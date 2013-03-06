@@ -1,5 +1,6 @@
 local M = {}
 
+M.ex_mode = require 'vi_mode_ex'
 --[[
 Make textadept behave a bit like vim.
 --]]
@@ -181,6 +182,9 @@ mode_command = {
         -- edit commands
 	u = buffer.undo,
 	cr = buffer.redo,
+
+	-- Enter ex mode command
+	[':'] = M.ex_mode.start,
 
 	-- test/debug
 	home = function() l, n = buffer.get_cur_line()
