@@ -13,12 +13,20 @@ local in_search_mode = false
 local function handle_search_command(command)
     if in_search_mode then
 	gui.statusbar_text = "Search: "..command
+        local saved_pos = buffer.current_pos
         buffer:search_anchor()
 
         local search_flags = (_SCINTILLA.constants.SCFIND_REGEXP +
                               _SCINTILLA.constants.SCFIND_POSIX)
 
         pos = buffer:search_next(search_flags, command)
+
+        if pos < 0 then
+          -- Didn't find searching forward, so search whole buffer.
+          buffer.current_pos = 0
+          buffer:search_anchor()
+          pos = buffer:search_next(search_flags, command)
+        end
 
         if pos >= 0 then
             local saved_flags = buffer.search_flags
@@ -51,6 +59,7 @@ local function handle_search_command(command)
             -- Restore global search flags
             buffer.search_flags = saved_flags
         else
+            buffer.current_pos = saved_pos
             gui.statusbar_text = "Not found"
         end
 	--in_search_mode = false
