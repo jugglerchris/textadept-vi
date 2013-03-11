@@ -163,6 +163,15 @@ mode_command = {
              buffer.current_pos = pos
              buffer.anchor = pos
             end),
+        ['%'] = mk_movement(function()
+             local pos = buffer.brace_match(buffer.current_pos)
+             if pos >= 0 then
+                 buffer.current_pos = pos
+                 buffer.anchor = pos
+             else
+                 -- Should search for the next brace on this line.
+             end
+        end),
 
 	['0'] = function()
              if command_numarg == 0 then
