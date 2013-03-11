@@ -30,11 +30,11 @@ M.ex_commands = {
          end
     end,
     w = function(args)
-         dbg("Fn:" .. tostring(_G.buffer.filename))
+         --dbg("Fn:" .. tostring(_G.buffer.filename))
          if #args ~= 1 then
              ex_error(":w doesn't yet accept an arg")
          else
-              _G.buffer:save()
+              buffer.save(_G.buffer)
          end
     end,
 }
