@@ -96,6 +96,9 @@ local function do_movement(f)
         local start = buffer.current_pos
         f()
         local end_ = buffer.current_pos
+        if start > end_ then
+            start, end_ = end_, start
+        end
         pending_action(start, end_)
         pending_action = nil
     end
@@ -204,9 +207,34 @@ mode_command = {
 	a = function() buffer.char_right() enter_mode(mode_insert) end,
         A = function() buffer.line_end() enter_mode(mode_insert) end,
         o = function() buffer.line_end() buffer.new_line() enter_mode(mode_insert) end,
-        d = function() pending_action = function(start, end_)
-              buffer.delete_range(start, end_-start)
-            end
+        d = function()
+           if pending_action ~= nil and pending_command == 'd' then
+              -- The 'dd' command
+              local rept = 1
+              local lineno = buffer.line_from_position(buffer.current_pos)
+
+              if command_numarg > 0 then rept = command_numarg end
+
+              buffer.begin_undo_action()
+              for i=1, rept do
+                  buffer.line_delete()
+
+                  -- Only delete forwards, so if we end up on a different
+                  -- line we should stop.
+                  if buffer.line_from_position(buffer.current_pos) ~= lineno
+                  then
+                      break
+                  end
+              end
+              buffer.end_undo_action()
+
+              pending_action, pending_command, command_numarg = nil, nil, 0
+           else
+              pending_action = function(start, end_)
+                  buffer.delete_range(start, end_-start)
+              end
+              pending_command = 'd'
+           end
         end,
         x = function()
                 local here = buffer.current_pos
