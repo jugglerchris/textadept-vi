@@ -2,6 +2,7 @@ local M = {}
 
 M.ex_mode = require 'vi_mode_ex'
 M.search_mode = require 'vi_mode_search'
+M.kill = require 'kill'
 --[[
 Make textadept behave a bit like vim.
 --]]
@@ -271,6 +272,9 @@ mode_command = {
 	-- Enter ex mode command
 	[':'] = M.ex_mode.start,
 	['/'] = M.search_mode.start,
+
+    -- Misc: suspend the editor
+    cz = M.kill.kill,
 
     },
 }
