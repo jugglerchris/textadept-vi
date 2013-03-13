@@ -34,6 +34,13 @@ function enter_mode(m)
     update_status()
 end
 
+function do_keys(...)
+    for _,sym in ipairs({...}) do
+        handler = mode.bindings[sym]
+        if handler then handler(sym) end
+    end
+end
+
 function key_handler_common(bindings, code, shift, ctrl, alt, meta)
     sym = keys.KEYSYMS[code] or string.char(code)
     -- dbg("Code:", code)
@@ -125,6 +132,15 @@ local function mk_movement(f)
   end
 end
 
+function vi_right()
+    local line, pos = buffer.get_cur_line()
+	local docpos = buffer.current_pos
+	local length = buffer.line_length(buffer.line_from_position(docpos))
+	if pos < (length - 2) then
+	    buffer.char_right()
+	end
+end
+
 mode_command = {
     name = COMMAND,
 
@@ -139,12 +155,7 @@ mode_command = {
 	  if pos > 0 then buffer.char_left() end
         end)),
         l = mk_movement(repeat_arg(function()
-	  local line, pos = buffer.get_cur_line()
-	  local docpos = buffer.current_pos
-	  local length = buffer.line_length(buffer.line_from_position(docpos))
-	  if pos < (length - 1) then
-	      buffer.char_right()
-	  end
+          vi_right()
         end)),
         j = mk_movement(repeat_arg(buffer.line_down)),
         k = mk_movement(repeat_arg(buffer.line_up)),
@@ -190,12 +201,14 @@ mode_command = {
 	['7'] = dodigit(7),
 	['8'] = dodigit(8),
 	['9'] = dodigit(9),
-	['$'] = function()
+	['$'] = mk_movement(function()
 		 -- Stop just before the end
 		 buffer.line_end()
 		 local line, pos = buffer.get_cur_line()
-		 if pos > 0 then buffer.char_left() end
-	       end,
+         -- If inside an action (eg d$) then we really do go to the end of
+         -- the line rather than one short.
+		 if pos > 0 and pending_action == nil then buffer.char_left() end
+	       end),
 	['^'] = mk_movement(function()
 		   buffer.home()    -- Go to beginning of line
 		   buffer.vc_home()  -- swaps between beginning/first visible
@@ -227,7 +240,8 @@ mode_command = {
 
               buffer.begin_undo_action()
               for i=1, rept do
-                  buffer.line_delete()
+                  buffer.line_cut()
+                  command_cut = 'line'
 
                   -- Only delete forwards, so if we end up on a different
                   -- line we should stop.
@@ -241,10 +255,14 @@ mode_command = {
               pending_action, pending_command, command_numarg = nil, nil, 0
            else
               pending_action = function(start, end_)
-                  buffer.delete_range(start, end_-start)
+                  buffer.set_sel(start, end_)
+                  buffer.cut()
               end
               pending_command = 'd'
            end
+        end,
+        D = function()
+            do_keys('d', '$')
         end,
         x = function()
                 local here = buffer.current_pos
@@ -263,8 +281,23 @@ mode_command = {
                     -- If at end of line, delete the previous char.
                     here = here - 1
                 end
-                buffer.delete_range(here, endpos-here)
+                buffer.set_sel(here, endpos)
+                buffer.cut()
+                command_cut = 'line'
+      end,
+
+        p = function()
+            if command_cut == 'line' then
+                -- Paste a new line.
+                buffer.line_end()
+                buffer.new_line()
+                buffer.paste()
+            else
+                vi_right()
+                buffer.paste()
+            end
         end,
+
         -- edit commands
 	u = buffer.undo,
 	cr = buffer.redo,
