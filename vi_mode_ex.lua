@@ -54,7 +54,7 @@ local function handle_ex_command(command)
         gui.command_entry.entry_text = ""
   in_ex_mode = false
 
-   return true  -- make sure this isn't handled again
+   return false  -- make sure this isn't handled again
     end
 end
 
