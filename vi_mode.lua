@@ -48,6 +48,13 @@ function key_handler_common(bindings, code, shift, ctrl, alt, meta)
     if ctrl then sym = 'c' .. sym end
     if shift then sym = 's' .. sym end -- Need to change for alphabetic
 
+    if state.pending_keyhandler ~= nil then
+        -- Call this instead
+        state.pending_keyhandler(sym)
+        state.pending_keyhandler = nil
+	return true
+    end
+
     --dbg("Sym:", sym, "Code:", code)
     handler = bindings[sym]
     if handler then
@@ -81,21 +88,30 @@ mode_insert = {
     }
 }
 
-command_numarg = 0
+-- Various state we modify
+state = {
+    numarg = 0,  -- The numeric prefix (eg for 10j to go down 10 times)
+
+    pending_action = nil,  -- An action waiting for a movement
+    pending_command = nil, -- The name of the editing command pending
+
+    pending_keyhandler = nil, -- A function to call on the next keypress
+    
+    marks = {},
+}
+
 function addarg(n)
-  command_numarg = command_numarg * 10 + n
-  dbg("New numarg: " .. tostring(command_numarg))
+  state.numarg = state.numarg * 10 + n
+  dbg("New numarg: " .. tostring(state.numarg))
 end
 -- Return a handler for digit n
 function dodigit(n)
     return function() addarg(n) end
 end
 
-local pending_action
-
 local function do_movement(f)
     -- Apply a movement command, which may be attached to an editing action.
-    if pending_action == nil then
+    if state.pending_action == nil then
         -- no action, just move
         f()
     else
@@ -107,15 +123,15 @@ local function do_movement(f)
         if start > end_ then
             start, end_ = end_, start
         end
-        pending_action(start, end_)
-        pending_action = nil
+        state.pending_action(start, end_)
+        state.pending_action = nil
     end
 end
 
 local function repeat_arg(f)
     return function()
-        local times = command_numarg
-        command_numarg = 0
+        local times = state.numarg
+        state.numarg = 0
         if times == 0 then times = 1 end
         for i=1,times do
             f()
@@ -125,8 +141,8 @@ end
 
 -- Wrapper to turn a simple command into one which uses the numeric prefix
 local function mk_movement(f)
-  -- Run f command_numarg times (if command_numarg is non-zero) and clear
-  -- command_numarg
+  -- Run f numarg times (if numarg is non-zero) and clear
+  -- numarg
   return function()
      do_movement(f)
   end
@@ -185,8 +201,30 @@ mode_command = {
              end
         end),
 
+	-- Mark actions
+	m = function()
+	    state.pending_keyhandler = function(sym)
+	        -- TODO: Marks should move if text is inserted before them.
+	        if string.match(sym, "^%a$") then
+		    -- alphabetic, so store the mark
+		    state.marks[sym] = buffer.current_pos
+		end
+	    end
+	end,
+	['\''] = function()
+	    state.pending_keyhandler = function(sym)
+	        if string.match(sym, "^%a$") then
+		    -- alphabetic, so restore the mark
+		    newpos = state.marks[sym]
+		    if newpos ~= nil then
+			do_movement(function () buffer.current_pos = newpos end)
+		    end
+		end
+	    end
+	end,
+
 	['0'] = function()
-             if command_numarg == 0 then
+             if state.numarg == 0 then
                 mk_movement(buffer.home)()
              else
                 addarg(0)
@@ -207,17 +245,17 @@ mode_command = {
 		 local line, pos = buffer.get_cur_line()
          -- If inside an action (eg d$) then we really do go to the end of
          -- the line rather than one short.
-		 if pos > 0 and pending_action == nil then buffer.char_left() end
+		 if pos > 0 and state.pending_action == nil then buffer.char_left() end
 	       end),
 	['^'] = mk_movement(function()
 		   buffer.home()    -- Go to beginning of line
 		   buffer.vc_home()  -- swaps between beginning/first visible
                 end),
 	G = mk_movement(function()
-	       if command_numarg > 0 then
+	       if state.numarg > 0 then
                    -- Textadept does zero-based line numbers.
-		   buffer.goto_line(command_numarg - 1)
-		   command_numarg = 0
+		   buffer.goto_line(state.numarg - 1)
+		   state.numarg = 0
 	       else
                  -- With no arg, go to last line.
                  buffer.document_end()
@@ -231,12 +269,12 @@ mode_command = {
         A = function() buffer.line_end() enter_mode(mode_insert) end,
         o = function() buffer.line_end() buffer.new_line() enter_mode(mode_insert) end,
         d = function()
-           if pending_action ~= nil and pending_command == 'd' then
+           if state.pending_action ~= nil and state.pending_command == 'd' then
               -- The 'dd' command
               local rept = 1
               local lineno = buffer.line_from_position(buffer.current_pos)
 
-              if command_numarg > 0 then rept = command_numarg end
+              if state.numarg > 0 then rept = state.numarg end
 
               buffer.begin_undo_action()
               for i=1, rept do
@@ -252,13 +290,13 @@ mode_command = {
               end
               buffer.end_undo_action()
 
-              pending_action, pending_command, command_numarg = nil, nil, 0
+              state.pending_action, state.pending_command, state.numarg = nil, nil, 0
            else
-              pending_action = function(start, end_)
+              state.pending_action = function(start, end_)
                   buffer.set_sel(start, end_)
                   buffer.cut()
               end
-              pending_command = 'd'
+              state.pending_command = 'd'
            end
         end,
         D = function()
@@ -266,9 +304,9 @@ mode_command = {
         end,
         x = function()
                 local here = buffer.current_pos
-                local rept = command_numarg
-                if command_numarg > 0 then
-                    command_numarg = 0
+                local rept = state.numarg
+                if state.numarg > 0 then
+                    state.numarg = 0
                 else
                     rept = 1
                 end
