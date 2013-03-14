@@ -31,6 +31,10 @@ function enter_mode(m)
     end
     key_handler = events.connect(events.KEYPRESS, m.key_handler, 1)
 
+    if m.restart then
+        m.restart()
+    end
+
     update_status()
 end
 
@@ -96,7 +100,7 @@ state = {
     pending_command = nil, -- The name of the editing command pending
 
     pending_keyhandler = nil, -- A function to call on the next keypress
-    
+
     marks = {},
 }
 
@@ -268,6 +272,7 @@ mode_command = {
 	a = function() buffer.char_right() enter_mode(mode_insert) end,
         A = function() buffer.line_end() enter_mode(mode_insert) end,
         o = function() buffer.line_end() buffer.new_line() enter_mode(mode_insert) end,
+
         d = function()
            if state.pending_action ~= nil and state.pending_command == 'd' then
               -- The 'dd' command
@@ -299,6 +304,21 @@ mode_command = {
               state.pending_command = 'd'
            end
         end,
+
+         c = function()
+              state.pending_action = function(start, end_)
+                  buffer.set_sel(start, end_)
+                  buffer.begin_undo_action()
+                  buffer.cut()
+                  enter_mode(mode_insert)
+
+                  mode_command.restart = function()
+                      buffer.end_undo_action()
+                  end
+              end
+              state.pending_command = 'c'
+         end,
+
         D = function()
             do_keys('d', '$')
         end,
@@ -321,7 +341,7 @@ mode_command = {
                 end
                 buffer.set_sel(here, endpos)
                 buffer.cut()
-                command_cut = 'line'
+                command_cut = 'char'
       end,
 
         p = function()
