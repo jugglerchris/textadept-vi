@@ -2,8 +2,8 @@
 #include <sys/types.h>
 #include <signal.h>
 #include <unistd.h>
-#include <lua5.2/lua.h>
-#include <lua5.2/lauxlib.h>
+#include <lua.h>
+#include <lauxlib.h>
 
 int l_kill(lua_State *L)
 {
