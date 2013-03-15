@@ -9,9 +9,12 @@ local function set_colours()
     buffer.indic_style[search_hl_indic] = _SCINTILLA.constants.INDIC_ROUNDBOX
 end
 
-local in_search_mode = false
+M.state = {
+    in_search_mode = false,
+    backwards = false,
+}
 local function handle_search_command(command)
-    if in_search_mode then
+    if state.in_search_mode then
 	gui.statusbar_text = "Search: "..command
         local saved_pos = buffer.current_pos
         buffer:search_anchor()
@@ -19,13 +22,23 @@ local function handle_search_command(command)
         local search_flags = (_SCINTILLA.constants.SCFIND_REGEXP +
                               _SCINTILLA.constants.SCFIND_POSIX)
 
-        pos = buffer:search_next(search_flags, command)
+	local searcher
+	if state.backwards then
+	    searcher = function(...) return buffer:search_prev(...) end
+	else
+	    searcher = function(...) return buffer:search_next(...) end
+        end
+	pos = searcher(search_flags, command)
 
         if pos < 0 then
-          -- Didn't find searching forward, so search whole buffer.
-          buffer.current_pos = 0
+          -- Didn't find searching in this direction, so search whole buffer.
+	  if state.backwards then
+	      buffer.current_pos = buffer.length-1
+	  else
+	      buffer.current_pos = 0
+	  end
           buffer:search_anchor()
-          pos = buffer:search_next(search_flags, command)
+          pos = searcher(search_flags, command)
         end
 
         if pos >= 0 then
@@ -62,26 +75,36 @@ local function handle_search_command(command)
             buffer.current_pos = saved_pos
             gui.statusbar_text = "Not found"
         end
-	in_search_mode = false
+	state.in_search_mode = false
 	return false  -- make sure this isn't handled again
     end
 end
 
 local function handle_search_key(code)
-    if in_search_mode and keys.KEYSYMS[code] == 'esc' then
+    if state.in_search_mode and keys.KEYSYMS[code] == 'esc' then
         -- Make sure we cancel the search flag.
 
-        in_search_mode = false
+        state.in_search_mode = false
     end
 end
 
 events.connect(events.COMMAND_ENTRY_COMMAND, handle_search_command, 1)
 events.connect(events.COMMAND_ENTRY_KEYPRESS, handle_search_key, 1)
 
-function M.start()
-    in_search_mode = true
+local function start_common()
+    state.in_search_mode = true
     gui.command_entry.entry_text = ""
     gui.command_entry.focus()
+end
+
+function M.start()
+    state.backwards = false
+    return start_common()
+end
+
+function M.start_rev()
+    state.backwards = true
+    return start_common()
 end
 
 return M

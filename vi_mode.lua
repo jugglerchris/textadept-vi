@@ -380,6 +380,9 @@ mode_command = {
 	-- Enter ex mode command
 	[':'] = M.ex_mode.start,
 	['/'] = M.search_mode.start,
+	['?'] = M.search_mode.start_rev,
+
+
 
     -- Misc: suspend the editor
     cz = M.kill.kill,
