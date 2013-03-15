@@ -276,6 +276,19 @@ mode_command = {
 	a = function() buffer.char_right() enter_mode(mode_insert) end,
         A = function() buffer.line_end() enter_mode(mode_insert) end,
         o = function() buffer.line_end() buffer.new_line() enter_mode(mode_insert) end,
+        O = function()
+            buffer.home()
+            if buffer.current_pos == 0 then
+               -- start of buffer
+               buffer.new_line()
+               buffer.char_left()  -- position cursor at start of the inserted
+                                   -- line
+            else
+               buffer.char_left()
+               buffer.new_line()
+            end
+            enter_mode(mode_insert)
+        end,
 
         d = function()
            if state.pending_action ~= nil and state.pending_command == 'd' then

@@ -62,7 +62,7 @@ local function handle_search_command(command)
             buffer.current_pos = saved_pos
             gui.statusbar_text = "Not found"
         end
-	--in_search_mode = false
+	in_search_mode = false
 	return false  -- make sure this isn't handled again
     end
 end
