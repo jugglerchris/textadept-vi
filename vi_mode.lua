@@ -2,7 +2,11 @@ local M = {}
 
 M.ex_mode = require 'vi_mode_ex'
 M.search_mode = require 'vi_mode_search'
-M.kill = require 'kill'
+res, M.kill = pcall(require,'kill')
+if not res then
+    -- The extension module may not be available.
+    M.kill = { kill=function() end }
+end
 --[[
 Make textadept behave a bit like vim.
 --]]
