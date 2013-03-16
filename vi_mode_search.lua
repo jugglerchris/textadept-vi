@@ -122,4 +122,23 @@ function M.restart_rev()
     do_search(not state.backwards)
 end
 
+local function search_word_common(backwards)
+    -- Search for the word under the cursor
+    -- TODO: quote properly, or better don't use regex'
+    -- Uses ideas from editing.lua
+    local pos = buffer.current_pos
+    local s, e = buffer:word_start_position(pos, true), buffer:word_end_position(pos)
+    local word = buffer:text_range(s, e)
+    state.pattern = '\\<' .. word .. '\\>'
+    do_search(backwards)
+end
+
+function M.search_word()
+    search_word_common(false)
+end
+
+function M.search_word_rev()
+    search_word_common(true)
+end
+
 return M

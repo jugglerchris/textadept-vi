@@ -383,6 +383,8 @@ mode_command = {
 	['?'] = M.search_mode.start_rev,
         n = M.search_mode.restart,
         N = M.search_mode.restart_rev,
+        ['*'] = M.search_mode.search_word,
+        ['#'] = M.search_mode.search_word_rev,
 
     -- Misc: suspend the editor
     cz = M.kill.kill,
