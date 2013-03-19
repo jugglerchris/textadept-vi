@@ -64,8 +64,22 @@ local function do_search(backwards)
 	    -- Set the search range from the end of this match to the
 	    -- end of the buffer.
 	    ]]
-	    buffer.target_start = buffer.target_end
+            if buffer.target_end == buffer.target_start then
+                -- Zero length match - not useful, abort here.
+                buffer.current_pos = saved_pos
+                gui.statusbar_text = "Not found"
+                return
+            end
+            -- Ensure we make some progress
+            if buffer.target_end == buffer.target_start then
+                buffer.target_start = buffer.target_end + 1
+            else
+                    buffer.target_start = buffer.target_end
+            end
 	    buffer.target_end = buffer.length
+            if buffer.target_start >= buffer.length then
+                break
+            end
 
 	    occurences = occurences + 1
 	end

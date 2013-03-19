@@ -43,18 +43,26 @@ function enter_mode(m)
 end
 
 function do_keys(...)
+    local result = nil
     for _,sym in ipairs({...}) do
         handler = mode.bindings[sym]
-        if handler then handler(sym) end
+        if handler then result = handler(sym) end
     end
+    return result
 end
 
 function key_handler_common(bindings, code, shift, ctrl, alt, meta)
     sym = keys.KEYSYMS[code] or string.char(code)
-    -- dbg("Code:", code)
     if alt then sym = 'a' .. sym end
     if ctrl then sym = 'c' .. sym end
     if shift then sym = 's' .. sym end -- Need to change for alphabetic
+
+    if NCURSES and (meta or alt) then
+        -- Inject an ESC followed by the un-alt/meta key.
+        events.emit(events.KEYPRESS, 7, false, false, false, false)
+        events.emit(events.KEYPRESS, code, shift, ctrl, false, false)
+        return true
+    end
 
     if state.pending_keyhandler ~= nil then
         -- Call this instead
@@ -289,6 +297,19 @@ mode_command = {
             end
             enter_mode(mode_insert)
         end,
+	r = function()
+	    state.pending_keyhandler = function(sym)
+	        -- TODO: Marks should move if text is inserted before them.
+	        if string.match(sym, "^.$") then
+		      -- Single character, so buffer.replace.
+              here = buffer.current_pos
+              buffer.set_sel(here, here+1)
+              buffer.replace_sel(sym)
+              buffer.current_pos = here+1
+		    end
+	    end
+	end,
+
 
         d = function()
            if state.pending_action ~= nil and state.pending_command == 'd' then
@@ -339,6 +360,11 @@ mode_command = {
         D = function()
             do_keys('d', '$')
         end,
+
+        C = function()
+            do_keys('c', '$')
+        end,
+
         x = function()
                 local here = buffer.current_pos
                 local rept = state.numarg
@@ -360,6 +386,15 @@ mode_command = {
                 buffer.cut()
                 command_cut = 'char'
       end,
+
+         ['>'] = function()
+              -- TODO: add support for >> (ideally generically)
+              state.pending_action = function(start, end_)
+                  buffer.set_sel(start, end_)
+                  buffer.tab()
+              end
+              state.pending_command = '='
+         end,
 
         p = function()
             if command_cut == 'line' then
