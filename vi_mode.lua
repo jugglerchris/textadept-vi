@@ -18,6 +18,8 @@ mode = nil  -- initialised below
 local key_handler = nil
 
 local debug = false
+-- If true, then convert alt-x or meta-x into ESC x (NCURSES only)
+M.strip_alt = false
 
 function dbg(...)
     --if debug then print(...) end
@@ -57,7 +59,7 @@ function key_handler_common(bindings, code, shift, ctrl, alt, meta)
     if ctrl then sym = 'c' .. sym end
     if shift then sym = 's' .. sym end -- Need to change for alphabetic
 
-    if NCURSES and (meta or alt) then
+    if M.strip_alt and NCURSES and (meta or alt) then
         -- Inject an ESC followed by the un-alt/meta key.
         events.emit(events.KEYPRESS, 7, false, false, false, false)
         events.emit(events.KEYPRESS, code, shift, ctrl, false, false)
@@ -191,6 +193,9 @@ mode_command = {
         end)),
         j = mk_movement(repeat_arg(buffer.line_down)),
         k = mk_movement(repeat_arg(buffer.line_up)),
+        w = mk_movement(repeat_arg(buffer.word_right)),
+        b = mk_movement(repeat_arg(buffer.word_left)),
+
         H = mk_movement(function()
              -- We can't use goto_line here as it scrolls the window slightly.
              local top_line = buffer.first_visible_line

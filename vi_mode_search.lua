@@ -12,8 +12,9 @@ end
 M.state = {
     in_search_mode = false,
     backwards = false,
-    pattern = nil,
+    pattern = "",
 }
+local state = M.state
 
 local function do_search(backwards)
     gui.statusbar_text = "Search: "..state.pattern
@@ -85,7 +86,8 @@ local function do_search(backwards)
 	end
 	gui.statusbar_text = "Found " .. tostring(occurences) .. " : <" .. tostring(search_hl_indic) .. ">"
 	-- Restore global search flags
-	buffer.search_flags = saved_flags
+        buffer.search_flags = saved_flags
+        buffer.current_pos = pos
     else
 	buffer.current_pos = saved_pos
 	gui.statusbar_text = "Not found"

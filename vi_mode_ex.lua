@@ -2,8 +2,9 @@
 -- Modeled on textadept's command_entry.lua
 local M = {}
 
+local debug = false
 local function dbg(...)
-    gui._print("ex", ...)
+    if debug then gui._print("ex", ...) end
 end
 
 local function split(s)
@@ -37,24 +38,42 @@ M.ex_commands = {
               buffer.save(_G.buffer)
          end
     end,
+    n = function(args)
+         view:goto_buffer(1, true)
+    end,
+    p = function(args)
+         view:goto_buffer(-1, true)
+    end,
+    c = function(args)
+        -- Leave the command entry open
+        gui.command_entry.focus()
+        return true
+    end,
 }
+
 local function handle_ex_command(command)
     if in_ex_mode then
       gui.statusbar_text = "Ex: "..command
         local cmd = split(command)
         -- For now, a very simple command parser
         local handler = M.ex_commands[cmd[1]]
+        local result
+
+        gui.command_entry.entry_text = ""
+
         if handler ~= nil then
-            handler(cmd)
+            result = handler(cmd)
         else
             gui.statusbar_text = "Bad command <" .. cmd[1] .. ">"
         end
 
-        -- Slight hack: let the normal command handler hide the entry widget again.
-        gui.command_entry.entry_text = ""
-  in_ex_mode = false
+        in_ex_mode = false
 
-   return false  -- make sure this isn't handled again
+        if result ~= nil then
+            return result
+        else
+            return false  -- make sure this isn't handled again
+        end
     end
 end
 
