@@ -12,14 +12,13 @@ Make textadept behave a bit like vim.
 --]]
 
 -- The current mode (command, insert, etc.)
-COMMAND = "command"
-INSERT = "insert"
+COMMAND = "vi_command"
+INSERT = "vi_insert"
 mode = nil  -- initialised below
-local key_handler = nil
 
 local debug = false
 -- If true, then convert alt-x or meta-x into ESC x (NCURSES only)
-M.strip_alt = false
+M.strip_alt = false  -- doesn't yet work
 
 function dbg(...)
     --if debug then print(...) end
@@ -32,10 +31,7 @@ function enter_mode(m)
     mode = m
 
     dbg("Enter mode:" .. m.name)
-    if key_handler ~= nil then
-        events.disconnect(events.KEYPRESS, key_handler)
-    end
-    key_handler = events.connect(events.KEYPRESS, m.key_handler, 1)
+    keys.MODE = m.name
 
     if m.restart then
         m.restart()
@@ -53,12 +49,7 @@ function do_keys(...)
     return result
 end
 
-function key_handler_common(bindings, code, shift, ctrl, alt, meta)
-    sym = keys.KEYSYMS[code] or string.char(code)
-    if alt then sym = 'a' .. sym end
-    if ctrl then sym = 'c' .. sym end
-    if shift then sym = 's' .. sym end -- Need to change for alphabetic
-
+function key_handler_common(bindings, sym)
     if M.strip_alt and NCURSES and (meta or alt) then
         -- Inject an ESC followed by the un-alt/meta key.
         events.emit(events.KEYPRESS, 7, false, false, false, false)
@@ -73,7 +64,7 @@ function key_handler_common(bindings, code, shift, ctrl, alt, meta)
 	return true
     end
 
-    --dbg("Sym:", sym, "Code:", code)
+    dbg("Sym:", sym)
     handler = bindings[sym]
     if handler then
         handler(sym)
@@ -419,7 +410,7 @@ mode_command = {
 
 	-- Enter ex mode command
 	[':'] = M.ex_mode.start,
-	['/'] = M.search_mode.start,
+	['/'] = function() M.search_mode.start(function () enter_mode(mode_command) end) end,
 	['?'] = M.search_mode.start_rev,
         n = M.search_mode.restart,
         N = M.search_mode.restart_rev,
@@ -431,6 +422,23 @@ mode_command = {
 
     },
 }
+
+-- Fall back to main keymap for any unhandled keys
+local keys_mt = {
+	__index = keys
+}
+
+setmetatable(mode_command.bindings, keys_mt)
+
+keys[COMMAND] = setmetatable({}, {
+    __index = function (tab, key)
+        return function()
+	    key_handler_common(mode_command.bindings, key)
+	end
+    end,
+})
+
+keys[INSERT] = setmetatable(mode_insert.bindings, keys_mt)
 
 -- Disable "normal" keys in command mode if I haven't bound them explicitly.
 local function set_default_key(k)

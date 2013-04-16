@@ -2,11 +2,15 @@
 -- Modeled on textadept's command_entry.lua
 local M = {}
 
-local search_hl_indic = _SCINTILLA.next_indic_number()
+M.search_hl_indic = _SCINTILLA.next_indic_number()
 
 local function set_colours()
-    buffer.indic_fore[search_hl_indic] = "0x00FFFF"
-    buffer.indic_style[search_hl_indic] = _SCINTILLA.constants.INDIC_ROUNDBOX
+    buffer.indic_fore[M.search_hl_indic] = 0x00FFFF
+    buffer.indic_style[M.search_hl_indic] = _SCINTILLA.constants.INDIC_ROUNDBOX
+    buffer.indic_alpha[M.search_hl_indic] = 100
+    -- Find all occurrences to highlight.
+    buffer.indicator_current = M.search_hl_indic
+    buffer:indicator_clear_range(0, buffer.length)
 end
 
 M.state = {
@@ -43,28 +47,20 @@ local function do_search(backwards)
       pos = searcher(search_flags, state.pattern)
     end
 
+    set_colours()
+
     if pos >= 0 then
 	local saved_flags = buffer.search_flags
 	buffer.search_flags = search_flags
 	buffer.goto_pos(pos)
-	-- Find all occurrences to highlight.
-	buffer.indicator_current = search_hl_indic
-	buffer:indicator_clear_range(0, buffer.length)
 
 	-- Need to use search_in_target to find the actual search extents.
 	buffer.target_start = 0
 	buffer.target_end = buffer.length
 	local occurences = 0
-	local addsel = buffer.set_selection
 	while buffer.search_in_target(state.pattern) >= 0 do
-	    addsel(buffer.target_end-1, buffer.target_start)
-	    addsel = buffer.add_selection
-	    --[[  In the terminal, indicators currently don't work.  :-(
 	    local match_len = buffer.target_end - buffer.target_start
 	    buffer:indicator_fill_range(buffer.target_start, match_len)
-	    -- Set the search range from the end of this match to the
-	    -- end of the buffer.
-	    ]]
             if buffer.target_end == buffer.target_start then
                 -- Zero length match - not useful, abort here.
                 buffer.current_pos = saved_pos
@@ -84,10 +80,10 @@ local function do_search(backwards)
 
 	    occurences = occurences + 1
 	end
-	gui.statusbar_text = "Found " .. tostring(occurences) .. " : <" .. tostring(search_hl_indic) .. ">"
+	gui.statusbar_text = "Found " .. tostring(occurences) .. " : <" .. tostring(M.search_hl_indic) .. ">"
 	-- Restore global search flags
         buffer.search_flags = saved_flags
-        buffer.current_pos = pos
+--        buffer.current_pos = pos
     else
 	buffer.current_pos = saved_pos
 	gui.statusbar_text = "Not found"
@@ -111,23 +107,35 @@ local function handle_search_key(code)
     end
 end
 
-events.connect(events.COMMAND_ENTRY_COMMAND, handle_search_command, 1)
-events.connect(events.COMMAND_ENTRY_KEYPRESS, handle_search_key, 1)
+-- Register our key bindings for the command entry
+local gui_ce = gui.command_entry
+keys.vi_search_command = {
+    ['\n'] = function ()
+              gui_ce.finish_mode()
+              local exit = state.exitfunc
+              state.exitfunc = nil
+              handle_search_command(gui_ce.entry_text)
+              exit()
+            end,
+}
+-- events.connect(events.COMMAND_ENTRY_COMMAND, handle_search_command, 1)
+-- events.connect(events.COMMAND_ENTRY_KEYPRESS, handle_search_key, 1)
 
-local function start_common()
+local function start_common(exitfunc)
     state.in_search_mode = true
+    state.exitfunc = exitfunc
     gui.command_entry.entry_text = ""
-    gui.command_entry.focus()
+    gui.command_entry.enter_mode('vi_search_command')
 end
 
-function M.start()
+function M.start(exitfunc)
     state.backwards = false
-    return start_common()
+    return start_common(exitfunc)
 end
 
-function M.start_rev()
+function M.start_rev(exitfunc)
     state.backwards = true
-    return start_common()
+    return start_common(exitfunc)
 end
 
 function M.restart()
