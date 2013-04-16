@@ -9,7 +9,7 @@ end
 
 local function split(s)
     local ret = {}
-    -- dbg("split(" .. s ..")")
+    --dbg("split(" .. s ..")")
     for word in string.gmatch(s, "%S+") do
         ret[#ret+1] = word
     end
@@ -51,6 +51,7 @@ M.ex_commands = {
     end,
     q = function(args)
         -- Quit
+        dbg("in q")
         quit()
     end,
 }
@@ -88,10 +89,12 @@ local state = M.state
 local gui_ce = gui.command_entry
 keys.vi_ex_command = {
     ['\n'] = function ()
-	       gui_ce.finish_mode(handle_ex_command)
-	       local exit = state.exitfunc
-	       state.exitfunc = nil
-	       exit()
+    	       local exit = state.exitfunc
+     	       state.exitfunc = nil
+	       return gui_ce.finish_mode(function(text)
+                                              handle_ex_command(text)
+                                              exit()
+                                      end)
 	     end,
 }
 

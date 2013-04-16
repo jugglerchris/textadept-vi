@@ -103,11 +103,12 @@ end
 local gui_ce = gui.command_entry
 keys.vi_search_command = {
     ['\n'] = function ()
-              gui_ce.finish_mode()
               local exit = state.exitfunc
               state.exitfunc = nil
-              handle_search_command(gui_ce.entry_text)
-              exit()
+              return gui_ce.finish_mode(function(text)
+                                   handle_search_command(text)
+                                   exit()
+                               end)
             end,
 }
 
