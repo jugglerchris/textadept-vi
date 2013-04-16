@@ -18,7 +18,7 @@ mode = nil  -- initialised below
 
 local debug = false
 -- If true, then convert alt-x or meta-x into ESC x (NCURSES only)
-M.strip_alt = false  -- doesn't yet work
+M.strip_alt = false
 
 function dbg(...)
     --if debug then print(...) end
@@ -49,7 +49,7 @@ function do_keys(...)
     return result
 end
 
-function key_handler_common(bindings, sym)
+function key_handler_common(code, shift, ctrl, alt, meta)
     if M.strip_alt and NCURSES and (meta or alt) then
         -- Inject an ESC followed by the un-alt/meta key.
         events.emit(events.KEYPRESS, 7, false, false, false, false)
@@ -63,14 +63,8 @@ function key_handler_common(bindings, sym)
         state.pending_keyhandler = nil
 	return true
     end
-
-    dbg("Sym:", sym)
-    handler = bindings[sym]
-    if handler then
-        handler(sym)
-        return true
-    end
 end
+events.connect(events.KEYPRESS, key_handler_common, 1)
 
 function update_status()
     if mode.name == COMMAND then
@@ -164,6 +158,10 @@ function vi_right()
 	if pos < (length - 2) then
 	    buffer.char_right()
 	end
+end
+
+local function enter_command()
+    enter_mode(mode_command)
 end
 
 mode_command = {
@@ -409,8 +407,8 @@ mode_command = {
 	cr = buffer.redo,
 
 	-- Enter ex mode command
-	[':'] = M.ex_mode.start,
-	['/'] = function() M.search_mode.start(function () enter_mode(mode_command) end) end,
+	[':'] = function() M.ex_mode.start(enter_command) end,
+	['/'] = function() M.search_mode.start(enter_command) end,
 	['?'] = M.search_mode.start_rev,
         n = M.search_mode.restart,
         N = M.search_mode.restart_rev,
@@ -428,16 +426,7 @@ local keys_mt = {
 	__index = keys
 }
 
-setmetatable(mode_command.bindings, keys_mt)
-
-keys[COMMAND] = setmetatable({}, {
-    __index = function (tab, key)
-        return function()
-	    key_handler_common(mode_command.bindings, key)
-	end
-    end,
-})
-
+keys[COMMAND] = setmetatable(mode_command.bindings, keys_mt)
 keys[INSERT] = setmetatable(mode_insert.bindings, keys_mt)
 
 -- Disable "normal" keys in command mode if I haven't bound them explicitly.

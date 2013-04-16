@@ -99,14 +99,6 @@ local function handle_search_command(command)
     end
 end
 
-local function handle_search_key(code)
-    if state.in_search_mode and keys.KEYSYMS[code] == 'esc' then
-        -- Make sure we cancel the search flag.
-
-        state.in_search_mode = false
-    end
-end
-
 -- Register our key bindings for the command entry
 local gui_ce = gui.command_entry
 keys.vi_search_command = {
@@ -118,8 +110,6 @@ keys.vi_search_command = {
               exit()
             end,
 }
--- events.connect(events.COMMAND_ENTRY_COMMAND, handle_search_command, 1)
--- events.connect(events.COMMAND_ENTRY_KEYPRESS, handle_search_key, 1)
 
 local function start_common(exitfunc)
     state.in_search_mode = true

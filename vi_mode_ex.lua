@@ -49,6 +49,10 @@ M.ex_commands = {
         gui.command_entry.focus()
         return true
     end,
+    q = function(args)
+        -- Quit
+        quit()
+    end,
 }
 
 local function handle_ex_command(command)
@@ -77,20 +81,25 @@ local function handle_ex_command(command)
     end
 end
 
-local function handle_ex_key(code)
-    if in_ex_mode and keys.KEYSYMS[code] == 'esc' then
-        -- Make sure we cancel the ex flag.
-        in_ex_mode = false
-    end
-end
+M.state = {}
+local state = M.state
 
-events.connect(events.COMMAND_ENTRY_COMMAND, handle_ex_command, 1)
-events.connect(events.COMMAND_ENTRY_KEYPRESS, handle_ex_key, 1)
+-- Register our command_entry keybindings
+local gui_ce = gui.command_entry
+keys.vi_ex_command = {
+    ['\n'] = function ()
+	       gui_ce.finish_mode(handle_ex_command)
+	       local exit = state.exitfunc
+	       state.exitfunc = nil
+	       exit()
+	     end,
+}
 
-function M.start()
+function M.start(exitfunc)
     in_ex_mode = true
+    state.exitfunc = exitfunc
     gui.command_entry.entry_text = ""
-    gui.command_entry.focus()
+    gui.command_entry.enter_mode('vi_ex_command')
 end
 
 return M
