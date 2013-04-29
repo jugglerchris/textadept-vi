@@ -110,6 +110,10 @@ keys.vi_search_command = {
                                    exit()
                                end)
             end,
+    ['esc'] = function()
+              gui_ce.enter_mode(nil)  -- Exit command_entry mode
+	      keys.MODE = "vi_command"
+	    end,
 }
 
 local function start_common(exitfunc)
