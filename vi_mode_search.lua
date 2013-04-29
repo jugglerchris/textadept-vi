@@ -28,38 +28,45 @@ local function do_search(backwards)
     local search_flags = (_SCINTILLA.constants.SCFIND_REGEXP +
 			  _SCINTILLA.constants.SCFIND_POSIX)
 
-    local searcher
-    if backwards then
-	searcher = function(...) return buffer:search_prev(...) end
-    else
-	searcher = function(...) return buffer:search_next(...) end
-    end
-    pos = searcher(search_flags, state.pattern)
+    local searcher = function(...) return buffer:search_next(...) end
 
-    if pos < 0 then
-      -- Didn't find searching in this direction, so search whole buffer.
-      if backwards then
-	  buffer.current_pos = buffer.length-1
-      else
-	  buffer.current_pos = 0
-      end
-      buffer:search_anchor()
-      pos = searcher(search_flags, state.pattern)
-    end
+    -- Search from the end.  We'll jump to the first one "after" the current pos.
+    buffer.current_pos = 0
+    buffer:search_anchor()
+    pos = searcher(search_flags, state.pattern)
 
     set_colours()
 
     if pos >= 0 then
 	local saved_flags = buffer.search_flags
 	buffer.search_flags = search_flags
-	buffer.goto_pos(pos)
+
+    local new_pos = nil
 
 	-- Need to use search_in_target to find the actual search extents.
 	buffer.target_start = 0
 	buffer.target_end = buffer.length
 	local occurences = 0
+    local first_pos = nil
+    local last_pos = nil
 	while buffer.search_in_target(state.pattern) >= 0 do
 	    local match_len = buffer.target_end - buffer.target_start
+        last_pos = buffer.target_start
+        if first_pos == nil then
+            first_pos = buffer.target_start
+        end
+
+        -- Work out the current pos, ie first hit after the saved position.
+        if backwards then
+            if buffer.target_start < saved_pos then
+                new_pos = buffer.target_start
+            end
+        else
+            -- Forwards - take the first one after saved_pos
+            if new_pos == nil and buffer.target_start > saved_pos then
+                new_pos = buffer.target_start
+            end
+        end
 	    buffer:indicator_fill_range(buffer.target_start, match_len)
             if buffer.target_end == buffer.target_start then
                 -- Zero length match - not useful, abort here.
@@ -80,10 +87,21 @@ local function do_search(backwards)
 
 	    occurences = occurences + 1
 	end
-	gui.statusbar_text = "Found " .. tostring(occurences) .. " : <" .. tostring(M.search_hl_indic) .. ">"
+    -- Handle wrapping search
+    if new_pos == nil then
+        if backwards then
+            new_pos = last_pos
+        else
+            new_pos = first_pos
+        end
+        gui.statusbar_text = "WRAPPED SEARCH"
+    else
+	gui.statusbar_text = "Found " .. tostring(occurences)
+    end
 	-- Restore global search flags
         buffer.search_flags = saved_flags
---        buffer.current_pos = pos
+        buffer.goto_pos(new_pos)
+        buffer.selection_start = new_pos
     else
 	buffer.current_pos = saved_pos
 	gui.statusbar_text = "Not found"
@@ -106,6 +124,9 @@ keys.vi_search_command = {
               local exit = state.exitfunc
               state.exitfunc = nil
               return gui_ce.finish_mode(function(text)
+                                   if string.len(text) == 0 then
+                                       text = state.pattern
+                                   end
                                    handle_search_command(text)
                                    exit()
                                end)

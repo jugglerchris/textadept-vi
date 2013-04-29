@@ -57,6 +57,12 @@ function key_handler_common(code, shift, ctrl, alt, meta)
         return true
     end
 
+    sym = keys.KEYSYMS[code] or string.char(code)
+    -- dbg("Code:", code)
+    if alt then sym = 'a' .. sym end
+    if ctrl then sym = 'c' .. sym end
+    if shift then sym = 's' .. sym end -- Need to change for alphabetic
+
     if state.pending_keyhandler ~= nil then
         -- Call this instead
         state.pending_keyhandler(sym)
@@ -409,7 +415,7 @@ mode_command = {
 	-- Enter ex mode command
 	[':'] = function() M.ex_mode.start(enter_command) end,
 	['/'] = function() M.search_mode.start(enter_command) end,
-	['?'] = M.search_mode.start_rev,
+	['?'] = function() M.search_mode.start_rev(enter_command) end,
         n = M.search_mode.restart,
         N = M.search_mode.restart_rev,
         ['*'] = M.search_mode.search_word,
@@ -445,5 +451,7 @@ for i = 0,25 do
 end
 
 enter_mode(mode_command)
+
+function M.enter_cmd() enter_mode(mode_command) end
 
 return M
