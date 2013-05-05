@@ -434,6 +434,18 @@ mode_command = {
         -- edit commands
 	u = buffer.undo,
 	cr = buffer.redo,
+        ['.'] = function()
+              -- Redo the last action, taking into account possible prefix arg.
+              local rpt = state.last_numarg
+              if state.numarg > 0 then
+                  rpt = state.numarg
+                  state.numarg = 0
+                  state.last_numarg = rpt
+              end
+              buffer.begin_undo_action()
+              state.last_action(rpt)
+              buffer.end_undo_action()
+           end,
 
 	-- Enter ex mode command
 	[':'] = function() M.ex_mode.start(enter_command) end,
