@@ -97,17 +97,33 @@ mode_insert = {
     }
 }
 
+local function no_action() end
+
 -- Various state we modify
 state = {
     numarg = 0,  -- The numeric prefix (eg for 10j to go down 10 times)
+    last_numarg = 0,  -- The last numeric argument used (for repeating previous)
 
     pending_action = nil,  -- An action waiting for a movement
     pending_command = nil, -- The name of the editing command pending
 
     pending_keyhandler = nil, -- A function to call on the next keypress
+    last_action = no_action,
 
     marks = {},
 }
+
+function do_action(action)
+    state.last_action = action
+
+    local rpt = 1
+    if state.numarg > 0 then rpt = state.numarg end
+    state.last_numarg = rpt
+
+    buffer.begin_undo_action()
+    action(rpt)
+    buffer.end_undo_action()
+end
 
 function addarg(n)
   state.numarg = state.numarg * 10 + n
@@ -302,10 +318,17 @@ mode_command = {
 	        -- TODO: Marks should move if text is inserted before them.
 	        if string.match(sym, "^.$") then
 		      -- Single character, so buffer.replace.
-              here = buffer.current_pos
-              buffer.set_sel(here, here+1)
-              buffer.replace_sel(sym)
-              buffer.current_pos = here+1
+                   do_action(function(rpt)
+                       here = buffer.current_pos
+                       while rpt > 0 do
+                           buffer.set_sel(here, here+1)
+                           buffer.replace_sel(sym)
+                           buffer.current_pos = here+1
+
+                           here = here + 1
+                           rpt = rpt - 1
+                       end
+                     end)
 		    end
 	    end
 	end,
@@ -434,6 +457,10 @@ local keys_mt = {
 
 keys[COMMAND] = setmetatable(mode_command.bindings, keys_mt)
 keys[INSERT] = setmetatable(mode_insert.bindings, keys_mt)
+
+-- Since it's currently easy to escape from the vi modes to the default mode,
+-- make sure we can get back to it from default mode.
+keys.esc = function() enter_mode(mode_command) end
 
 -- Disable "normal" keys in command mode if I haven't bound them explicitly.
 local function set_default_key(k)
