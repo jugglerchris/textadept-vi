@@ -110,6 +110,8 @@ state = {
     pending_keyhandler = nil, -- A function to call on the next keypress
     last_action = no_action,
 
+    command_cut = nil,   -- Whether the last cut was char or line oriented
+
     marks = {},
 }
 
@@ -150,6 +152,12 @@ local function do_movement(f)
         end
         state.pending_action(start, end_)
         state.pending_action = nil
+    end
+end
+
+local function repeatable(f)
+    return function(rpt)
+        for i=1,rpt do f() end
     end
 end
 
@@ -340,21 +348,17 @@ mode_command = {
               local rept = 1
               local lineno = buffer.line_from_position(buffer.current_pos)
 
-              if state.numarg > 0 then rept = state.numarg end
-
-              buffer.begin_undo_action()
-              for i=1, rept do
-                  buffer.line_cut()
-                  command_cut = 'line'
-
-                  -- Only delete forwards, so if we end up on a different
-                  -- line we should stop.
-                  if buffer.line_from_position(buffer.current_pos) ~= lineno
-                  then
-                      break
+              do_action(function(rpt)
+                  state.command_cut = 'line'
+                  buffer.home()  -- Start of line
+                  local start = buffer.current_pos
+                  for i = 1,rpt do
+                      buffer.line_down()
                   end
-              end
-              buffer.end_undo_action()
+                  local endpos = buffer.current_pos
+                  buffer.set_selection(start, endpos)
+                  buffer.cut()
+              end)
 
               state.pending_action, state.pending_command, state.numarg = nil, nil, 0
            else
@@ -407,7 +411,7 @@ mode_command = {
                 end
                 buffer.set_sel(here, endpos)
                 buffer.cut()
-                command_cut = 'char'
+                state.command_cut = 'char'
       end,
 
          ['>'] = function()
@@ -420,12 +424,14 @@ mode_command = {
          end,
 
         p = function()
-            if command_cut == 'line' then
+            if state.command_cut == 'line' then
                 -- Paste a new line.
-                buffer.line_end()
-                buffer.goto_pos(buffer.current_pos + 1)
-                buffer.paste()
-                buffer.line_up()
+                do_action(repeatable(function()
+                    buffer.line_end()
+                    buffer.goto_pos(buffer.current_pos + 1)
+                    buffer.paste()
+                    buffer.line_up()
+                end))
             else
                 vi_right()
                 buffer.paste()
