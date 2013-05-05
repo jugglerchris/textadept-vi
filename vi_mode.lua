@@ -423,8 +423,9 @@ mode_command = {
             if command_cut == 'line' then
                 -- Paste a new line.
                 buffer.line_end()
-                buffer.new_line()
+                buffer.goto_pos(buffer.current_pos + 1)
                 buffer.paste()
+                buffer.line_up()
             else
                 vi_right()
                 buffer.paste()
