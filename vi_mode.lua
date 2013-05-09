@@ -57,7 +57,9 @@ function key_handler_common(code, shift, ctrl, alt, meta)
         return true
     end
 
-    sym = keys.KEYSYMS[code] or string.char(code)
+    -- This logic borrowed from core/keys.lua from textadept.
+    local sym = code < 256 and (not CURSES or code ~= 7) and string.char(code) or
+                                                           keys.KEYSYMS[code]
     -- dbg("Code:", code)
     if alt then sym = 'a' .. sym end
     if ctrl then sym = 'c' .. sym end
@@ -78,8 +80,8 @@ function update_status()
     else
         gui.statusbar_text = "-- INSERT --"
     end
-
 end
+events.connect(events.UPDATE_UI)
 
 mode_insert = {
     name = INSERT,
@@ -94,6 +96,8 @@ mode_insert = {
             if pos > 0 then buffer.char_left() end
             enter_mode(mode_command)
         end,
+
+        cp = _M.textadept.editing.autocomplete_word,
     }
 }
 
