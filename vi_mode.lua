@@ -60,6 +60,9 @@ function key_handler_common(code, shift, ctrl, alt, meta)
     -- This logic borrowed from core/keys.lua from textadept.
     local sym = code < 256 and (not CURSES or code ~= 7) and string.char(code) or
                                                            keys.KEYSYMS[code]
+
+    if not sym then return -- ignore unknown keys
+
     -- dbg("Code:", code)
     if alt then sym = 'a' .. sym end
     if ctrl then sym = 'c' .. sym end
