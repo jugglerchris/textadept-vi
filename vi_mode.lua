@@ -347,6 +347,15 @@ mode_command = {
 		    end
 	    end
 	end,
+        ['~'] = function()
+            do_action(repeatable(function()
+                buffer.set_selection(buffer.current_pos, buffer.current_pos+1)
+                local c = buffer.get_sel_text()
+                local newc = string.upper(c)
+                if newc == c then newc = string.lower(c) end
+                buffer.replace_sel(newc)
+            end))
+        end,
 
 
         d = function()
