@@ -203,6 +203,17 @@ local function enter_command()
     enter_mode(mode_command)
 end
 
+local function enter_insert_then_end_undo()
+    enter_mode(mode_insert)
+    mode_command.restart = function()
+        buffer.end_undo_action()
+    end
+end
+local function enter_insert_with_undo()
+    buffer.begin_undo_action()
+    enter_insert_then_end_undo()
+end
+
 mode_command = {
     name = COMMAND,
 
@@ -313,12 +324,18 @@ mode_command = {
 	   end),
 
 	-- edit mode commands
-        i = function() enter_mode(mode_insert) end,
-	a = function() buffer.char_right() enter_mode(mode_insert) end,
-        A = function() buffer.line_end() enter_mode(mode_insert) end,
-        o = function() buffer.line_end() buffer.new_line() enter_mode(mode_insert) end,
+        i = function() enter_insert_with_undo() end,
+	a = function() buffer.char_right() enter_insert_with_undo() end,
+        A = function() buffer.line_end() enter_insert_with_undo() end,
+        o = function()
+            buffer.line_end()
+            buffer.begin_undo_action()
+            buffer.new_line()
+            enter_insert_then_end_undo()
+        end,
         O = function()
             buffer.home()
+            buffer.begin_undo_action()
             if buffer.current_pos == 0 then
                -- start of buffer
                buffer.new_line()
@@ -328,7 +345,7 @@ mode_command = {
                buffer.char_left()
                buffer.new_line()
             end
-            enter_mode(mode_insert)
+            enter_insert_then_end_undo()
         end,
 	r = function()
 	    state.pending_keyhandler = function(sym)
@@ -393,11 +410,7 @@ mode_command = {
                   buffer.set_sel(start, end_)
                   buffer.begin_undo_action()
                   buffer.cut()
-                  enter_mode(mode_insert)
-
-                  mode_command.restart = function()
-                      buffer.end_undo_action()
-                  end
+                  enter_insert_then_end_undo()
               end
               state.pending_command = 'c'
          end,
