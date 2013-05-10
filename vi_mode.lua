@@ -34,7 +34,9 @@ function enter_mode(m)
     keys.MODE = m.name
 
     if m.restart then
-        m.restart()
+        local restart = m.restart
+        m.restart = nil
+        restart()
     end
 
     update_status()
