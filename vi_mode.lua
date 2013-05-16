@@ -414,8 +414,11 @@ mode_command = {
               state.pending_action, state.pending_command, state.numarg = nil, nil, 0
            else
               state.pending_action = function(start, end_)
-                  buffer.set_sel(start, end_)
-                  buffer.cut()
+                  do_action(function()
+                      --
+                      buffer.set_sel(start, end_)
+                      buffer.cut()
+                  end)
               end
               state.pending_command = 'd'
            end
@@ -440,13 +443,8 @@ mode_command = {
         end,
 
         x = function()
+            do_action(function(rept)
                 local here = buffer.current_pos
-                local rept = state.numarg
-                if state.numarg > 0 then
-                    state.numarg = 0
-                else
-                    rept = 1
-                end
                 local text, _ = buffer.get_cur_line()
                 local lineno = buffer.line_from_position(buffer.current_pos)
                 local lineend = buffer.line_end_position[lineno]
@@ -459,6 +457,7 @@ mode_command = {
                 buffer.set_sel(here, endpos)
                 buffer.cut()
                 state.command_cut = 'char'
+            end)
       end,
 
          ['>'] = function()
