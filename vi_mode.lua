@@ -546,4 +546,11 @@ enter_mode(mode_command)
 
 function M.enter_cmd() enter_mode(mode_command) end
 
+-- Return to command mode when switching buffers
+events.connect(events.BUFFER_BEFORE_SWITCH, function()
+    if mode.name ~= COMMAND then
+        M.enter_cmd()
+    end
+end)
+
 return M
