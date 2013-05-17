@@ -131,6 +131,14 @@ keys.vi_search_command = {
                                    exit()
                                end)
             end,
+    cv = {
+        ['\t'] = function()
+            local text = gui_ce.entry_text
+            gui_ce.enter_mode(nil)
+            gui_ce.entry_text = text .. "\t"
+            gui_ce.enter_mode("vi_search_command")
+        end,
+    },
     ['esc'] = function()
               gui_ce.enter_mode(nil)  -- Exit command_entry mode
 	      keys.MODE = "vi_command"

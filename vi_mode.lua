@@ -88,6 +88,20 @@ function update_status()
 end
 events.connect(events.UPDATE_UI)
 
+local self_insert_mt = {
+    __index = function(tab, key)
+        if type(key) == "string" then
+            if string.len(key) == 1 then
+                return function() buffer.add_text(key) end
+            end
+        end
+    end,
+}
+local self_insert_tab = setmetatable({}, self_insert_mt)
+-- This table can't be empty, or it will be treated as an invalid key binding,
+-- since next() returns nothing.
+self_insert_tab.dummy = "dummy"
+
 mode_insert = {
     name = INSERT,
 
@@ -103,6 +117,8 @@ mode_insert = {
         end,
 
         cp = _M.textadept.editing.autocomplete_word,
+
+        cv = self_insert_tab,
     }
 }
 

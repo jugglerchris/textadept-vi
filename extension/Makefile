@@ -1,4 +1,5 @@
-LUA_INCLUDE := /usr/include/lua5.2
+TA_PATH := $(HOME)/working/textadept/ta_hg/textadept
+LUA_INCLUDE := $(TA_PATH)/src/lua/src
 INCLUDES :=
 INCLUDES += -I$(LUA_INCLUDE)
 
