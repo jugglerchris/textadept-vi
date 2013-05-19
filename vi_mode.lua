@@ -132,8 +132,11 @@ local function insert_end_edit()
     -- If the cursor moved, then assume we've inserted text.
     if state.insert_pos < buffer.current_pos then
         local curpos = buffer.current_pos
-        buffer.set_selection(state.insert_pos, curpos)
+        buffer.set_selection(state.insert_pos, curpos+1)
         state.last_insert_string = buffer.get_sel_text()
+        buffer.clear_selections()
+        buffer.current_pos = curpos
+        buffer.goto_pos(curpos)
     end
 end
 
@@ -263,17 +266,37 @@ local function enter_command()
     enter_mode(mode_command)
 end
 
-local function enter_insert_then_end_undo()
+local function enter_insert_then_end_undo(cb)
     enter_mode(mode_insert)
     insert_start_edit()
     mode_command.restart = function()
         insert_end_edit()
         buffer.end_undo_action()
+        if cb then cb() end
     end
 end
-local function enter_insert_with_undo()
+local function enter_insert_with_undo(cb)
     buffer.begin_undo_action()
-    enter_insert_then_end_undo()
+    enter_insert_then_end_undo(cb)
+end
+
+--- Function to be called after an insert mode operation.
+--  Sets the last action to call prep_f() to prepare (eg go to end of
+--  line, etc.) and then insert the last-inserted text.
+local function post_insert(prep_f)
+  return function()
+          -- This function is run when exiting from undo
+          state.last_action = function(rpt)
+            local rpt = rpt
+            if rpt < 1 then rpt = 1 end
+            buffer.begin_undo_action()
+            prep_f()
+            for i=1,rpt do
+                buffer.add_text(state.last_insert_string)
+            end
+            buffer.end_undo_action()
+          end
+        end
 end
 
 mode_command = {
@@ -386,14 +409,23 @@ mode_command = {
 	   end),
 
 	-- edit mode commands
-        i = function() enter_insert_with_undo() end,
-	a = function() buffer.char_right() enter_insert_with_undo() end,
-        A = function() buffer.line_end() enter_insert_with_undo() end,
+        i = function() enter_insert_with_undo(post_insert(function() end)) end,
+     	a = function()
+             buffer.char_right()
+             enter_insert_with_undo(post_insert(buffer.char_right))
+        end,
+        A = function()
+             buffer.line_end()
+             enter_insert_with_undo(post_insert(buffer.line_end))
+        end,
         o = function()
             buffer.line_end()
             buffer.begin_undo_action()
             buffer.new_line()
-            enter_insert_then_end_undo()
+            enter_insert_then_end_undo(post_insert(function()
+                buffer.line_end()
+                buffer.new_line()
+            end))
         end,
         O = function()
             buffer.home()
