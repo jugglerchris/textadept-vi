@@ -99,6 +99,16 @@ local self_insert_mt = {
 }
 local self_insert_tab = setmetatable({}, self_insert_mt)
 
+--- Return a function which does the same as its argument, but also
+--  restarts the undo action.
+local function break_undo(f)
+    return function()
+        buffer.end_undo_action()
+        f()
+        buffer.begin_undo_action()
+    end
+end
+
 mode_insert = {
     name = INSERT,
 
@@ -108,10 +118,19 @@ mode_insert = {
 
     bindings = {
         esc = function()
-	    local line, pos = buffer.get_cur_line()
+	        local line, pos = buffer.get_cur_line()
             if pos > 0 then buffer.char_left() end
             enter_mode(mode_command)
         end,
+
+        up    = break_undo(buffer.line_up),
+        down  = break_undo(buffer.line_down),
+        left  = break_undo(buffer.char_left),
+        right = break_undo(buffer.char_right),
+        home  = break_undo(buffer.vc_home),
+        ['end']   = break_undo(buffer.line_end),
+        pgup =  break_undo(buffer.page_up),
+        pgdn =  break_undo(buffer.page_down),
 
         -- These don't quite behave as vim, but they'll do for now.
         cp = _M.textadept.editing.autocomplete_word,
