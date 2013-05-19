@@ -568,6 +568,11 @@ mode_command = {
         ['*'] = M.search_mode.search_word,
         ['#'] = M.search_mode.search_word_rev,
 
+    -- Views and buffers
+    cw = {
+        cw = { gui.goto_view, 1, true },  -- cycle between views
+    },
+
     -- Misc: suspend the editor
     cz = M.kill.kill,
 

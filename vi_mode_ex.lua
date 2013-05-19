@@ -38,6 +38,10 @@ M.ex_commands = {
               buffer.save(_G.buffer)
          end
     end,
+    wq = function(args)
+        buffer.save(_G.buffer)
+        M.ex_commands.q()
+    end,
     n = function(args)
          view:goto_buffer(1, true)
     end,
@@ -52,7 +56,16 @@ M.ex_commands = {
     q = function(args)
         -- Quit
         dbg("in q")
-        quit()
+        if #_VIEWS == 1 then
+            -- Only one view, so quit.
+            quit()
+        else
+            -- there are split views, so lose one.
+            view.unsplit(view)
+        end
+    end,
+    split = function(args)
+        view.split(view, true)
     end,
 }
 
