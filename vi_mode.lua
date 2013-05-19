@@ -428,18 +428,21 @@ mode_command = {
             end))
         end,
         O = function()
-            buffer.home()
-            buffer.begin_undo_action()
-            if buffer.current_pos == 0 then
-               -- start of buffer
-               buffer.new_line()
-               buffer.char_left()  -- position cursor at start of the inserted
-                                   -- line
-            else
-               buffer.char_left()
-               buffer.new_line()
+            local function ins_new_line()
+              buffer.home()
+              buffer.begin_undo_action()
+              if buffer.current_pos == 0 then
+                 -- start of buffer
+                 buffer.new_line()
+                 buffer.char_left()  -- position cursor at start of the inserted
+                                     -- line
+              else
+                 buffer.char_left()
+                 buffer.new_line()
+              end
             end
-            enter_insert_then_end_undo()
+            ins_new_line()
+            enter_insert_then_end_undo(post_insert(ins_new_line))
         end,
 	r = function()
 	    state.pending_keyhandler = function(sym)
