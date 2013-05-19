@@ -98,9 +98,6 @@ local self_insert_mt = {
     end,
 }
 local self_insert_tab = setmetatable({}, self_insert_mt)
--- This table can't be empty, or it will be treated as an invalid key binding,
--- since next() returns nothing.
-self_insert_tab.dummy = "dummy"
 
 mode_insert = {
     name = INSERT,
