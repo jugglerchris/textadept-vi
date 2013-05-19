@@ -391,6 +391,19 @@ mode_command = {
             end))
         end,
 
+        J = function()
+           do_action(function (rpt)
+               local lines = rpt
+               if rpt < 2 then rpt = 2 end
+
+               for i=1,rpt-1 do
+                   buffer.line_end()
+                   buffer.target_start = buffer.current_pos
+                   buffer.target_end = buffer.current_pos + 1
+                   buffer.lines_join()
+               end
+           end)
+        end,
 
         d = function()
            if state.pending_action ~= nil and state.pending_command == 'd' then
