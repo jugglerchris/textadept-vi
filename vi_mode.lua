@@ -88,60 +88,6 @@ function update_status()
 end
 events.connect(events.UPDATE_UI)
 
-local self_insert_mt = {
-    __index = function(tab, key)
-        if type(key) == "string" then
-            if string.len(key) == 1 then
-                return function() buffer.add_text(key) end
-            end
-        end
-    end,
-}
-local self_insert_tab = setmetatable({}, self_insert_mt)
-
---- Return a function which does the same as its argument, but also
---  restarts the undo action.
-local function break_undo(f)
-    return function()
-        buffer.end_undo_action()
-        f()
-        buffer.begin_undo_action()
-    end
-end
-
-mode_insert = {
-    name = INSERT,
-
-    key_handler = function(code, shift, ctrl, alt, meta)
-          return key_handler_common(mode_insert.bindings, code, shift, ctrl, alt, meta)
-    end,
-
-    bindings = {
-        esc = function()
-	        local line, pos = buffer.get_cur_line()
-            if pos > 0 then buffer.char_left() end
-            enter_mode(mode_command)
-        end,
-
-        up    = break_undo(buffer.line_up),
-        down  = break_undo(buffer.line_down),
-        left  = break_undo(buffer.char_left),
-        right = break_undo(buffer.char_right),
-        home  = break_undo(buffer.vc_home),
-        ['end']   = break_undo(buffer.line_end),
-        pgup =  break_undo(buffer.page_up),
-        pgdn =  break_undo(buffer.page_down),
-
-        -- These don't quite behave as vim, but they'll do for now.
-        cp = _M.textadept.editing.autocomplete_word,
-        cn = _M.textadept.editing.autocomplete_word,
-
-        cv = self_insert_tab,
-    }
-}
-
-local function no_action() end
-
 -- Various state we modify
 state = {
     numarg = 0,  -- The numeric prefix (eg for 10j to go down 10 times)
@@ -156,7 +102,87 @@ state = {
     command_cut = nil,   -- Whether the last cut was char or line oriented
 
     marks = {},
+
+    last_insert_string = nil, -- Last inserted text
+    insert_pos = nil,
 }
+-- Make state visible.
+M.state = state
+
+local self_insert_mt = {
+    __index = function(tab, key)
+        if type(key) == "string" then
+            if string.len(key) == 1 then
+                return function() buffer.add_text(key) end
+            end
+        end
+    end,
+}
+local self_insert_tab = setmetatable({}, self_insert_mt)
+
+
+--- Mark the start of some potential text entry.
+local function insert_start_edit()
+    state.insert_pos = buffer.current_pos
+end
+
+--- Mark the end of an edit (either exiting insert mode, or moving the
+--  cursor).
+local function insert_end_edit()
+    -- If the cursor moved, then assume we've inserted text.
+    if state.insert_pos < buffer.current_pos then
+        local curpos = buffer.current_pos
+        buffer.set_selection(state.insert_pos, curpos)
+        state.last_insert_string = buffer.get_sel_text()
+    end
+end
+
+--- Return a function which does the same as its argument, but also
+--  restarts the undo action.
+local function break_edit(f)
+    return function()
+        buffer.end_undo_action()
+        insert_end_edit()
+        f()
+        insert_start_edit()
+        buffer.begin_undo_action()
+    end
+end
+
+mode_insert = {
+    name = INSERT,
+
+    key_handler = function(code, shift, ctrl, alt, meta)
+          return key_handler_common(mode_insert.bindings, code, shift, ctrl, alt, meta)
+    end,
+
+    bindings = {
+        esc = function()
+            insert_end_edit()
+	        local line, pos = buffer.get_cur_line()
+            if pos > 0 then buffer.char_left() end
+            enter_mode(mode_command)
+        end,
+
+        up    = break_edit(buffer.line_up),
+        down  = break_edit(buffer.line_down),
+        left  = break_edit(buffer.char_left),
+        right = break_edit(buffer.char_right),
+        home  = break_edit(buffer.vc_home),
+        ['end']   = break_edit(buffer.line_end),
+        pgup =  break_edit(buffer.page_up),
+        pgdn =  break_edit(buffer.page_down),
+
+        -- These don't quite behave as vim, but they'll do for now.
+        cp = _M.textadept.editing.autocomplete_word,
+        cn = _M.textadept.editing.autocomplete_word,
+
+        cv = self_insert_tab,
+    }
+}
+
+local function no_action() end
+
 
 function do_action(action)
     state.last_action = action
@@ -239,7 +265,9 @@ end
 
 local function enter_insert_then_end_undo()
     enter_mode(mode_insert)
+    insert_start_edit()
     mode_command.restart = function()
+        insert_end_edit()
         buffer.end_undo_action()
     end
 end
