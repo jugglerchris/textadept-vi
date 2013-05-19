@@ -113,7 +113,9 @@ mode_insert = {
             enter_mode(mode_command)
         end,
 
+        -- These don't quite behave as vim, but they'll do for now.
         cp = _M.textadept.editing.autocomplete_word,
+        cn = _M.textadept.editing.autocomplete_word,
 
         cv = self_insert_tab,
     }
