@@ -65,6 +65,9 @@ M.ex_commands = {
         end
     end,
     split = function(args)
+        view.split(view, false)
+    end,
+    vsplit = function(args)
         view.split(view, true)
     end,
 }
