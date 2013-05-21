@@ -70,6 +70,19 @@ M.ex_commands = {
     vsplit = function(args)
         view.split(view, true)
     end,
+    ds = function(args)
+        local st = gui.get_split_table()
+        local function dumpsplit(t, indent)
+          if t.split then
+            gui.print(indent.."View:", tostring(t))
+          else
+            gui.print(indent.."Split: ver=".. tostring(t.vertical))
+            dumpsplit(t[1], indent.."  ")
+            dumpsplit(t[2], indent.."  ")
+          end
+        end
+        dumpsplit(st, "")
+    end,
 }
 
 local function handle_ex_command(command)
