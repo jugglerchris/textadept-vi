@@ -21,6 +21,34 @@ local function ex_error(msg)
     gui.statusbar_text = "Error: " .. msg
 end
 
+local function unsplit_other(ts)
+    if ts.vertical == nil then
+        view.unsplit(ts)
+    else
+        unsplit_other(ts[1])
+    end
+end
+
+local function close_siblings_of(v, ts)
+    local v = view
+    local ts = ts or gui.get_split_table()
+
+    if ts.vertical == nil then
+        -- This is just a view
+        return false
+    else
+        if ts[1] == v then
+            -- We can't quite just close the current view.  Pick the first
+            -- on the other side.
+            return unsplit_other(ts[2])
+        else if ts[2] == v then
+            return unsplit_other(ts[1])
+        else
+            return close_siblings_of(v, ts[1]) or close_siblings_of(v, ts[2])
+        end end
+    end
+end
+
 M.ex_commands = {
     e = function(args)
          dbg("In e handler")
@@ -60,7 +88,15 @@ M.ex_commands = {
             -- Only one view, so quit.
             quit()
         else
-            -- there are split views, so lose one.
+            -- there are split views.  view.unsplit closes the *other*
+            -- splits to leave the current view; we want :q to do the
+            -- opposite and close this one.
+            close_siblings_of(view)
+        end
+    end,
+    only = function(args)
+        -- Quit
+        if #_VIEWS > 1 then
             view.unsplit(view)
         end
     end,
