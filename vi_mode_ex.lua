@@ -23,6 +23,13 @@ end
 
 local function unsplit_other(ts)
     if ts.vertical == nil then
+        -- Ensure this view is focused (so we don't delete the focused view)
+        for k,v in ipairs(_G._VIEWS) do
+            if ts == v then
+                gui.goto_view(k)
+                break
+            end
+        end
         view.unsplit(ts)
     else
         unsplit_other(ts[1])
