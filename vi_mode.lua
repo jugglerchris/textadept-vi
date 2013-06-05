@@ -299,6 +299,32 @@ local function post_insert(prep_f)
         end
 end
 
+local function wrap_lines(lines, width)
+  local alltext = table.concat(lines, " ")
+  local result = {}
+
+  local linelen = 0 -- length of this line
+  local line = {} -- parts of this line
+
+  for word in string.gmatch(alltext, "[^%s]+") do
+      local newlen = linelen + string.len(word) + 1
+      if linelen > 0 and newlen > width then
+          -- Doesn't fit, so start a new line
+          table.insert(result, table.concat(line, " "))
+          line = {}
+          linelen = 0
+          newlen = string.len(word)
+      end
+
+      table.insert(line, word)
+      linelen = newlen
+  end
+  if linelen > 0 then
+    table.insert(result, table.concat(line, " "))
+  end
+  return result
+end
+
 mode_command = {
     name = COMMAND,
 
@@ -486,6 +512,73 @@ mode_command = {
                end
            end)
         end,
+        g = {
+            q = function()
+                state.pending_action = function(start, end_)
+                   do_action(function()
+-- local dbg = {}
+                      local width = 78 -- FIXME: configurable
+                      local line_start = buffer.line_from_position(start)
+                      local line_end = buffer.line_from_position(end_)
+                      local pos_start = buffer.position_from_line(line_start)
+                      local pos_end = buffer.position_from_line(line_end) +
+                                      buffer.line_length(line_end)
+
+                      local prefix = nil
+                      local lines_to_wrap = {}
+
+                      while line_start <= (line_end+1) do
+-- table.insert(dbg, "Processing line "..line_start)
+                        local line, new_prefix
+                        if line_start <= line_end then
+                            line = buffer.get_line(line_start)
+                            new_prefix = string.match(line, "^[>| ]*")
+                        else
+                            -- A dummy end iteration to output the reuslt
+                            line = "dummy line"
+                            new_prefix = "invalid prefix"
+                        end
+                        if prefix == nil then prefix = new_prefix end
+                        if new_prefix ~= prefix then
+                          -- New prefix; Emit previous wrapped lines and
+                          -- start again
+                          local endpos = buffer.position_from_line(line_start)
+                          local new_lines = wrap_lines(lines_to_wrap, width-string.len(prefix))
+                          local new_parts = {}
+                          for _,l in ipairs(new_lines) do
+                            table.insert(new_parts,prefix)
+                            table.insert(new_parts,l)
+                            table.insert(new_parts,"\n")
+                          end
+                          buffer.set_selection(pos_start, endpos)
+                          local orig_end_line = buffer.line_from_position(endpos)
+                          local new_text = table.concat(new_parts)
+-- table.insert(dbg, "Replacing "..pos_start.."-"..endpos.." with <"..new_text..">")
+                          buffer.replace_sel(new_text)
+                          pos_start = buffer.selection_end
+                          local new_end_line = buffer.line_from_position(pos_start)
+                          buffer.clear_selections()
+
+                          -- Adjust line counts after wrapping text
+                          line_start = line_start + (new_end_line - orig_end_line)
+                          line_end= line_end + (new_end_line - orig_end_line)
+
+                          prefix = new_prefix
+                          lines_to_wrap = {}
+                          buffer.goto_pos(pos_start)
+                          buffer.line_up()
+                        end
+                        table.insert(lines_to_wrap,
+                                     string.sub(line,
+                                                string.len(prefix)))
+                        line_start = line_start + 1
+                      end
+-- gui.print(table.concat(dbg, "\n"))
+                  end)
+              end
+              state.pending_command = 'gq'
+            end,
+        },
 
         d = function()
            if state.pending_action ~= nil and state.pending_command == 'd' then
