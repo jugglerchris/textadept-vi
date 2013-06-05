@@ -186,11 +186,19 @@ mode_insert = {
 
 local function no_action() end
 
-
+-- Run an action, as a single undoable action.
+-- Passes the current repeat count (prefix count) to it,
+-- and saves it to be recalled with '.'.
 function do_action(action)
     state.last_action = action
 
+    raw_do_action(action)
+end
+
+-- Like do_action but doesn't save to last_action
+function raw_do_action(action)
     local rpt = 1
+
     if state.numarg > 0 then rpt = state.numarg end
     state.last_numarg = rpt
 
@@ -216,13 +224,22 @@ local function do_movement(f)
     else
         -- Select the region and apply
         -- TODO: handle line-oriented actions differently
-        local start = buffer.current_pos
-        f()
-        local end_ = buffer.current_pos
-        if start > end_ then
-            start, end_ = end_, start
+        -- Allow the action to be repeated
+        do
+          local move = f
+          local action = state.pending_action
+          state.last_action = function (rpt)
+
+            local start = buffer.current_pos
+            move()
+            local end_ = buffer.current_pos
+            if start > end_ then
+                start, end_ = end_, start
+            end
+            action(start, end_)
+          end
         end
-        state.pending_action(start, end_)
+        state.last_action(1)
         state.pending_action = nil
     end
 end
@@ -515,7 +532,7 @@ mode_command = {
         g = {
             q = function()
                 state.pending_action = function(start, end_)
-                   do_action(function()
+                   raw_do_action(function()
 -- local dbg = {}
                       local width = 78 -- FIXME: configurable
                       local line_start = buffer.line_from_position(start)
@@ -601,7 +618,7 @@ mode_command = {
               state.pending_action, state.pending_command, state.numarg = nil, nil, 0
            else
               state.pending_action = function(start, end_)
-                  do_action(function()
+                  raw_do_action(function()
                       --
                       buffer.set_sel(start, end_)
                       buffer.cut()
