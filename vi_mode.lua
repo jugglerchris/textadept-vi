@@ -216,7 +216,7 @@ function dodigit(n)
     return function() addarg(n) end
 end
 
-local function do_movement(f)
+local function do_movement(f, linewise)
     -- Apply a movement command, which may be attached to an editing action.
     if state.pending_action == nil then
         -- no action, just move
@@ -235,6 +235,13 @@ local function do_movement(f)
             local end_ = buffer.current_pos
             if start > end_ then
                 start, end_ = end_, start
+            end
+            if linewise then
+                start = buffer.position_from_line(buffer.line_from_position(start))
+
+                local line_end = buffer.line_from_position(end_)
+                end_ = buffer.position_from_line(line_end) +
+                                      buffer.line_length(line_end)
             end
             action(start, end_)
           end
@@ -262,11 +269,11 @@ local function repeat_arg(f)
 end
 
 -- Wrapper to turn a simple command into one which uses the numeric prefix
-local function mk_movement(f)
+local function mk_movement(f, linewise)
   -- Run f numarg times (if numarg is non-zero) and clear
   -- numarg
   return function()
-     do_movement(f)
+     do_movement(f, linewise)
   end
 end
 
@@ -354,14 +361,14 @@ mode_command = {
         h = mk_movement(repeat_arg(function ()
 	  local line, pos = buffer.get_cur_line()
 	  if pos > 0 then buffer.char_left() end
-        end)),
+        end), false),
         l = mk_movement(repeat_arg(function()
           vi_right()
-        end)),
-        j = mk_movement(repeat_arg(buffer.line_down)),
-        k = mk_movement(repeat_arg(buffer.line_up)),
-        w = mk_movement(repeat_arg(buffer.word_right)),
-        b = mk_movement(repeat_arg(buffer.word_left)),
+        end), false),
+        j = mk_movement(repeat_arg(buffer.line_down), true),
+        k = mk_movement(repeat_arg(buffer.line_up), true),
+        w = mk_movement(repeat_arg(buffer.word_right), false),
+        b = mk_movement(repeat_arg(buffer.word_left), false),
 
         H = mk_movement(function()
              -- We can't use goto_line here as it scrolls the window slightly.
@@ -369,16 +376,16 @@ mode_command = {
              local pos = buffer.position_from_line(top_line)
              buffer.current_pos = pos
              buffer.anchor = pos
-            end),
+            end, true),
         M = mk_movement(function()
              buffer.goto_line(buffer.first_visible_line + buffer.lines_on_screen/2)
-            end),
+            end, true),
         L = mk_movement(function()
              local bot_line = buffer.first_visible_line + buffer.lines_on_screen - 1
              local pos = buffer.position_from_line(bot_line)
              buffer.current_pos = pos
              buffer.anchor = pos
-            end),
+            end, true),
         ['%'] = mk_movement(function()
              local pos = buffer.brace_match(buffer.current_pos)
              if pos >= 0 then
@@ -387,7 +394,7 @@ mode_command = {
              else
                  -- Should search for the next brace on this line.
              end
-        end),
+        end, false),
 
 	-- Mark actions
 	m = function()
@@ -399,21 +406,34 @@ mode_command = {
 		end
 	    end
 	end,
-	['\''] = function()
-	    state.pending_keyhandler = function(sym)
-	        if string.match(sym, "^%a$") then
-		    -- alphabetic, so restore the mark
-		    newpos = state.marks[sym]
-		    if newpos ~= nil then
-			do_movement(function () buffer.current_pos = newpos end)
-		    end
-		end
-	    end
-	end,
+	['\''] = setmetatable({}, {
+        __index = function(t, key)
+	        if string.match(key, "^%a$") then
+		       -- alphabetic, so restore the mark
+               return function()
+                 newpos = state.marks[key]
+                 if newpos ~= nil then
+		 	        do_movement(function () buffer.goto_pos(newpos) end, true)
+		         end
+		       end
+	        end
+        end}),
+	['`'] = setmetatable({}, {
+        __index = function(t, key)
+	        if string.match(key, "^%a$") then
+		       -- alphabetic, so restore the mark
+               return function()
+                 newpos = state.marks[key]
+                 if newpos ~= nil then
+		 	        do_movement(function () buffer.goto_pos(newpos) end, false)
+		         end
+		       end
+	        end
+        end}),
 
 	['0'] = function()
              if state.numarg == 0 then
-                mk_movement(buffer.home)()
+                mk_movement(buffer.home, false)()
              else
                 addarg(0)
 	     end
@@ -434,11 +454,11 @@ mode_command = {
          -- If inside an action (eg d$) then we really do go to the end of
          -- the line rather than one short.
 		 if pos > 0 and state.pending_action == nil then buffer.char_left() end
-	       end),
+	       end, false),
 	['^'] = mk_movement(function()
 		   buffer.home()    -- Go to beginning of line
 		   buffer.vc_home()  -- swaps between beginning/first visible
-                end),
+                end, false),
 	G = mk_movement(function()
 	       if state.numarg > 0 then
                    -- Textadept does zero-based line numbers.
@@ -449,7 +469,7 @@ mode_command = {
                  buffer.document_end()
 		 buffer.home()
 	       end
-	   end),
+	   end, true),
 
 	-- edit mode commands
         i = function() enter_insert_with_undo(post_insert(function() end)) end,
