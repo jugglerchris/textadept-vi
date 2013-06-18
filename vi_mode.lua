@@ -199,7 +199,10 @@ end
 function raw_do_action(action)
     local rpt = 1
 
-    if state.numarg > 0 then rpt = state.numarg end
+    if state.numarg > 0 then
+        rpt = state.numarg
+        state.numarg = 0
+    end
     state.last_numarg = rpt
 
     buffer.begin_undo_action()
