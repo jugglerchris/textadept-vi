@@ -18,7 +18,7 @@ mode = nil  -- initialised below
 
 local debug = false
 -- If true, then convert alt-x or meta-x into ESC x (NCURSES only)
-M.strip_alt = false
+M.strip_alt = true
 
 function dbg(...)
     --if debug then print(...) end
@@ -52,7 +52,7 @@ function do_keys(...)
 end
 
 function key_handler_common(code, shift, ctrl, alt, meta)
-    if M.strip_alt and NCURSES and (meta or alt) then
+    if M.strip_alt and CURSES and (meta or alt) then
         -- Inject an ESC followed by the un-alt/meta key.
         events.emit(events.KEYPRESS, 7, false, false, false, false)
         events.emit(events.KEYPRESS, code, shift, ctrl, false, false)
