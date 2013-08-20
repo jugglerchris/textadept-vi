@@ -710,6 +710,18 @@ mode_command = {
             end
         end,
 
+        P = function()
+            if state.command_cut == 'line' then
+                -- Paste a new line (before current line)
+                do_action(repeatable(function()
+                    buffer.home()
+                    buffer.paste()
+                    buffer.line_up()
+                end))
+            else
+                buffer.paste()
+            end
+        end,
         -- edit commands
 	u = buffer.undo,
 	cr = buffer.redo,
@@ -728,6 +740,7 @@ mode_command = {
 
 	-- Enter ex mode command
 	[':'] = function() M.ex_mode.start(enter_command) end,
+	['ce']= function() gui.command_entry.enter_mode('lua_command') end,
 	['/'] = function() M.search_mode.start(enter_command) end,
 	['?'] = function() M.search_mode.start_rev(enter_command) end,
         n = M.search_mode.restart,

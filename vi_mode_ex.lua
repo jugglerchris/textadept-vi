@@ -136,15 +136,15 @@ local function handle_ex_command(command)
         local handler = M.ex_commands[cmd[1]]
         local result
 
+        in_ex_mode = false
+
         gui.command_entry.entry_text = ""
 
         if handler ~= nil then
             result = handler(cmd)
         else
-            gui.statusbar_text = "Bad command <" .. cmd[1] .. ">"
+            gui.statusbar_text = "Bad command <" .. tostring(cmd[1]) .. ">"
         end
-
-        in_ex_mode = false
 
         if result ~= nil then
             return result
