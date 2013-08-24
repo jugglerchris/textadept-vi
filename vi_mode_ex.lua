@@ -88,6 +88,18 @@ M.ex_commands = {
         gui.command_entry.focus()
         return true
     end,
+    b = function(args)
+        if #args > 1 then
+            local bufname = args[2]
+            for i, buf in ipairs(_BUFFERS) do
+                if buf and buf.filename and buf.filename:match(bufname) then
+                   -- TODO: handle more than one matching
+                   view:goto_buffer(i)
+                   return
+                end
+            end
+        end
+    end,
     q = function(args)
         -- Quit
         dbg("in q")
@@ -156,9 +168,21 @@ end
 
 M.state = {}
 local state = M.state
+local gui_ce = gui.command_entry
+
+local function complete_buffers(text)
+    local buffers = {}
+    for k,buf in ipairs(_BUFFERS) do
+        buffers[#buffers+1] = buf.filename
+    end
+    gui_ce.show_completions(buffers)
+end
+
+M.completions = {
+    b = complete_buffers,
+}
 
 -- Register our command_entry keybindings
-local gui_ce = gui.command_entry
 keys.vi_ex_command = {
     ['\n'] = function ()
     	       local exit = state.exitfunc
@@ -168,6 +192,14 @@ keys.vi_ex_command = {
                                               exit()
                                       end)
 	     end,
+    ['\t'] = function ()
+        local cmd = gui_ce.entry_text:match("^(%S+)%s")
+        if cmd and M.completions[cmd] then
+            M.completions[cmd]()
+        else
+            -- complete commands here
+        end
+    end,
 }
 
 function M.start(exitfunc)
