@@ -2,9 +2,9 @@
 -- Modeled on textadept's command_entry.lua
 local M = {}
 
-local debug = false
+local do_debug = false
 local function dbg(...)
-    if debug then gui._print("ex", ...) end
+    if do_debug then gui._print("ex", ...) end
 end
 
 local function split(s)
@@ -18,7 +18,7 @@ end
 
 local in_ex_mode = false
 local function ex_error(msg)
-    gui.statusbar_text = "Error: " .. msg
+    _M.vi_mode.err(msg)
 end
 
 local function unsplit_other(ts)
@@ -138,7 +138,38 @@ M.ex_commands = {
         end
         dumpsplit(st, "")
     end,
+
+    reset = function(args)
+        reset()
+    end,
+
+    -- Build things
+    make = function(args)
+        local command = io.popen("make " .. table.concat(args, " ") .. "2>&1")
+        -- modelled after run.lua:command
+        local lexer = buffer:get_lexer()
+        for line in command:lines() do
+            emit_event(events.COMPILE_OUTPUT, lexer, line)
+        end
+    end,
 }
+
+local function errhandler(msg)
+    local fullmsg = debug.traceback(msg)
+    return fullmsg
+end
+
+local function debugwrap(f)
+  local function wrapped(...)
+    ok, rest = xpcall(f, errhandler, ...)
+    if ok then
+      return rest
+    else
+      gui._print("lua errors", rest)
+    end
+  end
+  return wrapped
+end
 
 local function handle_ex_command(command)
     if in_ex_mode then
@@ -153,9 +184,11 @@ local function handle_ex_command(command)
         gui.command_entry.entry_text = ""
 
         if handler ~= nil then
+            handler = debugwrap(handler)
+
             result = handler(cmd)
         else
-            gui.statusbar_text = "Bad command <" .. tostring(cmd[1]) .. ">"
+            ex_error("Bad command <" .. tostring(cmd[1]) .. ">")
         end
 
         if result ~= nil then
@@ -170,16 +203,69 @@ M.state = {}
 local state = M.state
 local gui_ce = gui.command_entry
 
-local function complete_buffers(text)
+local function matching_buffers(text)
     local buffers = {}
     for k,buf in ipairs(_BUFFERS) do
-        buffers[#buffers+1] = buf.filename
+        if buf.filename:match(text) then
+          buffers[#buffers+1] = buf.filename
+        end
     end
-    gui_ce.show_completions(buffers)
+    return buffers
+end
+
+local function complete_buffers(pos, text)
+    local buffers = matching_buffers(text)
+    if #buffers == 1 then
+        gui_ce.entry_text = string.sub(gui_ce.entry_text, 1, pos-1) .. buffers[1]
+    else
+        gui_ce.show_completions(buffers)
+    end
+end
+
+local ignore_complete_files = { ['.'] = 1, ['..'] = 1 }
+local function complete_files(pos, text)
+    local dir, filepat, dirlen
+    if text then
+        dir, filepat = text:match("^(.-)([^/]*)$")
+        -- save the length of the directory portion (that we're not going to
+        -- modify).
+        dirlen = dir:len()
+    else
+        dir = '.'
+        filepat = ''
+        dirlen = 0
+    end
+    local files = { }
+
+    -- Default to current directory, but save the original length
+    if dir == '' then dir = '.' end
+
+    -- Assume this is a prefix.
+    filepat = '^' .. filepat
+
+    for fname in lfs.dir(dir) do
+        if (not ignore_complete_files[fname]) and fname:match(filepat) then
+          local fullpath = dir .. "/" .. fname
+          if lfs.attributes(fullpath, 'mode') == 'directory' then
+              fname = fname .. "/"
+          end
+          files[#files+1] = fname
+        end
+    end
+    if #files == 0 then
+        ex_error("No completions")
+    elseif #files == 1 then
+        -- Substitute directly
+        gui_ce.entry_text = string.sub(gui_ce.entry_text, 1, pos+dirlen-1) .. files[1]
+    else
+        -- Several completions
+        gui_ce.show_completions(files)
+    end
 end
 
 M.completions = {
     b = complete_buffers,
+    e = complete_files,
 }
 
 -- Register our command_entry keybindings
@@ -194,8 +280,9 @@ keys.vi_ex_command = {
 	     end,
     ['\t'] = function ()
         local cmd = gui_ce.entry_text:match("^(%S+)%s")
+        local lastpos, lastword = gui_ce.entry_text:match("%s()(%S+)$")
         if cmd and M.completions[cmd] then
-            M.completions[cmd]()
+            debugwrap(M.completions[cmd])(lastpos, lastword)
         else
             -- complete commands here
         end
