@@ -79,15 +79,6 @@ function key_handler_common(code, shift, ctrl, alt, meta)
 end
 events.connect(events.KEYPRESS, key_handler_common, 1)
 
-function update_status()
-    if mode.name == COMMAND then
-        gui.statusbar_text = "(command)"
-    else
-        gui.statusbar_text = "-- INSERT --"
-    end
-end
-events.connect(events.UPDATE_UI)
-
 -- Various state we modify
 state = {
     numarg = 0,  -- The numeric prefix (eg for 10j to go down 10 times)
@@ -105,9 +96,32 @@ state = {
 
     last_insert_string = nil, -- Last inserted text
     insert_pos = nil,
+
+    errmsg = '',              -- error from a command
 }
 -- Make state visible.
 M.state = state
+
+function M.err(msg)
+    state.errmsg = msg
+end
+
+function update_status()
+    local err = state.errmsg
+    local msg
+
+    if mode.name == COMMAND then
+        msg = "(command) "
+    else
+        msg = "-- INSERT -- "
+    end
+    msg = msg .. err
+    gui.statusbar_text = msg
+
+    state.errmsg = ''
+end
+events.connect(events.UPDATE_UI)
+
 
 local self_insert_mt = {
     __index = function(tab, key)
