@@ -145,11 +145,12 @@ M.ex_commands = {
 
     -- Build things
     make = function(args)
-        local command = io.popen("make " .. table.concat(args, " ") .. "2>&1")
         -- modelled after run.lua:command
+        local command = "make " .. table.concat(args, " ", 2) .. " 2>&1"
+        local output= io.popen(command)
         local lexer = buffer:get_lexer()
-        for line in command:lines() do
-            emit_event(events.COMPILE_OUTPUT, lexer, line)
+        for line in output:lines() do
+            events.emit(events.COMPILE_OUTPUT, lexer, line)
         end
     end,
 }
