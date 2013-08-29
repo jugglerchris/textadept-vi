@@ -212,13 +212,18 @@ M.ex_commands = {
     end,
     tsel = function(args)
         local tname = args[2]
-        local loc1 = vi_tags.find_tag_exact(tname)
-        if not loc1 then
-            ex_error("Tag not found")
-            return
+        local loc1
+        if tname then
+            loc1 = vi_tags.find_tag_exact(tname)
+            if not loc1 then
+                ex_error("Tag not found")
+                return
+            end
         end
         -- We know there's at least one match
         local tags = vi_tags.get_all()
+        if not tags then ex_error("No tags") end
+
         if #tags == 1 then
             -- Only one, just jump to it.
             vi_tags.goto_tag(loc1)

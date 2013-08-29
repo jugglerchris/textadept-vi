@@ -77,7 +77,9 @@ end
 
 -- Return all the tags in the current level
 function M.get_all()
-    return state.tagstack[state.tagidx].tags
+    if state.tagidx > 0 then
+        return state.tagstack[state.tagidx].tags
+    end
 end
 
 -- Go to a particular tag
