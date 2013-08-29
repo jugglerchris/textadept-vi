@@ -2,6 +2,9 @@ local M = {}
 
 local state = {
     tags = nil,   -- current set of tags
+    tagstack = {},-- current tag stack: list of { i=num, tags={tag list} }
+    tagidx = 0,   -- index into tagstack of current level
+    lasttag = nil,-- last tag list
 }
 M.state = state
 
@@ -20,7 +23,7 @@ local function load_tags()
           local l = results[tname]  -- now guaranteed to be a table
           
           do
-             -- Try to separate the ex command from other info
+             -- Try to separate the ex command from extension fields
              local e,f = excmd:match('^(.-);"\t(.*)$')
              if e then
                  excmd = e
@@ -45,7 +48,38 @@ end
 
 function M.find_tag_exact(name)
     local tags = get_tags()
-    return tags[name]
+    local result = tags[name]
+    if result then
+        state.tagstack[#state.tagstack+1] = { i=1, tags=result }
+        state.lasttag = result
+        state.tagidx = #state.tagstack
+        return result[1]
+    else
+        return nil
+    end
+end
+
+-- Go to a particular tag
+function M.goto_tag(tag)
+    io.open_file(tag.filename)
+    local excmd = tag.excmd
+    
+    local _, pat = excmd:match("^([?/])(.*)%1$")
+    if pat then
+        -- TODO: properly handle regexes
+        -- For now, assume it's a fixed string possibly with ^ and $ around it.
+        pat = pat:match("^^?(.-)$?$")
+        buffer.current_pos = 0
+        buffer.search_anchor()
+        local pos = buffer.search_next(0, pat)
+        if pos >= 0 then
+            buffer.goto_pos(pos)
+        else
+            gui.statusbar_text = "Not found: " .. pat
+        end
+    else
+        -- May be a numeric pattern
+    end
 end
 
 return M
