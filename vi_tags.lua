@@ -9,12 +9,9 @@ M.state = state
 local function load_tags()
     local tagf = io.open("tags") -- TODO: configurable tags file location
     local results = {}
-    local pat = "^([^\t]*)\t([%\t]*)\t(.*)$"
+    local pat = "^([^\t]*)\t([^\t]*)\t(.*)$"
     for line in tagf:lines() do
         local tname, fname, excmd = line:match(pat)
-        gui.print("Line: " .. line)
-        gui.print("  tname="..tostring(tname)..", fname="..tostring(fname)..
-                  ", excmd="..tostring(excmd).."\n")
         if tname then
           results[tname] = { fname, excmd }
         end

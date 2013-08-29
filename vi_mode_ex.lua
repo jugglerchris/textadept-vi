@@ -188,7 +188,11 @@ M.ex_commands = {
     tag = function(args)
         local tname = args[2]
         loc = vi_tags.find_tag_exact(tname)
-        gui.print("Got tag: ", table.concat(loc, ","))
+        if loc then
+            gui.print("Got tag: ", table.concat(loc, ","))
+        else
+            ex_error("Tag not found")
+        end
     end,
 }
 
