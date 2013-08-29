@@ -50,14 +50,21 @@ function M.find_tag_exact(name)
     local tags = get_tags()
     local result = tags[name]
     if result then
-        state.tagstack[#state.tagstack+1] = {
+        local newidx = state.tagidx + 1
+        
+        -- Clear the stack above where we are.
+        while newidx <= #state.tagstack do
+            state.tagstack[#state.tagstack] = nil
+        end
+        
+        state.tagstack[newidx] = {
            i=1,         -- which tag within this list
            tags=result, -- this level's tags
            fromname=buffer.filename,  -- where we came from
            frompos=buffer.current_pos,-- where we came from
         }
         state.lasttag = result
-        state.tagidx = #state.tagstack
+        state.tagidx = newidx
         return result[1]
     else
         return nil
