@@ -187,11 +187,27 @@ M.ex_commands = {
     -- Tags
     tag = function(args)
         local tname = args[2]
-        loc = vi_tags.find_tag_exact(tname)
+        local loc = vi_tags.find_tag_exact(tname)
         if loc then
             vi_tags.goto_tag(loc)
         else
             ex_error("Tag not found")
+        end
+    end,
+    tn = function(args)
+        local loc = vi_tags.tag_next()
+        if loc then
+            vi_tags.goto_tag(loc)
+        else
+            ex_error("No more tags")
+        end
+    end,
+    tp = function(args)
+        local loc = vi_tags.tag_prev()
+        if loc then
+            vi_tags.goto_tag(loc)
+        else
+            ex_error("No more tags")
         end
     end,
 }

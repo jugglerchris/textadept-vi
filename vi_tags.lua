@@ -82,4 +82,22 @@ function M.goto_tag(tag)
     end
 end
 
+-- Return the next tag at this level, or nil.
+function M.tag_next()
+    local taglist = state.tagstack[state.tagidx]
+    if taglist.i < #taglist.tags then
+        taglist.i = taglist.i + 1
+        return taglist.tags[taglist.i]
+    end
+end
+
+-- Return the next tag at this level, or nil.
+function M.tag_prev()
+    local taglist = state.tagstack[state.tagidx]
+    if taglist.i > 1 then
+        taglist.i = taglist.i - 1
+        return taglist.tags[taglist.i]
+    end
+end
+
 return M
