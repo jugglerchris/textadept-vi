@@ -1,6 +1,7 @@
 -- Handle the ex buffer emulation
 -- Modeled on textadept's command_entry.lua
 local M = {}
+local vi_tags = require('vi_tags')
 
 M.state = {
     history = {},  -- command history
@@ -182,6 +183,13 @@ M.ex_commands = {
             events.emit(events.COMPILE_OUTPUT, lexer, line)
         end
     end,
+
+    -- Tags
+    tag = function(args)
+        local tname = args[2]
+        loc = vi_tags.find_tag_exact(tname)
+        gui.print("Got tag: ", table.concat(loc, ","))
+    end,
 }
 
 local function errhandler(msg)
@@ -233,11 +241,14 @@ end
 
 local function matching_buffers(text)
     local buffers = {}
+    if text == nil or text == '' then
+        -- Match any filename if no pattern given.
+        text = "."
+    end
+
     for k,buf in ipairs(_BUFFERS) do
         if buf.filename and buf.filename:match(text) then
           buffers[#buffers+1] = buf.filename
-        elseif buf._type and buf._type:match(text) then
-          buffers[#buffers+1] = buf._type
         end
     end
     return buffers

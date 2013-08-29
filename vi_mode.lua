@@ -1,7 +1,17 @@
 local M = {}
 
+------ Configuration (should make it possible to pass it in) ------
+-- If true, then convert alt-x or meta-x into ESC x (NCURSES only).  This means
+-- that you can no longer use alt-key bindings, but means that you can quickly
+-- type ESC followed by vi commands without waiting for the ESC to time out.
+M.strip_alt = true
+-- If true, then take over the main keymap rather than putting the command mode bindings
+-- in a separate keymap.
+M.vi_global = true
+
 M.ex_mode = require 'vi_mode_ex'
 M.search_mode = require 'vi_mode_search'
+M.tags = require 'vi_tags'
 res, M.kill = pcall(require,'kill')
 if not res then
     -- The extension module may not be available.
@@ -17,8 +27,6 @@ INSERT = "vi_insert"
 mode = nil  -- initialised below
 
 local debug = false
--- If true, then convert alt-x or meta-x into ESC x (NCURSES only)
-M.strip_alt = true
 
 function dbg(...)
     --if debug then print(...) end
@@ -386,6 +394,11 @@ mode_command = {
         k = mk_movement(repeat_arg(buffer.line_up), true),
         w = mk_movement(repeat_arg(buffer.word_right), false),
         b = mk_movement(repeat_arg(buffer.word_left), false),
+        e = mk_movement(repeat_arg(function()
+                                      buffer.char_right()
+                                      buffer.word_right_end() 
+                                      buffer.char_left()
+                                   end), false),
 
         H = mk_movement(function()
              -- We can't use goto_line here as it scrolls the window slightly.
@@ -773,24 +786,39 @@ mode_command = {
     },
 }
 
--- Fall back to main keymap for any unhandled keys
-local keys_mt = {
-	__index = keys
-}
+if M.vi_global then
+  -- Rather than adding a command mode, copy all our bindings in and replace mode_command.bindings
+  -- with a reference to the global keys table.
+  for k,v in pairs(mode_command.bindings) do
+    keys[k] = v
+  end
+  
+  -- Make sure we've only got one table with the bindings.
+  mode_command.bindings = keys
+  -- And make sure that our mode is represented.
+  keys[COMMAND] = keys
+  
+  keys[INSERT] = mode_insert.bindings
+else
+  -- Fall back to main keymap for any unhandled keys
+  local keys_mt = {
+  	__index = keys
+  }
 
-keys[COMMAND] = setmetatable(mode_command.bindings, keys_mt)
-keys[INSERT] = setmetatable(mode_insert.bindings, keys_mt)
+  keys[COMMAND] = setmetatable(mode_command.bindings, keys_mt)
+  keys[INSERT] = setmetatable(mode_insert.bindings, keys_mt)
 
--- Since it's currently easy to escape from the vi modes to the default mode,
--- make sure we can get back to it from default mode.
-keys.esc = function() enter_mode(mode_command) end
+  -- Since it's currently easy to escape from the vi modes to the default mode,
+  -- make sure we can get back to it from default mode.
+  keys.esc = function() enter_mode(mode_command) end
+end
 
 -- Disable "normal" keys in command mode if I haven't bound them explicitly.
 local function set_default_key(k)
     if mode_command.bindings[k] == nil then
         mode_command.bindings[k] = function()
-		gui.statusbar_text = "Unbound key"
-	     end
+            M.err("Unbound key: <" .. tostring(k) .. ">")
+        end
     end
 end
 
