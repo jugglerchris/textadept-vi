@@ -189,7 +189,10 @@ M.ex_commands = {
         local tname = args[2]
         loc = vi_tags.find_tag_exact(tname)
         if loc then
-            gui.print("Got tag: ", table.concat(loc, ","))
+            local ntags = #loc
+            loc = loc[1]  -- for now, go for first one.
+            gui.print("Got "..ntags.." tags.  filename=<"..loc.filename..">, "
+                    .. "excmd=<"..loc.excmd..">, flags=<"..loc.flags..">")
         else
             ex_error("Tag not found")
         end
