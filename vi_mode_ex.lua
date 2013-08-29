@@ -210,6 +210,31 @@ M.ex_commands = {
             ex_error("No more tags")
         end
     end,
+    tsel = function(args)
+        local tname = args[2]
+        local loc1 = vi_tags.find_tag_exact(tname)
+        if not loc1 then
+            ex_error("Tag not found")
+            return
+        end
+        -- We know there's at least one match
+        local tags = vi_tags.get_all()
+        if #tags == 1 then
+            -- Only one, just jump to it.
+            vi_tags.goto_tag(loc1)
+        else
+            local list = _M.textredux.core.list.new('Choose tag')
+            local items = {}
+            for i,t in ipairs(tags) do
+                items[#items+1] = { t.filename, t.excmd, tag=t }
+            end
+            list.items = items
+            list.on_selection = function(l, item, shift, ctrl, alt, meta)
+                vi_tags.goto_tag(item.tag)
+            end
+            list:show()
+        end
+    end,
 }
 
 local function errhandler(msg)

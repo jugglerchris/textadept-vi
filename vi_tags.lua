@@ -50,13 +50,34 @@ function M.find_tag_exact(name)
     local tags = get_tags()
     local result = tags[name]
     if result then
-        state.tagstack[#state.tagstack+1] = { i=1, tags=result }
+        state.tagstack[#state.tagstack+1] = {
+           i=1,         -- which tag within this list
+           tags=result, -- this level's tags
+           fromname=buffer.filename,  -- where we came from
+           frompos=buffer.current_pos,-- where we came from
+        }
         state.lasttag = result
         state.tagidx = #state.tagstack
         return result[1]
     else
         return nil
     end
+end
+
+function M.pop_tag()
+    if state.tagidx >= 1 then
+        local tos = state.tagstack[state.tagidx]
+        io.open_file(tos.fromname)
+        buffer.goto_pos(tos.frompos)
+        state.tagidx = state.tagidx - 1
+    else
+        _M.vi_mode.err("Top of stack")
+    end
+end
+
+-- Return all the tags in the current level
+function M.get_all()
+    return state.tagstack[state.tagidx].tags
 end
 
 -- Go to a particular tag
@@ -66,7 +87,7 @@ function M.goto_tag(tag)
     
     local _, pat = excmd:match("^([?/])(.*)%1$")
     if pat then
-        -- TODO: properly handle regexes
+        -- TODO: properly handle regexes and line number tags.
         -- For now, assume it's a fixed string possibly with ^ and $ around it.
         pat = pat:match("^^?(.-)$?$")
         buffer.current_pos = 0

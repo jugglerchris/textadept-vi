@@ -12,6 +12,7 @@ M.vi_global = true
 M.ex_mode = require 'vi_mode_ex'
 M.search_mode = require 'vi_mode_search'
 M.tags = require 'vi_tags'
+local vi_tags = M.tags
 res, M.kill = pcall(require,'kill')
 if not res then
     -- The extension module may not be available.
@@ -774,6 +775,20 @@ mode_command = {
         N = M.search_mode.restart_rev,
         ['*'] = M.search_mode.search_word,
         ['#'] = M.search_mode.search_word_rev,
+        
+    -- Tags
+    ['c]'] = function()
+                local pos = buffer.current_pos
+                local s, e = buffer:word_start_position(pos, true), buffer:word_end_position(pos)
+                local word = buffer:text_range(s, e)
+                local tag = vi_tags.find_tag_exact(word)
+                if tag then
+                    vi_tags.goto_tag(tag)
+                else
+                    M.err("Not found")
+                end
+    end,
+    ['ct'] = vi_tags.pop_tag,
 
     -- Views and buffers
     cw = {
