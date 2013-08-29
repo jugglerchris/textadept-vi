@@ -2,6 +2,13 @@
 -- Modeled on textadept's command_entry.lua
 local M = {}
 
+M.state = {
+    history = {},  -- command history
+    histidx = 1,   -- current index
+}
+local state = M.state
+local gui_ce = gui.command_entry
+
 local do_debug = false
 local function dbg(...)
     if do_debug then gui._print("ex", ...) end
@@ -56,14 +63,36 @@ local function close_siblings_of(v, ts)
     end
 end
 
+-- Find files matching a Lua pattern
+local function find_matching_files(pattern)
+    local results = {}
+    local function f(filename)
+        if filename:match(pattern) then
+            results[#results+1] = filename
+        end
+    end
+    lfs.dir_foreach('.', f, { folders = { "build"}}, true)
+    return results
+end
+
 M.ex_commands = {
     e = function(args)
-         dbg("In e handler")
-         if args[2] ~= nil then
-             io.open_file(args[2])
-         else
-             ex_error("No filename to open")
-         end
+        dbg("In e handler")
+        if args[2] ~= nil then
+            io.open_file(args[2])
+        else
+            ex_error("No filename to open")
+        end
+    end,
+    find = function(args)
+        local files = find_matching_files(args[2])
+        if #files == 1 then
+            io.open_file(files[1])
+        elseif #files == 0 then
+            ex_error("No files found: " .. #files)
+        else
+            ex_error("Multiple files found: " .. #files)
+        end
     end,
     w = function(args)
          --dbg("Fn:" .. tostring(_G.buffer.filename))
@@ -175,6 +204,8 @@ end
 local function handle_ex_command(command)
     if in_ex_mode then
       gui.statusbar_text = "Ex: "..command
+        state.history[#(state.history)+1] = command
+        state.histidx = #(state.history)
         local cmd = split(command)
         -- For now, a very simple command parser
         local handler = M.ex_commands[cmd[1]]
@@ -200,15 +231,13 @@ local function handle_ex_command(command)
     end
 end
 
-M.state = {}
-local state = M.state
-local gui_ce = gui.command_entry
-
 local function matching_buffers(text)
     local buffers = {}
     for k,buf in ipairs(_BUFFERS) do
-        if buf.filename:match(text) then
+        if buf.filename and buf.filename:match(text) then
           buffers[#buffers+1] = buf.filename
+        elseif buf._type and buf._type:match(text) then
+          buffers[#buffers+1] = buf._type
         end
     end
     return buffers
@@ -286,6 +315,18 @@ keys.vi_ex_command = {
             debugwrap(M.completions[cmd])(lastpos, lastword)
         else
             -- complete commands here
+        end
+    end,
+    up = function ()
+        if state.histidx > 1 then
+            state.histidx = state.histidx - 1
+            gui_ce.entry_text = state.history[state.histidx]
+        end
+    end,
+    down= function ()
+        if state.histidx < #state.history then
+            state.histidx = state.histidx + 1
+            gui_ce.entry_text = state.history[state.histidx]
         end
     end,
 }
