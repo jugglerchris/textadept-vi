@@ -289,6 +289,24 @@ local function handle_ex_command(command)
     end
 end
 
+-- Handle a completion.
+-- Given a list of completions, and a function to get the string to complete,
+-- do the right thing:
+--  if nil or empty, give error
+--  if one option, substitute it in directly
+--  otherwise, prompt with the list.
+local function do_complete_simple(pos, names)
+    if (not names) or #names == 0 then
+        ex_error("No completions")
+    elseif #names == 1 then
+        -- Substitute directly
+        gui_ce.entry_text = string.sub(gui_ce.entry_text, 1, pos-1) .. names[1]
+    else
+        -- Several completions
+        gui_ce.show_completions(names)
+    end
+end
+
 local function matching_buffers(text)
     local buffers = {}
     if text == nil or text == '' then
@@ -354,9 +372,16 @@ local function complete_files(pos, text)
     end
 end
 
+local function complete_tags(pos, text)
+    local tagnames = vi_tags.match_tag(text)
+    do_complete_simple(pos, tagnames)
+end
+
 M.completions = {
     b = complete_buffers,
     e = complete_files,
+    tag = complete_tags,
+    tsel = complete_tags,
 }
 
 -- Register our command_entry keybindings

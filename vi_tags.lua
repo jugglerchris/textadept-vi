@@ -30,7 +30,7 @@ local function load_tags()
                  flags = f
              end
           end
-          l[#l+1] = { filename=fname, excmd=excmd, flags=flags }
+          l[#l+1] = { sym=tname, filename=fname, excmd=excmd, flags=flags }
         end
     end
     tagf:close()
@@ -69,6 +69,19 @@ function M.find_tag_exact(name)
     else
         return nil
     end
+end
+
+-- Return a list of tags matching Lua pat
+function M.match_tag(pat)
+    local tags = get_tags()
+    local result = {}
+    for name,_ in pairs(tags) do
+        if name:match(pat) then
+            result[#result+1] = name
+        end
+    end
+    if #result > 0 then return result end
+    -- return nil if nothing found
 end
 
 function M.pop_tag()
