@@ -269,7 +269,7 @@ local function do_movement(f, linewise)
                 end_ = buffer.position_from_line(line_end) +
                                       buffer.line_length(line_end)
             end
-            action(start, end_)
+            action(start, end_, move)
           end
         end
         state.last_action(1)
@@ -568,13 +568,16 @@ mode_command = {
 
         J = function()
            do_action(function (rpt)
-               local lines = rpt
                if rpt < 2 then rpt = 2 end
 
                for i=1,rpt-1 do
                    buffer.line_end()
                    buffer.target_start = buffer.current_pos
                    buffer.target_end = buffer.current_pos + 1
+                   
+                   -- Avoid an infinite loop when trying to join past the end.
+                   if buffer.target_end > buffer.text_length then break end
+                   
                    buffer.lines_join()
                end
            end)
@@ -679,11 +682,17 @@ mode_command = {
         end,
 
          c = function()
-              state.pending_action = function(start, end_)
+              state.pending_action = function(start, end_, move)
                   buffer.set_sel(start, end_)
                   buffer.begin_undo_action()
                   buffer.cut()
-                  enter_insert_then_end_undo()
+                  enter_insert_then_end_undo(post_insert(function()
+                      local start = buffer.current_pos
+                      move()
+                      local end_ = buffer.current_pos
+                      buffer.set_sel(start, end_)
+                      buffer.cut()
+                  end))
               end
               state.pending_command = 'c'
          end,
@@ -789,17 +798,31 @@ mode_command = {
                 end
     end,
     ['ct'] = vi_tags.pop_tag,
+    
+    -- Errors (in compile error buffer)
+    ['c}'] = function() _M.textadept.run.goto_error(false, true) end,
 
     -- Views and buffers
     cw = {
         cw = { gui.goto_view, 1, true },  -- cycle between views
     },
+    ['c^'] = function()
+        if view.vi_last_buf then 
+            bufnum = _BUFFERS[view.vi_last_buf]
+            if bufnum then
+                view:goto_buffer(bufnum)
+            end
+        end
+    end,
 
     -- Misc: suspend the editor
     cz = M.kill.kill,
 
     },
 }
+
+-- Save the previous buffer to be able to switch back
+events.connect(events.BUFFER_BEFORE_SWITCH, function () view.vi_last_buf = buffer end)
 
 if M.vi_global then
   -- Rather than adding a command mode, copy all our bindings in and replace mode_command.bindings

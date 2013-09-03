@@ -92,7 +92,12 @@ M.ex_commands = {
         elseif #files == 0 then
             ex_error("No files found: " .. #files)
         else
-            ex_error("Multiple files found: " .. #files)
+            local list = _M.textredux.core.list.new('Choose file')
+            list.items = files
+            list.on_selection = function(l, item, shift, ctrl, alt, meta)
+                io.open_file(item)
+            end
+            list:show()
         end
     end,
     w = function(args)
@@ -178,6 +183,7 @@ M.ex_commands = {
         -- modelled after run.lua:command
         local command = "make " .. table.concat(args, " ", 2) .. " 2>&1"
         local output= io.popen(command)
+        _M.textadept.run.cwd = './'  -- So that the run module can take care of finding errors.
         local lexer = buffer:get_lexer()
         for line in output:lines() do
             events.emit(events.COMPILE_OUTPUT, lexer, line)
