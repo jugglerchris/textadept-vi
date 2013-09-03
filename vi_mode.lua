@@ -604,7 +604,7 @@ mode_command = {
                             line = buffer.get_line(line_start)
                             new_prefix = string.match(line, "^[>| ]*")
                         else
-                            -- A dummy end iteration to output the reuslt
+                            -- A dummy end iteration to output the result
                             line = "dummy line"
                             new_prefix = "invalid prefix"
                         end
