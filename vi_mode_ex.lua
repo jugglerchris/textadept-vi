@@ -3,11 +3,29 @@
 local M = {}
 local vi_tags = require('vi_tags')
 
-M.state = {
-    history = {},  -- command history
-    histidx = 1,   -- current index
+-- Support for saving state over reset
+local state = {
+    history = {},
+    histidx = 1,
 }
-local state = M.state
+
+M.state = state
+
+-- Save over a reset
+events.connect(events.RESET_BEFORE, function()
+  -- stash state somewhere
+  _BUFFERS.vi_saved_state_ex = state
+end)
+events.connect(events.RESET_AFTER, function()
+  -- Restore saved state
+  local saved = _BUFFERS.vi_saved_state_ex
+  if saved then
+      state.history = saved.history
+      state.histidx = saved.histidx
+      _BUFFERS.vi_saved_state_ex = nil
+  end
+end)
+
 local gui_ce = gui.command_entry
 
 local do_debug = false
@@ -72,7 +90,7 @@ local function find_matching_files(pattern)
             results[#results+1] = filename
         end
     end
-    lfs.dir_foreach('.', f, { folders = { "build"}}, true)
+    lfs.dir_foreach('.', f, { folders = { "build"}}, false)
     return results
 end
 
@@ -97,6 +115,7 @@ M.ex_commands = {
             list.on_selection = function(l, item, shift, ctrl, alt, meta)
                 io.open_file(item)
             end
+            list.keys.esc = function() list:close() end
             list:show()
         end
     end,
@@ -267,18 +286,15 @@ end
 
 local function handle_ex_command(command)
     if in_ex_mode then
-      gui.statusbar_text = "Ex: "..command
-        state.history[#(state.history)+1] = command
-        state.histidx = #(state.history)
+      local result
+      if not command:match("^%s*$") then
+        gui.statusbar_text = "Ex: "..command
+        state.history[state.histidx] = command
         local cmd = split(command)
         -- For now, a very simple command parser
         local handler = M.ex_commands[cmd[1]]
-        local result
-
-        in_ex_mode = false
-
+        
         gui.command_entry.entry_text = ""
-
         if handler ~= nil then
             handler = debugwrap(handler)
 
@@ -287,11 +303,15 @@ local function handle_ex_command(command)
             ex_error("Bad command <" .. tostring(cmd[1]) .. ">")
         end
 
-        if result ~= nil then
-            return result
-        else
-            return false  -- make sure this isn't handled again
-        end
+      end
+
+      in_ex_mode = false
+
+      if result ~= nil then
+          return result
+      else
+          return false  -- make sure this isn't handled again
+      end
     end
 end
 
@@ -383,11 +403,17 @@ local function complete_tags(pos, text)
     do_complete_simple(pos, tagnames)
 end
 
+local function complete_paths(pos, text)
+    local files = find_matching_files(text)
+    do_complete_simple(pos, files)
+end
+
 M.completions = {
     b = complete_buffers,
     e = complete_files,
     tag = complete_tags,
     tsel = complete_tags,
+    find = complete_paths,
 }
 
 -- Register our command_entry keybindings
@@ -411,12 +437,18 @@ keys.vi_ex_command = {
     end,
     up = function ()
         if state.histidx > 1 then
+            -- Save current text
+            state.history[state.histidx] = gui_ce.entry_text
+            
             state.histidx = state.histidx - 1
             gui_ce.entry_text = state.history[state.histidx]
         end
     end,
     down= function ()
         if state.histidx < #state.history then
+            -- Save current text
+            state.history[state.histidx] = gui_ce.entry_text
+            
             state.histidx = state.histidx + 1
             gui_ce.entry_text = state.history[state.histidx]
         end
@@ -426,6 +458,7 @@ keys.vi_ex_command = {
 function M.start(exitfunc)
     in_ex_mode = true
     state.exitfunc = exitfunc
+    state.histidx = #state.history + 1  -- new command is after the end of the history
     gui.command_entry.entry_text = ""
     gui.command_entry.enter_mode('vi_ex_command')
 end
