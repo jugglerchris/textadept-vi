@@ -15,18 +15,19 @@ M.state = state
 
 -- Save over a reset
 events.connect(events.RESET_BEFORE, function()
-  -- stash state somewhere
-  _BUFFERS.vi_saved_state_ex = state
+  -- stash state in the arg table.  arg isn't available during reset,
+  -- but is restored afterwards.
+  _G.arg.vi_saved_state_ex = state
 end)
 events.connect(events.RESET_AFTER, function()
   -- Restore saved state
-  local saved = _BUFFERS.vi_saved_state_ex
+  local saved = _G.arg.vi_saved_state_ex
   if saved then
       state.history = saved.history
       state.histidx = saved.histidx
       state.clists = saved.clists or {}
       state.clistidx = saved.clistidx or 0
-      _BUFFERS.vi_saved_state_ex = nil
+      _G.arg.vi_saved_state_ex = nil
   end
 end)
 
