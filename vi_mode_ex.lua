@@ -7,6 +7,8 @@ local vi_tags = require('vi_tags')
 local state = {
     history = {},
     histidx = 1,
+    clists = {},  -- Stack of { list=items, idx=n } for :clist etc.
+    clistidx = 0,
 }
 
 M.state = state
@@ -22,6 +24,8 @@ events.connect(events.RESET_AFTER, function()
   if saved then
       state.history = saved.history
       state.histidx = saved.histidx
+      state.clists = saved.clists or {}
+      state.clistidx = saved.clistidx or 0
       _BUFFERS.vi_saved_state_ex = nil
   end
 end)
@@ -94,6 +98,24 @@ local function find_matching_files(pattern)
     return results
 end
 
+-- Given a list of items, prompt the user to choose one.
+local function choose_list(title, items, cb)
+    local list = _M.textredux.core.list.new(title)
+    list.items = items
+    list.on_selection = function(l, item, shift, ctrl, alt, meta)
+       cb(item)
+    end
+    list.keys.esc = function() list:close() end
+    list:show()
+end
+
+-- Jump to an item in a clist ({ filename, lineno, text })
+local function clist_go(item)
+    io.open_file(item[1])
+    buffer.goto_line(item[2]-1)
+    state.clists[state.clistidx].idx = item.idx
+end
+
 M.ex_commands = {
     e = function(args)
         dbg("In e handler")
@@ -110,13 +132,7 @@ M.ex_commands = {
         elseif #files == 0 then
             ex_error("No files found: " .. #files)
         else
-            local list = _M.textredux.core.list.new('Choose file')
-            list.items = files
-            list.on_selection = function(l, item, shift, ctrl, alt, meta)
-                io.open_file(item)
-            end
-            list.keys.esc = function() list:close() end
-            list:show()
+            choose_list('Choose file', files, io.open_file)
         end
     end,
     w = function(args)
@@ -208,6 +224,73 @@ M.ex_commands = {
             events.emit(events.COMPILE_OUTPUT, lexer, line)
         end
     end,
+    
+    -- Search files
+    lgrep = function(args)
+        local pat = args[2]
+        if not pat then return end
+        
+        local results = {}
+        
+        local function search(filename)
+            local f, err = io.open(filename)
+            if not f then
+                ex_error(err..":"..filename)
+            end
+            local lineno = 0
+            for line in f:lines() do
+                lineno = lineno + 1
+                if line:match(pat) then
+                    local idx = #results+1
+                    results[idx] = { filename, lineno, line, idx=idx }
+                end
+            end
+            f:close()
+        end
+        lfs.dir_foreach('.', search, _G.vifilter, false)
+        if #results == 0 then
+            ex_error("No matches found.")
+        else
+            -- Push the results list to the stack
+            state.clistidx = #state.clists+1
+            state.clists[state.clistidx] = { list=results, idx=1 }
+            choose_list('Matches found', results, clist_go)
+        end
+    end,
+    cn = function(args)
+        local clist = state.clists[state.clistidx]
+        if not clist then
+            ex_error("No clist")
+            return
+        end
+        local idx = clist.idx
+        if idx > #clist.list then
+            ex_error("End of list")
+        else
+            clist_go(clist.list[idx+1])
+        end
+    end,
+    cp = function(args)
+        local clist = state.clists[state.clistidx]
+        if not clist then
+            ex_error("No clist")
+            return
+        end
+        local idx = clist.idx
+        if idx <= 1 then
+            ex_error("Start of list")
+        else
+            clist_go(clist.list[idx-1])
+        end
+    end,
+    clist = function(args)
+        local clist = state.clists[state.clistidx]
+        if not clist then
+            ex_error("No clist")
+            return
+        end
+        choose_list('Matches found', clist.list, clist_go)
+    end,
 
     -- Tags
     tag = function(args)
@@ -253,16 +336,13 @@ M.ex_commands = {
             -- Only one, just jump to it.
             vi_tags.goto_tag(loc1)
         else
-            local list = _M.textredux.core.list.new('Choose tag')
             local items = {}
             for i,t in ipairs(tags) do
                 items[#items+1] = { t.filename, t.excmd, tag=t }
             end
-            list.items = items
-            list.on_selection = function(l, item, shift, ctrl, alt, meta)
+            choose_list('Choose tag', items, function(item)
                 vi_tags.goto_tag(item.tag)
-            end
-            list:show()
+            end)
         end
     end,
 }
@@ -360,6 +440,11 @@ end
 local ignore_complete_files = { ['.'] = 1, ['..'] = 1 }
 local function complete_files(pos, text)
     local dir, filepat, dirlen
+    -- Special case - a bare % becomes the current file's path.
+    if text == "%" then
+        gui_ce.entry_text = string.sub(gui_ce.entry_text, 1, pos-1) .. buffer.filename
+        return
+    end
     if text then
         dir, filepat = text:match("^(.-)([^/]*)$")
         -- save the length of the directory portion (that we're not going to
