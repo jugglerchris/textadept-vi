@@ -13,27 +13,29 @@ local function load_tags()
     local tagf = io.open("tags") -- TODO: configurable tags file location
     local results = {}
     local pat = "^([^\t]*)\t([^\t]*)\t(.*)$"
-    for line in tagf:lines() do
-        local tname, fname, excmd = line:match(pat)
-        local flags
-        if tname then
-          -- Initialise to an empty list if necessary
-          if not results[tname] then results[tname] = {} end
-          -- And append.
-          local l = results[tname]  -- now guaranteed to be a table
+    if tagf then
+      for line in tagf:lines() do
+          local tname, fname, excmd = line:match(pat)
+          local flags
+          if tname then
+            -- Initialise to an empty list if necessary
+            if not results[tname] then results[tname] = {} end
+            -- And append.
+            local l = results[tname]  -- now guaranteed to be a table
           
-          do
-             -- Try to separate the ex command from extension fields
-             local e,f = excmd:match('^(.-);"\t(.*)$')
-             if e then
-                 excmd = e
-                 flags = f
-             end
+            do
+               -- Try to separate the ex command from extension fields
+               local e,f = excmd:match('^(.-);"\t(.*)$')
+               if e then
+                   excmd = e
+                   flags = f
+               end
+            end
+            l[#l+1] = { sym=tname, filename=fname, excmd=excmd, flags=flags }
           end
-          l[#l+1] = { sym=tname, filename=fname, excmd=excmd, flags=flags }
-        end
+      end
+      tagf:close()
     end
-    tagf:close()
     state.tags = results
 end
 
