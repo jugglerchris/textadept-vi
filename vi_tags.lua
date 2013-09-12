@@ -122,9 +122,18 @@ function M.goto_tag(tag)
         else
             gui.statusbar_text = "Not found: " .. pat
         end
-    else
-        -- May be a numeric pattern
+        return
     end
+    
+    -- Try a numeric line number
+    local pat = excmd:match("^(%d+)$")
+    if pat then
+        buffer.goto_line(tonumber(pat)-1)
+        return
+    end
+    
+    -- unknown tag pattern
+    _M.vi_mode.err('Tag pat: '..excmd)
 end
 
 -- Return the next tag at this level, or nil.
