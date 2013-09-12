@@ -47,7 +47,6 @@ local function split(s)
     return ret
 end
 
-local in_ex_mode = false
 local function ex_error(msg)
     _M.vi_mode.err(msg)
 end
@@ -366,7 +365,6 @@ local function debugwrap(f)
 end
 
 local function handle_ex_command(command)
-    if in_ex_mode then
       local result
       if not command:match("^%s*$") then
         gui.statusbar_text = "Ex: "..command
@@ -386,14 +384,11 @@ local function handle_ex_command(command)
 
       end
 
-      in_ex_mode = false
-
       if result ~= nil then
           return result
       else
           return false  -- make sure this isn't handled again
       end
-    end
 end
 
 -- Handle a completion.
@@ -542,11 +537,21 @@ keys.vi_ex_command = {
 }
 
 function M.start(exitfunc)
-    in_ex_mode = true
     state.exitfunc = exitfunc
     state.histidx = #state.history + 1  -- new command is after the end of the history
     gui.command_entry.entry_text = ""
     gui.command_entry.enter_mode('vi_ex_command')
+end
+
+--- Run an ex command that may not have come directly from the command line.
+function M.run_ex_command(text)
+    handle_ex_command(text)
+end
+
+--- Add a new custom ex command.
+function M.add_ex_command(name, handler, completer)
+    M.ex_commands[name] = handler
+    M.completions[name] = completer
 end
 
 return M
