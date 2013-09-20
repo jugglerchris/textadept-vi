@@ -216,13 +216,19 @@ M.ex_commands = {
     -- Build things
     make = function(args)
         -- modelled after run.lua:command
-        local command = "make " .. table.concat(args, " ", 2) .. " 2>&1"
-        local output= io.popen(command)
+        local command = {"make"}
+        for i=2,#args do
+            command[#command+1] = args[i]
+        end
         _M.textadept.run.cwd = './'  -- So that the run module can take care of finding errors.
         local lexer = buffer:get_lexer()
-        for line in output:lines() do
-            events.emit(events.COMPILE_OUTPUT, lexer, line)
+        gui.print("Running: " .. table.concat(command, " "))
+        local msgbuf = buffer
+        local function getoutput(s)
+            msgbuf:append_text(s)
+            msgbuf:goto_pos(msgbuf.length)
         end
+        os.spawn(nil, command, nil, nil, getoutput, getoutput)
     end,
     
     -- Search files
