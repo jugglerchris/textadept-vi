@@ -225,8 +225,28 @@ M.ex_commands = {
         gui.print("Running: " .. table.concat(command, " "))
         local msgbuf = buffer
         local function getoutput(s)
-            msgbuf:append_text(s)
-            msgbuf:goto_pos(msgbuf.length)
+            local cur_view = view
+            local cur_buf
+            local my_view
+            -- Search for a view with this buffer
+            for i,v in ipairs(_VIEWS) do
+                if v.buffer == msgbuf then
+                    my_view = v
+                    break
+                end
+            end
+            if my_view then
+                if cur_view ~= my_view then
+                    gui.goto_view(_VIEWS[my_view])
+                end
+                    
+                msgbuf:append_text(s)
+                msgbuf:goto_pos(msgbuf.length)
+                
+                if my_view ~= cur_view then
+                    gui.goto_view(_VIEWS[cur_view])
+                end
+            end
         end
         os.spawn(nil, command, nil, nil, getoutput, getoutput)
     end,
