@@ -391,8 +391,30 @@ mode_command = {
         l = mk_movement(repeat_arg(function()
           vi_right()
         end), false),
-        j = mk_movement(repeat_arg(buffer.line_down), true),
-        k = mk_movement(repeat_arg(buffer.line_up), true),
+        j = mk_movement(repeat_arg(function()
+                                      local lineno = buffer.line_from_position(buffer.current_pos)
+                                      local linestart = buffer.position_from_line(lineno)
+                                      if lineno < buffer.line_count then
+                                          local ln = lineno + 1
+                                          local col = buffer.current_pos - linestart
+                                          if col >= buffer.line_length(ln) then
+                                              col = buffer.line_length(ln) - 1
+                                          end
+                                          buffer.goto_pos(buffer.position_from_line(ln) + col)
+                                      end
+                                  end), true),
+        k = mk_movement(repeat_arg(function()
+                                      local lineno = buffer.line_from_position(buffer.current_pos)
+                                      local linestart = buffer.position_from_line(lineno)
+                                      if lineno > 1 then
+                                          local ln = lineno - 1
+                                          local col = buffer.current_pos - linestart
+                                          if col >= buffer.line_length(ln) then
+                                              col = buffer.line_length(ln) - 1
+                                          end
+                                          buffer.goto_pos(buffer.position_from_line(ln) + col)
+                                      end
+                                  end), true),
         w = mk_movement(repeat_arg(buffer.word_right), false),
         b = mk_movement(repeat_arg(buffer.word_left), false),
         e = mk_movement(repeat_arg(function()
