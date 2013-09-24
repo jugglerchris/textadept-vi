@@ -858,7 +858,11 @@ mode_command = {
 }
 
 -- Save the previous buffer to be able to switch back
-events.connect(events.BUFFER_BEFORE_SWITCH, function () view.vi_last_buf = buffer end)
+events.connect(events.BUFFER_BEFORE_SWITCH, function () 
+       if not buffer._textredux  then
+           view.vi_last_buf = buffer
+       end
+    end)
 
 if M.vi_global then
   -- Rather than adding a command mode, copy all our bindings in and replace mode_command.bindings
