@@ -137,10 +137,12 @@ M.ex_commands = {
     end,
     w = function(args)
          --dbg("Fn:" .. tostring(_G.buffer.filename))
-         if #args ~= 1 then
-             ex_error(":w doesn't yet accept an arg")
+         if #args == 2 then
+             buffer:save_as(args[2])
+         elseif #args == 1 then
+             buffer:save()
          else
-              buffer.save(_G.buffer)
+             ex_error("Too many arguments to :w")
          end
     end,
     wq = function(args)
@@ -518,6 +520,7 @@ end
 M.completions = {
     b = complete_buffers,
     e = complete_files,
+    w = complete_files,
     tag = complete_tags,
     tsel = complete_tags,
     find = complete_paths,

@@ -99,15 +99,16 @@ state = {
     pending_keyhandler = nil, -- A function to call on the next keypress
     last_action = no_action,
 
-    command_cut = nil,   -- Whether the last cut was char or line oriented
-
     marks = {},
 
     last_insert_string = nil, -- Last inserted text
     insert_pos = nil,
 
     errmsg = '',              -- error from a command
+    
+    registers = {}            -- cut/paste registers
 }
+
 -- Make state visible.
 M.state = state
 
@@ -147,6 +148,67 @@ local self_insert_tab = setmetatable({}, self_insert_mt)
 --- Mark the start of some potential text entry.
 local function insert_start_edit()
     state.insert_pos = buffer.current_pos
+end
+
+--- Delete a range from this buffer, and save in a register.
+--  If the register is not specified, use the unnamed register ("").
+local function vi_cut(start, end_, linewise, register)
+    buffer.set_sel(start, end_)
+    local text = buffer.get_sel_text()
+    buffer.cut()
+    state.registers[register or '"'] = {text=text, line=linewise}
+end
+
+--- Paste from a register (by default the unnamed register "")
+--  If after is true, then will paste after the current character or line
+--  (depending on whether the buffer was line or character based)
+local function vi_paste(after, register)
+    local buf = state.registers[register or '"']
+    if not buf then return end
+    
+    local pos = buffer.current_pos
+    
+    if buf.line then
+        local lineno = buffer.line_from_position(pos)
+        if after then
+            lineno = lineno + 1
+        end
+        pos = buffer:position_from_line(lineno)
+        buffer:goto_pos(pos)
+    else
+        if after then pos = pos + 1 end
+    end
+    buffer:insert_text(pos, buf.text)
+end
+
+---  Move the cursor down one line.
+-- 
+local function vi_down()
+    local lineno = buffer.line_from_position(buffer.current_pos)
+    local linestart = buffer.position_from_line(lineno)
+    if lineno < buffer.line_count then
+        local ln = lineno + 1
+        local col = buffer.current_pos - linestart
+        if col >= buffer.line_length(ln) then
+            col = buffer.line_length(ln) - 1
+        end
+        buffer.goto_pos(buffer.position_from_line(ln) + col)
+    end
+end
+
+---  Move the cursor up one line.
+-- 
+local function vi_up()
+    local lineno = buffer.line_from_position(buffer.current_pos)
+    local linestart = buffer.position_from_line(lineno)
+    if lineno > 1 then
+        local ln = lineno - 1
+        local col = buffer.current_pos - linestart
+        if col >= buffer.line_length(ln) then
+            col = buffer.line_length(ln) - 1
+        end
+        buffer.goto_pos(buffer.position_from_line(ln) + col)
+    end
 end
 
 --- Mark the end of an edit (either exiting insert mode, or moving the
@@ -190,8 +252,8 @@ mode_insert = {
             enter_mode(mode_command)
         end,
 
-        up    = break_edit(buffer.line_up),
-        down  = break_edit(buffer.line_down),
+        up    = break_edit(vi_up),
+        down  = break_edit(vi_down),
         left  = break_edit(buffer.char_left),
         right = break_edit(buffer.char_right),
         home  = break_edit(buffer.vc_home),
@@ -269,7 +331,7 @@ local function do_movement(f, linewise)
                 end_ = buffer.position_from_line(line_end) +
                                       buffer.line_length(line_end)
             end
-            action(start, end_, move)
+            action(start, end_, move, linewise)
           end
         end
         state.last_action(1)
@@ -391,8 +453,8 @@ mode_command = {
         l = mk_movement(repeat_arg(function()
           vi_right()
         end), false),
-        j = mk_movement(repeat_arg(buffer.line_down), true),
-        k = mk_movement(repeat_arg(buffer.line_up), true),
+        j = mk_movement(repeat_arg(vi_down), true),
+        k = mk_movement(repeat_arg(vi_up), true),
         w = mk_movement(repeat_arg(buffer.word_right), false),
         b = mk_movement(repeat_arg(buffer.word_left), false),
         e = mk_movement(repeat_arg(function()
@@ -657,24 +719,21 @@ mode_command = {
               local lineno = buffer.line_from_position(buffer.current_pos)
 
               do_action(function(rpt)
-                  state.command_cut = 'line'
                   buffer.home()  -- Start of line
                   local start = buffer.current_pos
                   for i = 1,rpt do
-                      buffer.line_down()
+                      vi_down()
                   end
                   local endpos = buffer.current_pos
-                  buffer.set_selection(start, endpos)
-                  buffer.cut()
+                  vi_cut(start, endpos, true)
               end)
 
               state.pending_action, state.pending_command, state.numarg = nil, nil, 0
            else
-              state.pending_action = function(start, end_)
+              state.pending_action = function(start, end_, move, linewise)
                   raw_do_action(function()
                       --
-                      buffer.set_sel(start, end_)
-                      buffer.cut()
+                      vi_cut(start, end_, linewise)
                   end)
               end
               state.pending_command = 'd'
@@ -682,16 +741,14 @@ mode_command = {
         end,
 
          c = function()
-              state.pending_action = function(start, end_, move)
-                  buffer.set_sel(start, end_)
+              state.pending_action = function(start, end_, move, linewise)
                   buffer.begin_undo_action()
-                  buffer.cut()
+                  vi_cut(start, end_, linewise)
                   enter_insert_then_end_undo(post_insert(function()
                       local start = buffer.current_pos
                       move()
                       local end_ = buffer.current_pos
-                      buffer.set_sel(start, end_)
-                      buffer.cut()
+                      vi_cut(start, end_, linewise)
                   end))
               end
               state.pending_command = 'c'
@@ -717,9 +774,7 @@ mode_command = {
                     -- If at end of line, delete the previous char.
                     here = here - 1
                 end
-                buffer.set_sel(here, endpos)
-                buffer.cut()
-                state.command_cut = 'char'
+                vi_cut(here, endpos, false)
             end)
       end,
 
@@ -733,31 +788,12 @@ mode_command = {
          end,
 
         p = function()
-            if state.command_cut == 'line' then
-                -- Paste a new line.
-                do_action(repeatable(function()
-                    buffer.line_end()
-                    buffer.goto_pos(buffer.current_pos + 1)
-                    buffer.paste()
-                    buffer.line_up()
-                end))
-            else
-                vi_right()
-                buffer.paste()
-            end
+            -- Paste a new line.
+            do_action(repeatable(function() vi_paste(true) end))
         end,
 
         P = function()
-            if state.command_cut == 'line' then
-                -- Paste a new line (before current line)
-                do_action(repeatable(function()
-                    buffer.home()
-                    buffer.paste()
-                    buffer.line_up()
-                end))
-            else
-                buffer.paste()
-            end
+            do_action(repeatable(function() vi_paste(false) end))
         end,
         -- edit commands
 	u = buffer.undo,
