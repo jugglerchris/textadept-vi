@@ -201,7 +201,7 @@ end
 local function vi_up()
     local lineno = buffer.line_from_position(buffer.current_pos)
     local linestart = buffer.position_from_line(lineno)
-    if lineno > 1 then
+    if lineno >= 1 then
         local ln = lineno - 1
         local col = buffer.current_pos - linestart
         if col >= buffer.line_length(ln) then
@@ -480,12 +480,33 @@ mode_command = {
              buffer.anchor = pos
             end, true),
         ['%'] = mk_movement(function()
+             local orig_pos = buffer.current_pos
+             -- Simple case: match on current character
              local pos = buffer.brace_match(buffer.current_pos)
              if pos >= 0 then
                  buffer.goto_pos(pos)
-             else
-                 -- Should search for the next brace on this line.
+                 return
              end
+             
+             -- Get the current line and position, as we'll need it for
+             -- the next tests.
+             local line, idx = buffer:get_cur_line()
+             
+             -- Are we on a C conditional?
+--             local cppcond = 
+             
+             -- Try searching forwards on the line
+             local bracketpat =  "[%(%)<>%[%]{}]"
+             
+             local newidx, _, c = line:find(bracketpat, idx+1)
+             if newidx then
+                 pos = buffer:brace_match(orig_pos + newidx - idx - 1)
+                 if pos >= 0 then
+                     buffer:goto_pos(pos)
+                 end
+                 return
+             end
+             
         end, false),
 
 	-- Mark actions
