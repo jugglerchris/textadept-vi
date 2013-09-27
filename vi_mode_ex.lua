@@ -358,7 +358,10 @@ M.ex_commands = {
         end
         -- We know there's at least one match
         local tags = vi_tags.get_all()
-        if not tags then ex_error("No tags") end
+        if not tags then
+            ex_error("No tags")
+            return
+        end
 
         if #tags == 1 then
             -- Only one, just jump to it.
