@@ -1,4 +1,5 @@
 local M = {}
+local lpeg = require'lpeg'
 
 ------ Configuration (should make it possible to pass it in) ------
 -- If true, then convert alt-x or meta-x into ESC x (NCURSES only).  This means
@@ -493,7 +494,62 @@ mode_command = {
              local line, idx = buffer:get_cur_line()
              
              -- Are we on a C conditional?
---             local cppcond = 
+             do
+                 -- TODO: cache this
+                 local P = lpeg.P
+                 local S = lpeg.S
+                 local C = lpeg.C
+                 local R = lpeg.R
+                 
+                 local ws = S' \t'
+                
+                 local cpppat = (ws ^ 0) * P"#" * (ws ^ 0) * 
+                            (C(P"if" + P"elif" + P"else"+ P"ifdef" + P"endif") + -R("az", "AZ", "09"))
+                 
+                 local cppcond = cpppat:match(line)
+                 
+                 -- How each operation adjusts the nesting level
+                 local nestop = {
+                     ['if'] = 1,
+                     ['ifdef'] = 1,
+                     ['else'] = 0,
+                     ['elif'] = 0,
+                     ['endif'] = -1,
+                 }
+                 
+                 local lineno = buffer.line_from_position(buffer.current_pos)
+                 local level = 0
+                 if cppcond == 'endif' then
+                     -- Search backwards for the original if/ifdef
+                     while lineno > 0 do
+                         lineno = lineno - 1
+                         line = buffer:get_line(lineno)
+                         cppcond = cpppat:match(line)
+                         if nestop[cppcond] == 1 and level == 0 then
+                             -- found!
+                             buffer.goto_line(lineno)
+                             return
+                         elseif cppcond then
+                             level = level + nestop[cppcond]
+                         end
+                     end
+                 elseif cppcond then
+                     -- Search forwards for matching level
+                     local lines = buffer.line_count
+                     while lineno < lines do
+                         lineno = lineno + 1
+                         line = buffer:get_line(lineno)
+                         cppcond = cpppat:match(line)
+                         if cppcond and level == 0 then
+                             -- found!
+                             buffer.goto_line(lineno)
+                             return
+                         elseif cppcond then
+                             level = level + nestop[cppcond]
+                         end
+                     end
+                 end
+             end
              
              -- Try searching forwards on the line
              local bracketpat =  "[%(%)<>%[%]{}]"
