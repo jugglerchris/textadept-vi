@@ -21,12 +21,12 @@ M.state = {
 local state = M.state
 
 local function do_search(backwards)
-    gui.statusbar_text = "Search: "..state.pattern
+    ui.statusbar_text = "Search: "..state.pattern
     local saved_pos = buffer.current_pos
     buffer:search_anchor()
 
-    local search_flags = (_SCINTILLA.constants.SCFIND_REGEXP +
-			  _SCINTILLA.constants.SCFIND_POSIX)
+    local search_flags = (_SCINTILLA.constants.FIND_REGEXP +
+			  _SCINTILLA.constants.FIND_POSIX)
 
     local searcher = function(...) return buffer:search_next(...) end
 
@@ -71,7 +71,7 @@ local function do_search(backwards)
             if buffer.target_end == buffer.target_start then
                 -- Zero length match - not useful, abort here.
                 buffer.current_pos = saved_pos
-                gui.statusbar_text = "Not found"
+                ui.statusbar_text = "Not found"
                 return
             end
             -- Ensure we make some progress
@@ -94,9 +94,9 @@ local function do_search(backwards)
         else
             new_pos = first_pos
         end
-        gui.statusbar_text = "WRAPPED SEARCH"
+        ui.statusbar_text = "WRAPPED SEARCH"
     else
-	gui.statusbar_text = "Found " .. tostring(occurences)
+	ui.statusbar_text = "Found " .. tostring(occurences)
     end
 	-- Restore global search flags
         buffer.search_flags = saved_flags
@@ -104,7 +104,7 @@ local function do_search(backwards)
         buffer.selection_start = new_pos
     else
 	buffer.current_pos = saved_pos
-	gui.statusbar_text = "Not found"
+	ui.statusbar_text = "Not found"
     end
 end
 
@@ -118,12 +118,12 @@ local function handle_search_command(command)
 end
 
 -- Register our key bindings for the command entry
-local gui_ce = gui.command_entry
+local ui_ce = ui.command_entry
 keys.vi_search_command = {
     ['\n'] = function ()
               local exit = state.exitfunc
               state.exitfunc = nil
-              return gui_ce.finish_mode(function(text)
+              return ui_ce.finish_mode(function(text)
                                    if string.len(text) == 0 then
                                        text = state.pattern
                                    end
@@ -133,14 +133,14 @@ keys.vi_search_command = {
             end,
     cv = {
         ['\t'] = function()
-            local text = gui_ce.entry_text
-            gui_ce.enter_mode(nil)
-            gui_ce.entry_text = text .. "\t"
-            gui_ce.enter_mode("vi_search_command")
+            local text = ui_ce.entry_text
+            ui_ce.enter_mode(nil)
+            ui_ce.entry_text = text .. "\t"
+            ui_ce.enter_mode("vi_search_command")
         end,
     },
     ['esc'] = function()
-              gui_ce.enter_mode(nil)  -- Exit command_entry mode
+              ui_ce.enter_mode(nil)  -- Exit command_entry mode
 	      keys.MODE = "vi_command"
 	    end,
 }
@@ -148,8 +148,8 @@ keys.vi_search_command = {
 local function start_common(exitfunc)
     state.in_search_mode = true
     state.exitfunc = exitfunc
-    gui.command_entry.entry_text = ""
-    gui.command_entry.enter_mode('vi_search_command')
+    ui.command_entry.entry_text = ""
+    ui.command_entry.enter_mode('vi_search_command')
 end
 
 function M.start(exitfunc)

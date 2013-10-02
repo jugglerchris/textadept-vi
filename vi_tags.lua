@@ -93,7 +93,7 @@ function M.pop_tag()
         buffer.goto_pos(tos.frompos)
         state.tagidx = state.tagidx - 1
     else
-        _M.vi_mode.err("Top of stack")
+        vi_mode.err("Top of stack")
     end
 end
 
@@ -133,7 +133,7 @@ function M.goto_tag(tag)
     end
     
     -- unknown tag pattern
-    _M.vi_mode.err('Tag pat: '..excmd)
+    vi_mode.err('Tag pat: '..excmd)
 end
 
 -- Return the next tag at this level, or nil.

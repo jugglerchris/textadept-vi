@@ -31,11 +31,11 @@ events.connect(events.RESET_AFTER, function()
   end
 end)
 
-local gui_ce = gui.command_entry
+local ui_ce = ui.command_entry
 
 local do_debug = false
 local function dbg(...)
-    if do_debug then gui._print("ex", ...) end
+    if do_debug then ui._print("ex", ...) end
 end
 
 local function split(s)
@@ -48,7 +48,7 @@ local function split(s)
 end
 
 local function ex_error(msg)
-    _M.vi_mode.err(msg)
+    vi_mode.err(msg)
 end
 
 local function unsplit_other(ts)
@@ -56,7 +56,7 @@ local function unsplit_other(ts)
         -- Ensure this view is focused (so we don't delete the focused view)
         for k,v in ipairs(_G._VIEWS) do
             if ts == v then
-                gui.goto_view(k)
+                ui.goto_view(k)
                 break
             end
         end
@@ -68,7 +68,7 @@ end
 
 local function close_siblings_of(v, ts)
     local v = view
-    local ts = ts or gui.get_split_table()
+    local ts = ts or ui.get_split_table()
 
     if ts.vertical == nil then
         -- This is just a view
@@ -100,7 +100,7 @@ end
 
 -- Given a list of items, prompt the user to choose one.
 local function choose_list(title, items, cb)
-    local list = _M.textredux.core.list.new(title)
+    local list = textredux.core.list.new(title)
     list.items = items
     list.on_selection = function(l, item, shift, ctrl, alt, meta)
        cb(item)
@@ -138,15 +138,15 @@ M.ex_commands = {
     w = function(args)
          --dbg("Fn:" .. tostring(_G.buffer.filename))
          if #args == 2 then
-             buffer:save_as(args[2])
+	     io.save_file_as(args[2])
          elseif #args == 1 then
-             buffer:save()
+	     io.save_file()
          else
              ex_error("Too many arguments to :w")
          end
     end,
     wq = function(args)
-        buffer.save(_G.buffer)
+        io.save_file()
         M.ex_commands.q()
     end,
     n = function(args)
@@ -157,7 +157,7 @@ M.ex_commands = {
     end,
     c = function(args)
         -- Leave the command entry open
-        gui.command_entry.focus()
+        ui.command_entry.focus()
         return true
     end,
     b = function(args)
@@ -198,12 +198,12 @@ M.ex_commands = {
         view.split(view, true)
     end,
     ds = function(args)
-        local st = gui.get_split_table()
+        local st = ui.get_split_table()
         local function dumpsplit(t, indent)
           if t.split then
-            gui.print(indent.."View:", tostring(t))
+            ui.print(indent.."View:", tostring(t))
           else
-            gui.print(indent.."Split: ver=".. tostring(t.vertical))
+            ui.print(indent.."Split: ver=".. tostring(t.vertical))
             dumpsplit(t[1], indent.."  ")
             dumpsplit(t[2], indent.."  ")
           end
@@ -222,9 +222,9 @@ M.ex_commands = {
         for i=2,#args do
             command[#command+1] = args[i]
         end
-        _M.textadept.run.cwd = './'  -- So that the run module can take care of finding errors.
+        textadept.run.cwd = './'  -- So that the run module can take care of finding errors.
         local lexer = buffer:get_lexer()
-        gui.print("Running: " .. table.concat(command, " "))
+        ui.print("Running: " .. table.concat(command, " "))
         local msgbuf = buffer
         local function getoutput(s)
             local cur_view = view
@@ -239,14 +239,14 @@ M.ex_commands = {
             end
             if my_view then
                 if cur_view ~= my_view then
-                    gui.goto_view(_VIEWS[my_view])
+                    ui.goto_view(_VIEWS[my_view])
                 end
                     
                 msgbuf:append_text(s)
                 msgbuf:goto_pos(msgbuf.length)
                 
                 if my_view ~= cur_view then
-                    gui.goto_view(_VIEWS[cur_view])
+                    ui.goto_view(_VIEWS[cur_view])
                 end
             end
         end
@@ -389,7 +389,7 @@ local function debugwrap(f)
     if ok then
       return rest
     else
-      gui._print("lua errors", rest)
+      ui._print("lua errors", rest)
     end
   end
   return wrapped
@@ -398,13 +398,13 @@ end
 local function handle_ex_command(command)
       local result
       if not command:match("^%s*$") then
-        gui.statusbar_text = "Ex: "..command
+        ui.statusbar_text = "Ex: "..command
         state.history[state.histidx] = command
         local cmd = split(command)
         -- For now, a very simple command parser
         local handler = M.ex_commands[cmd[1]]
         
-        gui.command_entry.entry_text = ""
+        ui.command_entry.entry_text = ""
         if handler ~= nil then
             handler = debugwrap(handler)
 
@@ -433,10 +433,10 @@ local function do_complete_simple(pos, names)
         ex_error("No completions")
     elseif #names == 1 then
         -- Substitute directly
-        gui_ce.entry_text = string.sub(gui_ce.entry_text, 1, pos-1) .. names[1]
+        ui_ce.entry_text = string.sub(ui_ce.entry_text, 1, pos-1) .. names[1]
     else
         -- Several completions
-        gui_ce.show_completions(names)
+        ui_ce.show_completions(names)
     end
 end
 
@@ -458,9 +458,9 @@ end
 local function complete_buffers(pos, text)
     local buffers = matching_buffers(text)
     if #buffers == 1 then
-        gui_ce.entry_text = string.sub(gui_ce.entry_text, 1, pos-1) .. buffers[1]
+        ui_ce.entry_text = string.sub(ui_ce.entry_text, 1, pos-1) .. buffers[1]
     else
-        gui_ce.show_completions(buffers)
+        ui_ce.show_completions(buffers)
     end
 end
 
@@ -469,7 +469,7 @@ local function complete_files(pos, text)
     local dir, filepat, dirlen
     -- Special case - a bare % becomes the current file's path.
     if text == "%" then
-        gui_ce.entry_text = string.sub(gui_ce.entry_text, 1, pos-1) .. buffer.filename
+        ui_ce.entry_text = string.sub(ui_ce.entry_text, 1, pos-1) .. buffer.filename
         return
     end
     if text then
@@ -503,10 +503,10 @@ local function complete_files(pos, text)
         ex_error("No completions")
     elseif #files == 1 then
         -- Substitute directly
-        gui_ce.entry_text = string.sub(gui_ce.entry_text, 1, pos+dirlen-1) .. files[1]
+        ui_ce.entry_text = string.sub(ui_ce.entry_text, 1, pos+dirlen-1) .. files[1]
     else
         -- Several completions
-        gui_ce.show_completions(files)
+        ui_ce.show_completions(files)
     end
 end
 
@@ -534,14 +534,14 @@ keys.vi_ex_command = {
     ['\n'] = function ()
     	       local exit = state.exitfunc
      	       state.exitfunc = nil
-	       return gui_ce.finish_mode(function(text)
+	       return ui_ce.finish_mode(function(text)
                                               handle_ex_command(text)
                                               exit()
                                       end)
 	     end,
     ['\t'] = function ()
-        local cmd = gui_ce.entry_text:match("^(%S+)%s")
-        local lastpos, lastword = gui_ce.entry_text:match("%s()(%S+)$")
+        local cmd = ui_ce.entry_text:match("^(%S+)%s")
+        local lastpos, lastword = ui_ce.entry_text:match("%s()(%S+)$")
         if cmd and M.completions[cmd] then
             debugwrap(M.completions[cmd])(lastpos, lastword)
         else
@@ -551,19 +551,19 @@ keys.vi_ex_command = {
     up = function ()
         if state.histidx > 1 then
             -- Save current text
-            state.history[state.histidx] = gui_ce.entry_text
+            state.history[state.histidx] = ui_ce.entry_text
             
             state.histidx = state.histidx - 1
-            gui_ce.entry_text = state.history[state.histidx]
+            ui_ce.entry_text = state.history[state.histidx]
         end
     end,
     down= function ()
         if state.histidx < #state.history then
             -- Save current text
-            state.history[state.histidx] = gui_ce.entry_text
+            state.history[state.histidx] = ui_ce.entry_text
             
             state.histidx = state.histidx + 1
-            gui_ce.entry_text = state.history[state.histidx]
+            ui_ce.entry_text = state.history[state.histidx]
         end
     end,
 }
@@ -571,8 +571,8 @@ keys.vi_ex_command = {
 function M.start(exitfunc)
     state.exitfunc = exitfunc
     state.histidx = #state.history + 1  -- new command is after the end of the history
-    gui.command_entry.entry_text = ""
-    gui.command_entry.enter_mode('vi_ex_command')
+    ui.command_entry.entry_text = ""
+    ui.command_entry.enter_mode('vi_ex_command')
 end
 
 --- Run an ex command that may not have come directly from the command line.

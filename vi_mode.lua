@@ -33,7 +33,7 @@ local debug = false
 function dbg(...)
     --if debug then print(...) end
     if debug then
-        gui._print("vimode", ...)
+        ui._print("vimode", ...)
     end
 end
 
@@ -127,11 +127,11 @@ function update_status()
         msg = "-- INSERT -- "
     end
     msg = msg .. err
-    gui.statusbar_text = msg
+    ui.statusbar_text = msg
 
     state.errmsg = ''
 end
-events.connect(events.UPDATE_UI)
+events.connect(events.UPDATE_UI, update_status)
 
 
 local self_insert_mt = {
@@ -263,8 +263,8 @@ mode_insert = {
         pgdn =  break_edit(buffer.page_down),
 
         -- These don't quite behave as vim, but they'll do for now.
-        cp = _M.textadept.editing.autocomplete_word,
-        cn = _M.textadept.editing.autocomplete_word,
+        cp = textadept.editing.autocomplete_word,
+        cn = textadept.editing.autocomplete_word,
 
         cv = self_insert_tab,
     }
@@ -782,7 +782,7 @@ mode_command = {
                                                 string.len(prefix)))
                         line_start = line_start + 1
                       end
--- gui.print(table.concat(dbg, "\n"))
+-- ui.print(table.concat(dbg, "\n"))
                   end)
               end
               state.pending_command = 'gq'
@@ -890,7 +890,7 @@ mode_command = {
 
 	-- Enter ex mode command
 	[':'] = function() M.ex_mode.start(enter_command) end,
-	['ce']= function() gui.command_entry.enter_mode('lua_command') end,
+	['ce']= function() ui.command_entry.enter_mode('lua_command') end,
 	['/'] = function() M.search_mode.start(enter_command) end,
 	['?'] = function() M.search_mode.start_rev(enter_command) end,
         n = M.search_mode.restart,
@@ -913,11 +913,11 @@ mode_command = {
     ['ct'] = vi_tags.pop_tag,
     
     -- Errors (in compile error buffer)
-    ['c}'] = function() _M.textadept.run.goto_error(false, true) end,
+    ['c}'] = function() textadept.run.goto_error(false, true) end,
 
     -- Views and buffers
     cw = {
-        cw = { gui.goto_view, 1, true },  -- cycle between views
+        cw = { ui.goto_view, 1, true },  -- cycle between views
     },
     ['c^'] = function()
         if view.vi_last_buf then 
