@@ -50,4 +50,8 @@ function M.key(key)
     events.emit(events.KEYPRESS, key:byte(1))
 end
 
+function M.physkey(key)
+    os.execute("(echo send-key "..key.." ; echo detach) | TMUX= tmux -S ./output/tmux-socket -C attach")
+end
+
 return M
