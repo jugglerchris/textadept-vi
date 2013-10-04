@@ -542,6 +542,7 @@ keys.vi_ex_command = {
     ['\t'] = function ()
         local cmd = ui_ce.entry_text:match("^(%S+)%s")
         local lastpos, lastword = ui_ce.entry_text:match("%s()(%S+)$")
+        if not lastpos then lastpos = ui_ce.entry_text:len() end
         if cmd and M.completions[cmd] then
             debugwrap(M.completions[cmd])(lastpos, lastword)
         else
