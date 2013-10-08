@@ -8,6 +8,19 @@ local results = io.open('results.txt','w')
 results:write("Running tests...\n")
 results:flush()
 
+function M.log(msg)
+    results:write(msg)
+    results:flush()
+end
+local log = M.log
+
+M.debug = false
+function M.dbg(msg)
+  if debug then
+    log(msg)
+  end
+end
+
 local numtests = 0
 local passes = 0
 local failures = 0
@@ -16,27 +29,25 @@ local fail_immediate = false
 
 -- Run test <testname>, from tests/jk.lua
 function M.run(testname)
-    results:write("  "..testname.."...")
-    results:flush()
+    log("  "..testname.."...")
     numtests = numtests + 1
     local testfile =  _USERHOME .. "/../tests/" .. testname .. ".lua"
     local testfunc, msg = loadfile(testfile, "t")
     if not testfunc then
-        results:write(" error loading: " .. msg .. "\n")
+        log(" error loading: " .. msg .. "\n")
         failures = failures + 1
         error("Error loading test script " .. testfile)
     end
     res, msg = pcall(testfunc)
     if res then 
         passes = passes + 1
-        results:write('OK\n')
+        log('OK\n')
     else
         failures = failures + 1
-        results:write('Fail: '..tostring(msg)..'\n')
+        log('Fail: '..tostring(msg)..'\n')
         if  fail_immediate then error(msg) end
         
     end
-    results:flush()
 end
 
 -- Open a test file in the current view
