@@ -8,6 +8,7 @@ vi_mode = require 'vi_mode'
 events.connect(events.INITIALIZED, function()
     test.run('empty')
     test.run('jk')
+    test.run('hl')
     quit()
     test.physkey('esc')
 end)

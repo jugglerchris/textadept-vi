@@ -54,4 +54,9 @@ function M.physkey(key)
     os.execute("(echo send-key "..key.." ; echo detach) | TMUX= tmux -S ./output/tmux-socket -C attach")
 end
 
+-- Return the current line number
+function M.lineno() return buffer:line_from_position(buffer.current_pos) end
+
+function M.colno() return buffer.column[buffer.current_pos] end
+
 return M

@@ -1,6 +1,6 @@
 -- Test the up/down arrows
 test.open('1_10.txt')
-function lineno() return buffer:line_from_position(buffer.current_pos) end
+local lineno = test.lineno
 assert(buffer.current_pos == 0)
 assert(lineno() == 0)
 test.key('k')
