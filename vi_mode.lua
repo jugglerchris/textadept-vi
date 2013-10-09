@@ -369,8 +369,10 @@ end
 function vi_right()
     local line, pos = buffer.get_cur_line()
 	local docpos = buffer.current_pos
-	local length = buffer.line_length(buffer.line_from_position(docpos))
-	if pos < (length - 2) then
+    -- Don't include line ending characters, so we can't use buffer.line_length().
+    local lineno = buffer:line_from_position(docpos)
+	local length = buffer.line_end_position[lineno] - buffer.position_from_line(lineno)
+	if pos < (length - 1) then
 	    buffer.char_right()
 	end
 end
