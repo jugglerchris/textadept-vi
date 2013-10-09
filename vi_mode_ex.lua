@@ -490,7 +490,9 @@ local function complete_files(pos, text)
     -- Assume this is a prefix.
     filepat = '^' .. filepat
 
-    for fname in lfs.dir(dir) do
+    local mode = lfs.attributes(dir, 'mode')
+    if mode and mode == 'directory' then
+      for fname in lfs.dir(dir) do
         if (not ignore_complete_files[fname]) and fname:match(filepat) then
           local fullpath = dir .. "/" .. fname
           if lfs.attributes(fullpath, 'mode') == 'directory' then
@@ -498,6 +500,9 @@ local function complete_files(pos, text)
           end
           files[#files+1] = fname
         end
+      end
+    else
+      ex_error('Bad dir: '..dir)
     end
     if #files == 0 then
         ex_error("No completions")
