@@ -182,6 +182,12 @@ local function vi_paste(after, register)
     buffer:insert_text(pos, buf.text)
 end
 
+-- Return the number of characters on this line, without
+-- line endings.
+local function line_length(lineno)
+	return buffer.line_end_position[lineno] - buffer.position_from_line(lineno)
+end
+
 ---  Move the cursor down one line.
 -- 
 local function vi_down()
@@ -190,9 +196,10 @@ local function vi_down()
     if lineno < buffer.line_count then
         local ln = lineno + 1
         local col = buffer.current_pos - linestart
-        if col >= buffer.line_length(ln) then
-            col = buffer.line_length(ln) - 1
+        if col >= line_length(ln) then
+            col = line_length(ln) - 1
         end
+        if col < 0 then col = 0 end
         buffer.goto_pos(buffer.position_from_line(ln) + col)
     end
 end
@@ -205,9 +212,10 @@ local function vi_up()
     if lineno >= 1 then
         local ln = lineno - 1
         local col = buffer.current_pos - linestart
-        if col >= buffer.line_length(ln) then
-            col = buffer.line_length(ln) - 1
+        if col >= line_length(ln) then
+            col = line_length(ln) - 1
         end
+        if col < 0 then col = 0 end
         buffer.goto_pos(buffer.position_from_line(ln) + col)
     end
 end
@@ -371,7 +379,7 @@ function vi_right()
 	local docpos = buffer.current_pos
     -- Don't include line ending characters, so we can't use buffer.line_length().
     local lineno = buffer:line_from_position(docpos)
-	local length = buffer.line_end_position[lineno] - buffer.position_from_line(lineno)
+	local length = line_length(lineno)
 	if pos < (length - 1) then
 	    buffer.char_right()
 	end

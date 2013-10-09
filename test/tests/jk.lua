@@ -16,6 +16,8 @@ assert(lineno() == 2)
 for i=1,10 do
   test.key('j')
 end
+assert(lineno() == 10)
+test.key('k')
 assert(lineno() == 9)
 test.key('k')
 assert(lineno() == 8)
