@@ -1,4 +1,11 @@
-TA := ../../ta_hg/textadept-curses
+STRACE :=
+TMUX_EXTRA :=
+
+ifeq ($(DEBUG),1)
+STRACE := strace -o ta.strace
+TMUX_EXTRA :=  \; attach
+endif
+TA := $(STRACE) ../../ta_hg/textadept-curses
 TMUX := tmux
 
 # tmux configuration
@@ -13,8 +20,8 @@ output:
 	mkdir -p $@
 
 test: output
-	$(TMUX) -S $(TMUX_SOCKET) -C new-session -d $(TMUX_SIZE) "$(TA) --nosession --userhome ./userhome ; echo Finished >> results.txt" \; attach
-	#$(TMUX) -S $(TMUX_SOCKET) -C attach
+	$(TMUX) -S $(TMUX_SOCKET) -C new-session -d $(TMUX_SIZE) "$(TA) --nosession --userhome ./userhome ; echo Finished >> results.txt" $(TMUX_EXTRA)
+	@#$(TMUX) -S $(TMUX_SOCKET) -C attach
   
 # Convenience target to attach to any session still running.
 attach:

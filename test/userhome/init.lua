@@ -5,11 +5,10 @@ test = require 'test'
 
 vi_mode = require 'vi_mode'
 
-events.connect(events.INITIALIZED, function()
+test.queue(function()
     test.run('empty')
     test.run('jk')
     test.run('hl')
     test.run('cols')
-    quit()
-    test.physkey('esc')
+    test.physkey('c-q')
 end)
