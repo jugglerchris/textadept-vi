@@ -13,6 +13,7 @@ M.vi_global = true
 M.ex_mode = require 'vi_mode_ex'
 M.search_mode = require 'vi_mode_search'
 M.tags = require 'vi_tags'
+M.lang = require 'vi_lang'
 local vi_tags = M.tags
 res, M.kill = pcall(require,'kill')
 if not res then
@@ -505,7 +506,7 @@ mode_command = {
              
              -- Are we on a C conditional?
              do
-                 -- TODO: cache this
+                 -- TODO: cache the pattern
                  local P = lpeg.P
                  local S = lpeg.S
                  local C = lpeg.C
@@ -867,11 +868,52 @@ mode_command = {
 
          ['>'] = function()
               -- TODO: add support for >> (ideally generically)
-              state.pending_action = function(start, end_)
-                  buffer.set_sel(start, end_)
-                  buffer.tab()
-              end
-              state.pending_command = '='
+                state.pending_action = function(start, end_)
+                    buffer.set_sel(start, end_)
+                    buffer.tab()
+                end
+              state.pending_command = '>'
+         end,
+         
+         -- Re-indent the range
+         ['='] = function()
+           state.pending_action = function(start, end_)
+             local line_start = buffer.line_from_position(start)
+             local line_end = buffer.line_from_position(end_)
+             local ff = io.open("eq_test.txt", "w")
+             local function f(msg) ff:write(msg .. "\n") ff:flush() end
+             local pat = M.lang.indents.xml.indent
+             local dpat = M.lang.indents.xml.dedent
+             
+             local indent_inc = 2
+             local next_indent = nil
+             -- If this isn't the first line, then get the indent
+             -- from the previous line
+             if line_start > 1 then
+               local prev_line = buffer:get_line(line_start-1)
+               local prev_indent = prev_line:match(" *()")
+               next_indent = prev_indent + pat:match(prev_line)
+             end
+             for lineno=line_start,line_end do
+                 local line = buffer:get_line(lineno)
+                 local indent_delta = pat:match(line)
+                 -- re-indent this line
+                 if next_indent then
+                     local this_indent = next_indent
+                     -- Special case - looking at this line may
+                     -- make us want to dedent (eg closing brace/tag)
+                     this_indent = this_indent + indent_inc * dpat:match(line)
+                     line = line:gsub("^%s*", (" "):rep(this_indent))
+                     buffer:set_selection(buffer:position_from_line(lineno+1),
+                                          buffer:position_from_line(lineno))
+                     buffer:replace_sel(line)
+                 else
+                     next_indent = 0
+                 end
+                 next_indent = next_indent + indent_inc * indent_delta
+             end
+           end
+           state.pending_command = '='
          end,
 
         p = function()

@@ -12,4 +12,4 @@ for i=1,buffer.line_count do
     -- line numbers 0-based
     indents[i] = buffer:get_line(i-1):match("^ *()") - 1
 end
-assertEq(indents, {0, 2, 2, 4, 4, 4, 4, 4, 2, 2, 4, 2, 0})
+assertEq(indents, {0, 2, 2, 4, 4, 4, 4, 4, 4, 2, 4, 2, 0})
