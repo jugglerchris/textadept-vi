@@ -105,11 +105,19 @@ state = {
 
     last_insert_string = nil, -- Last inserted text
     insert_pos = nil,
-
+    
     errmsg = '',              -- error from a command
     
     registers = {}            -- cut/paste registers
 }
+
+--- Return the buffer-specific vi state.
+local function buf_state(buf)
+    if not buf._vi then
+        buf._vi = {}
+    end
+    return buf._vi
+end
 
 -- Make state visible.
 M.state = state
@@ -192,11 +200,14 @@ end
 ---  Move the cursor down one line.
 -- 
 local function vi_down()
+    local bufstate = buf_state(buffer)
+    
     local lineno = buffer.line_from_position(buffer.current_pos)
     local linestart = buffer.position_from_line(lineno)
     if lineno < buffer.line_count then
         local ln = lineno + 1
-        local col = buffer.current_pos - linestart
+        local col = bufstate.col or (buffer.current_pos - linestart)
+        bufstate.col = col  -- Try to stay in the same column
         if col >= line_length(ln) then
             col = line_length(ln) - 1
         end
@@ -208,11 +219,13 @@ end
 ---  Move the cursor up one line.
 -- 
 local function vi_up()
+    local bufstate = buf_state(buffer)
     local lineno = buffer.line_from_position(buffer.current_pos)
     local linestart = buffer.position_from_line(lineno)
     if lineno >= 1 then
         local ln = lineno - 1
-        local col = buffer.current_pos - linestart
+        local col = bufstate.col or buffer.current_pos - linestart
+        bufstate.col = col
         if col >= line_length(ln) then
             col = line_length(ln) - 1
         end
@@ -372,6 +385,9 @@ local function mk_movement(f, linewise)
   -- numarg
   return function()
      do_movement(f, linewise)
+     -- If this was a horizontal movement, then forget what column
+     -- we were trying to stay in.
+     if not linewise then buf_state(buffer).col = nil end
   end
 end
 
