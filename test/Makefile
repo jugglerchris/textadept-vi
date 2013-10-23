@@ -2,7 +2,7 @@ STRACE :=
 TMUX_EXTRA :=
 
 ifeq ($(DEBUG),1)
-STRACE := strace -o ta.strace
+STRACE := strace -o output/ta.strace
 TMUX_EXTRA :=  \; attach
 endif
 TA := $(STRACE) ../../ta_hg/textadept-curses
@@ -18,10 +18,17 @@ all: test
 
 output:
 	mkdir -p $@
+  
+clean:
+	rm -r output
 
 test: output
-	$(TMUX) -S $(TMUX_SOCKET) -C new-session -d $(TMUX_SIZE) "$(TA) --nosession --userhome ./userhome ; echo Finished >> results.txt" $(TMUX_EXTRA)
+	$(TMUX) -S $(TMUX_SOCKET) -C new-session -d $(TMUX_SIZE) "$(TA) --nosession --userhome ./userhome ; echo Finished >> output/results.txt" $(TMUX_EXTRA)
   
 # Convenience target to attach to any session still running.
 attach:
 	$(TMUX) -S $(TMUX_SOCKET) attach
+  
+# Convenience to print out the current screen
+show:
+	echo capture-pane -p | $(TMUX) -S $(TMUX_SOCKET) -C attach

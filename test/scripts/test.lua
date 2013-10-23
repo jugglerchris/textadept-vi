@@ -4,14 +4,14 @@ Utilities for running textadept tests.
 
 local M = {}
 
-local results = io.open('results.txt','w')
+local results = io.open('./output/results.txt','w')
 
 local function log(msg)
     results:write(msg)
     results:flush()
 end
 M.log = log
-M.debug = false
+M.debug = true
 local function logd(msg)
     if M.debug then log(msg) end
 end
@@ -23,7 +23,7 @@ if M.debug then
     tmux_trace = " strace -o "
 end
 
-local tmux = io.popen("TMUX="..tmux_trace.."tmux.strace tmux -S ./output/tmux-socket -C attach > tmux.output 2>&1", "w")
+local tmux = io.popen("TMUX="..tmux_trace.."./output/tmux.strace tmux -S ./output/tmux-socket -C attach > ./output/tmux.output 2>&1", "w")
 events.connect(events.QUIT, function() tmux:close() return true end)
 
 function M.dbg(msg)
@@ -86,12 +86,31 @@ function M.run(testname)
         if  fail_immediate then error(msg) end
         
     end
+    -- Close any buffers opened for the test.
+    for i,buf in ipairs(_G._BUFFERS) do
+        if buf._vitest_owned then
+            view:goto_buffer(i)
+            buffer:set_save_point()  -- assert not dirty
+            if not io.close_buffer(buf) then
+                log('Error closing buffer ' .. tostring(buffer.filename))
+            end
+        end
+    end
 end
 
 -- Start running a test function.  It will be run in a coroutine, as it may
 -- need to wait for events to happen.
 function M.queue(f)
-    local testrun = coroutine.create(f)
+    io.open_file('files/dummy.txt')
+    local function xpwrapped()
+        local res, rest = xpcall(f, debug.traceback)
+        if not res then 
+            log(rest)
+            error(rest)
+        end
+        return rest
+    end
+    local testrun = coroutine.create(xpwrapped)
     local function doquit()
         logd('doquit()\n')
         quit()
@@ -118,6 +137,7 @@ function M.queue(f)
         -- Run the queued function a bit on every keypress
         events.connect(events.QUIT, continuetest, 1)
         events.connect(events.KEYPRESS, doquit, 1)
+        logd("Connected QUIT and KEYPRESS events\n")
     end)
 end
 
@@ -187,15 +207,18 @@ end
 function M.open(filebase)
     local filename = _USERHOME .. "/../files/"..filebase
     io.open_file(filename)
+    buffer._vitest_owned = true
 end
 
 -- Simulate a keypress
-function M.key(key)
-    logd("Sending key " .. key .. "\n")
-    M.physkey(key)
-    logd("yielding after sending key\n")
-    coroutine.yield()
-    logd("Resumed after key "..tostring(key).."\n")
+function M.key(...)
+    for _, key in ipairs({...}) do
+      logd("Sending key " .. key .. "\n")
+      M.physkey(key)
+      logd("yielding after sending key\n")
+      coroutine.yield()
+      logd("Resumed after key "..tostring(key).."\n")
+    end
 end
 
 function M.physkey(key)
