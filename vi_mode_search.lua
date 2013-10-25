@@ -25,8 +25,8 @@ local function do_search(backwards)
     local saved_pos = buffer.current_pos
     buffer:search_anchor()
 
-    local search_flags = (_SCINTILLA.constants.FIND_REGEXP +
-			  _SCINTILLA.constants.FIND_POSIX)
+    -- Hack - need the old FIND_POSIX|FIND_REGEXP, but one's gone.
+    local search_flags = (_SCINTILLA.constants.FIND_REGEXP + _SCINTILLA.constants.FIND_REGEXP/2)
 
     local searcher = function(...) return buffer:search_next(...) end
 
