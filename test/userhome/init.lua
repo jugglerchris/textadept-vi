@@ -8,7 +8,6 @@ vi_mode = require 'vi_mode'
 
 test.queue(function()
     test.run('empty')
-    test.run('d')
     test.run('jk')
     test.run('hl')
     test.run('cols')

@@ -6,7 +6,7 @@ STRACE := strace -o output/ta.strace
 TMUX_EXTRA :=  \; attach
 endif
 TA := $(STRACE) ../../ta_hg/textadept-curses
-TMUX := tmux
+TMUX := tmux -f userhome/tmux.conf
 
 # tmux configuration
 TMUX_SOCKET := ./output/tmux-socket

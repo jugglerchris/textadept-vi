@@ -823,7 +823,10 @@ mode_command = {
               local lineno = buffer.line_from_position(buffer.current_pos)
 
               do_action(function(rpt)
-                  buffer.home()  -- Start of line
+                  local bufstate = buf_state(buffer)
+                  buffer:home()  -- Start of line
+                  bufstate.col = nil  -- don't try to jump to the wrong column.
+                  
                   local start = buffer.current_pos
                   for i = 1,rpt do
                       vi_down()

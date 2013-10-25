@@ -11,7 +11,7 @@ local function log(msg)
     results:flush()
 end
 M.log = log
-M.debug = true
+M.debug = false
 local function logd(msg)
     if M.debug then log(msg) end
 end
@@ -222,6 +222,11 @@ function M.key(...)
 end
 
 function M.physkey(key)
+    if key:len() == 1 then
+       -- escape single characters if necessary
+       local c = key:byte(1)
+       key = string.format('0x%02x', c)
+    end
     tmux:write('send-keys ' .. key .. '\n')
     tmux:flush()
 end
