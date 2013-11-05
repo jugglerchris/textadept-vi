@@ -24,6 +24,7 @@ clean:
 
 test: output
 	$(TMUX) -S $(TMUX_SOCKET) -C new-session -d $(TMUX_SIZE) "$(TA) --nosession --userhome ./userhome ; echo Finished >> output/results.txt" $(TMUX_EXTRA)
+	@cat output/results.txt
   
 # Convenience target to attach to any session still running.
 attach:
