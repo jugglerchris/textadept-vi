@@ -13,6 +13,7 @@ test.queue(function()
     test.run('cols')
     test.run('eq')
     test.run('d')
+    test.run('cw')
     test.physkey('c-q')
 end)
 
