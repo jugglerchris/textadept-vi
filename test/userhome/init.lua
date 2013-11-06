@@ -14,6 +14,7 @@ test.queue(function()
     test.run('eq')
     test.run('d')
     test.run('cw')
+    test.run('cw_count')
     test.physkey('c-q')
 end)
 
