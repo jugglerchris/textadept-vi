@@ -23,7 +23,12 @@ clean:
 	rm -r output
 
 test: output
-	$(TMUX) -S $(TMUX_SOCKET) -C new-session -d $(TMUX_SIZE) "$(TA) --nosession --userhome ./userhome ; echo Finished >> output/results.txt" $(TMUX_EXTRA)
+	@# Remove previous output file to avoid confusion.
+	@rm -f output/results.txt output/sem.fifo
+	@mkfifo output/sem.fifo
+	$(TMUX) -S $(TMUX_SOCKET) -C new-session -d $(TMUX_SIZE) "$(TA) --nosession --userhome ./userhome ; echo Finished >> output/results.txt ; echo Finished > output/sem.fifo" $(TMUX_EXTRA)
+	@echo Waiting for test...
+	@head -1 output/sem.fifo
 	@cat output/results.txt
   
 # Convenience target to attach to any session still running.
