@@ -32,7 +32,6 @@ test.queue(function()
     test.run('cC')
     test.run('x')
     test.run('rightangle')
-    test.physkey('c-q')
     test.run('pP')
     test.run('undo_redo')
     test.run('colon')
@@ -40,6 +39,7 @@ test.queue(function()
     test.run('tags')   -- c], ct
     test.run('c_hat')  -- c^, switch to last buffer
     test.run('cz')     -- suspend
+    test.physkey('c-q')
 end)
 
 
