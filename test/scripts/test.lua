@@ -128,7 +128,9 @@ end
 -- Give the test summary
 function M.report()
     if failures > 0 then
-      log("End of tests: "..green(passes.." pass")..", "..red(failures.." FAIL\n"))
+      log("End of tests: "..
+          green(passes.." pass ("..(100.0 * passes/(passes+failures)).."%)")..
+          ", "..red(failures.." FAIL ("..(100.0 * failures/(passes+failures))..")\n"))
     else
       log("End of tests: all "..green(passes.." passed\n"))
     end
