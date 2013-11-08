@@ -105,7 +105,8 @@ function M.run(testname)
         log(green('OK'..'\n'))
     else
         failures = failures + 1
-        log(red('Fail: '..tostring(msg)..'\n'))
+        -- Strip trailing newlines to keep things tidy.
+        log(red('Fail: '..tostring(msg):gsub("^(.-)(\n*)$", "%1")..'\n'))
         -- log the display when it failed
         tmux:write('display-message "Test '..testname..' failed."\n')
         tmux:write('capture-pane\n')

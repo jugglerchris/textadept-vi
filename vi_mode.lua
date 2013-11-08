@@ -649,6 +649,8 @@ mode_command = {
 		       -- alphabetic, so restore the mark
                return function()
                  newpos = state.marks[key]
+                 -- Go to the start of line as it's linewise.
+                 newpos = buffer:position_from_line(buffer:line_from_position(newpos))
                  if newpos ~= nil then
 		 	        do_movement(function () buffer.goto_pos(newpos) end, true)
 		         end
