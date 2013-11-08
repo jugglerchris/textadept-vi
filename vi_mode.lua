@@ -234,6 +234,31 @@ local function vi_up()
     end
 end
 
+-- Move to the start of the next word
+local function vi_word_right()
+    buffer.word_right()
+    local lineno = buffer.line_from_position(buffer.current_pos)
+    local col = buffer.current_pos - buffer.position_from_line(lineno)
+    -- Textadept sticks at the end of the line.
+    if col >= line_length(lineno) then
+        if lineno == buffer.line_count-1 then
+            buffer:char_left()
+        else
+            buffer:word_right()
+        end
+    end
+end
+
+-- Move to the start of the previous word
+local function vi_word_left()
+    buffer.word_left()
+    local lineno = buffer.line_from_position(buffer.current_pos)
+    local col = buffer.current_pos - buffer.position_from_line(lineno)
+    -- Textadept sticks at the end of the line.
+    if col >= line_length(lineno) then
+        buffer:word_left()
+    end
+end
 --- Mark the end of an edit (either exiting insert mode, or moving the
 --  cursor).
 local function insert_end_edit()
@@ -483,8 +508,8 @@ mode_command = {
         end), false),
         j = mk_movement(repeat_arg(vi_down), true),
         k = mk_movement(repeat_arg(vi_up), true),
-        w = mk_movement(repeat_arg(buffer.word_right), false),
-        b = mk_movement(repeat_arg(buffer.word_left), false),
+        w = mk_movement(repeat_arg(vi_word_right), false),
+        b = mk_movement(repeat_arg(vi_word_left), false),
         e = mk_movement(repeat_arg(function()
                                       buffer.char_right()
                                       buffer.word_right_end() 
