@@ -931,8 +931,6 @@ mode_command = {
            state.pending_action = function(start, end_)
              local line_start = buffer.line_from_position(start)
              local line_end = buffer.line_from_position(end_)
-             local ff = io.open("eq_test.txt", "w")
-             local function f(msg) ff:write(msg .. "\n") ff:flush() end
              local pat = M.lang.indents.xml.indent
              local dpat = M.lang.indents.xml.dedent
              
