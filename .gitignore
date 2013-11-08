@@ -1,2 +1,2 @@
-*.swp
-*.so
+test/output
+extension/*.so

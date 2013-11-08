@@ -378,6 +378,15 @@ local function do_movement(f, linewise)
                 local line_end = buffer.line_from_position(end_)
                 end_ = buffer.position_from_line(line_end) +
                                       buffer.line_length(line_end)
+            else
+                -- TODO: only for exclusive motions
+                -- If the end is at the start of a new line, then move it
+                -- back to the end for this.
+                local endlineno = buffer:line_from_position(end_)
+                local endcol = end_ - buffer.position_from_line(endlineno)
+                if endcol == 0 and end_ > start then
+                    end_ = buffer.line_end_position[endlineno-1]
+                end
             end
             action(start, end_, move, linewise)
           end
@@ -599,7 +608,7 @@ mode_command = {
                          lineno = lineno + 1
                          line = buffer:get_line(lineno)
                          cppcond = cpppat:match(line)
-                         if cppcond and level == 0 then
+                         if cppcond and level == 0 and nestop[cppcond] < 1 then
                              -- found!
                              buffer.goto_line(lineno)
                              return
