@@ -12,6 +12,10 @@ local function log(msg)
 end
 M.log = log
 M.debug = false
+
+-- Catch any errors that happen.
+events.connect(events.ERROR, log, 1)
+
 local function logd(msg)
     if M.debug then log(msg) end
 end
@@ -83,6 +87,10 @@ function M.run(testname)
             if coroutine.status(test_coro) == "dead" then
                 -- It succeeded
                 res = true
+                
+                -- But has the view split (eg for an error buffer)?
+                if #_VIEWS ~= 1 then res = false end
+                
                 break
             else
                 -- Try again later
@@ -98,6 +106,10 @@ function M.run(testname)
     else
         failures = failures + 1
         log(red('Fail: '..tostring(msg)..'\n'))
+        -- log the display when it failed
+        tmux:write('display-message "Test '..testname..' failed."\n')
+        tmux:write('capture-pane\n')
+        tmux:flush()
         if  fail_immediate then error(msg) end
         
     end
@@ -125,7 +137,7 @@ end
 -- Start running a test function.  It will be run in a coroutine, as it may
 -- need to wait for events to happen.
 function M.queue(f)
-    io.open_file('files/dummy.txt')
+--    io.open_file('files/dummy.txt')
     local function xpwrapped()
         local res, rest = xpcall(f, debug.traceback)
         if not res then 
