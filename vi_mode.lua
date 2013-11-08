@@ -513,6 +513,13 @@ mode_command = {
         e = mk_movement(repeat_arg(function()
                                       buffer.char_right()
                                       buffer.word_right_end() 
+                                      local lineno = buffer:line_from_position(buffer.current_pos)
+                                      local col = buffer.current_pos - buffer.position_from_line(lineno)
+                                      if col == 0 then
+                                        -- word_right_end sticks at start of
+                                        -- line.
+                                        buffer:word_right_end()
+                                      end
                                       buffer.char_left()
                                    end), false),
 
