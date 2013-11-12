@@ -1004,6 +1004,7 @@ mode_command = {
 
     },
 }
+M.mode_command = mode_command
 
 -- Save the previous buffer to be able to switch back
 events.connect(events.BUFFER_BEFORE_SWITCH, function () 
