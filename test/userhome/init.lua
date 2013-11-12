@@ -38,6 +38,7 @@ test.queue(function()
     test.run('search') -- /, ?, *, #, n, N
     test.run('tags')   -- c], ct
     test.run('c_hat')  -- c^, switch to last buffer
+    test.run('fold')
     test.run('cz')     -- suspend
     test.physkey('c-q')
 end)

@@ -1039,6 +1039,15 @@ mode_command = {
             end
         end
     end,
+    
+    -- Folds
+    z = {
+      o = function() buffer:fold_line(buffer:line_from_position(buffer.current_pos), buffer.FOLDACTION_EXPAND) end,
+      c = function() buffer:fold_line(buffer:line_from_position(buffer.current_pos), buffer.FOLDACTION_CONTRACT) end,
+    },
+    
+    -- Show help
+    f1 = textadept.adeptsense.show_apidoc,
 
     -- Misc: suspend the editor
     cz = M.kill.kill,

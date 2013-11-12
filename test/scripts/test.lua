@@ -271,6 +271,18 @@ function M.physkey(key)
     tmux:flush()
 end
 
+-- Read the current screen contents (defaulting to the whole screen).
+function M.getscreen(first, last)
+    first = first or 0
+    last = last or 23
+    
+    local tmux = io.popen("TMUX= tmux -S ./output/tmux-socket -C capture-pane -S "..first.." -E "..last.." -p", "r")
+    
+    data = tmux:read("*a")
+    tmux:close()
+    return data
+end
+
 -- Return the current line number
 function M.lineno() return buffer:line_from_position(buffer.current_pos) end
 
