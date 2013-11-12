@@ -15,6 +15,31 @@ test.queue(function()
     test.run('d')
     test.run('cw')
     test.run('cw_count')
+    test.run('wbe')
+    test.run('HML')
+    test.run('pct')
+    test.run('m_quot_bquot')
+    test.run('0^dollar')  -- 0, ^, $
+    test.run('count')
+    test.run('G')
+    test.run('iaAoO')
+    test.run('r')
+    test.run('R')
+    test.run('tilde')
+    test.run('J')
+    test.run('gq')
+    test.run('dD')
+    test.run('cC')
+    test.run('x')
+    test.run('rightangle')
+    test.run('pP')
+    test.run('undo_redo')
+    test.run('colon')
+    test.run('search') -- /, ?, *, #, n, N
+    test.run('tags')   -- c], ct
+    test.run('c_hat')  -- c^, switch to last buffer
+    test.run('fold')
+    test.run('cz')     -- suspend
     test.physkey('c-q')
 end)
 

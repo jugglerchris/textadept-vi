@@ -1,0 +1,19 @@
+({[<>]})({<[({[<f>]})]>})  -- single-line brackets
+(
+{
+[
+<
+"foo"
+>
+]
+}
+)
+
+#if foo
+# if bar
+# endif
+#elif foo
+ #if nested
+ #endif
+#else
+#endif

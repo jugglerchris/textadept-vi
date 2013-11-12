@@ -12,6 +12,10 @@ local function log(msg)
 end
 M.log = log
 M.debug = false
+
+-- Catch any errors that happen.
+events.connect(events.ERROR, log, 1)
+
 local function logd(msg)
     if M.debug then log(msg) end
 end
@@ -32,6 +36,19 @@ function M.dbg(msg)
   end
 end
 
+-- Colour codes
+CSI = "\x1B["
+local function SGR(...)
+  return CSI .. table.concat({...},';') .. "m"
+end
+NORMAL = SGR(0)
+RED = SGR(31,1)
+GREEN = SGR(32,1)
+
+-- Wrap text in colours
+local function green(text) return GREEN .. text .. NORMAL end
+local function red(text) return RED .. text .. NORMAL end
+
 local numtests = 0
 local passes = 0
 local failures = 0
@@ -45,9 +62,11 @@ function M.run(testname)
     local testfile =  _USERHOME .. "/../tests/" .. testname .. ".lua"
     local testfunc, msg = loadfile(testfile, "t")
     if not testfunc then
-        log(" error loading: " .. msg .. "\n")
+        log(red(" ERROR\n"))
+        logd(" ERROR loading: " .. msg .. "\n")
         failures = failures + 1
-        error("Error loading test script " .. testfile)
+        --error("Error loading test script " .. testfile)
+        return
     end
     local res = nil
     
@@ -68,6 +87,10 @@ function M.run(testname)
             if coroutine.status(test_coro) == "dead" then
                 -- It succeeded
                 res = true
+                
+                -- But has the view split (eg for an error buffer)?
+                if #_VIEWS ~= 1 then res = false end
+                
                 break
             else
                 -- Try again later
@@ -79,10 +102,15 @@ function M.run(testname)
     end
     if res then 
         passes = passes + 1
-        log('OK\n')
+        log(green('OK'..'\n'))
     else
         failures = failures + 1
-        log('Fail: '..tostring(msg)..'\n')
+        -- Strip trailing newlines to keep things tidy.
+        log(red('Fail: '..tostring(msg):gsub("^(.-)(\n*)$", "%1")..'\n'))
+        -- log the display when it failed
+        tmux:write('display-message "Test '..testname..' failed."\n')
+        tmux:write('capture-pane\n')
+        tmux:flush()
         if  fail_immediate then error(msg) end
         
     end
@@ -98,10 +126,21 @@ function M.run(testname)
     end
 end
 
+-- Give the test summary
+function M.report()
+    if failures > 0 then
+      log("End of tests: "..
+          green(passes.." pass ("..(100.0 * passes/(passes+failures)).."%)")..
+          ", "..red(failures.." FAIL ("..(100.0 * failures/(passes+failures))..")\n"))
+    else
+      log("End of tests: all "..green(passes.." passed\n"))
+    end
+end
+
 -- Start running a test function.  It will be run in a coroutine, as it may
 -- need to wait for events to happen.
 function M.queue(f)
-    io.open_file('files/dummy.txt')
+--    io.open_file('files/dummy.txt')
     local function xpwrapped()
         local res, rest = xpcall(f, debug.traceback)
         if not res then 
@@ -121,6 +160,7 @@ function M.queue(f)
             logd("Disconnecting continuetest\n")
             events.disconnect(events.KEYPRESS, doquit)
             events.disconnect(events.QUIT, continuetest)
+            M.report()
             M.physkey("c-q")
             return false
         else
@@ -229,6 +269,18 @@ function M.physkey(key)
     end
     tmux:write('send-keys ' .. key .. '\n')
     tmux:flush()
+end
+
+-- Read the current screen contents (defaulting to the whole screen).
+function M.getscreen(first, last)
+    first = first or 0
+    last = last or 23
+    
+    local tmux = io.popen("TMUX= tmux -S ./output/tmux-socket -C capture-pane -S "..first.." -E "..last.." -p", "r")
+    
+    data = tmux:read("*a")
+    tmux:close()
+    return data
 end
 
 -- Return the current line number

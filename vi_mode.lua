@@ -234,6 +234,31 @@ local function vi_up()
     end
 end
 
+-- Move to the start of the next word
+local function vi_word_right()
+    buffer.word_right()
+    local lineno = buffer.line_from_position(buffer.current_pos)
+    local col = buffer.current_pos - buffer.position_from_line(lineno)
+    -- Textadept sticks at the end of the line.
+    if col >= line_length(lineno) then
+        if lineno == buffer.line_count-1 then
+            buffer:char_left()
+        else
+            buffer:word_right()
+        end
+    end
+end
+
+-- Move to the start of the previous word
+local function vi_word_left()
+    buffer.word_left()
+    local lineno = buffer.line_from_position(buffer.current_pos)
+    local col = buffer.current_pos - buffer.position_from_line(lineno)
+    -- Textadept sticks at the end of the line.
+    if col >= line_length(lineno) then
+        buffer:word_left()
+    end
+end
 --- Mark the end of an edit (either exiting insert mode, or moving the
 --  cursor).
 local function insert_end_edit()
@@ -353,6 +378,15 @@ local function do_movement(f, linewise)
                 local line_end = buffer.line_from_position(end_)
                 end_ = buffer.position_from_line(line_end) +
                                       buffer.line_length(line_end)
+            else
+                -- TODO: only for exclusive motions
+                -- If the end is at the start of a new line, then move it
+                -- back to the end for this.
+                local endlineno = buffer:line_from_position(end_)
+                local endcol = end_ - buffer.position_from_line(endlineno)
+                if endcol == 0 and end_ > start then
+                    end_ = buffer.line_end_position[endlineno-1]
+                end
             end
             action(start, end_, move, linewise)
           end
@@ -483,11 +517,18 @@ mode_command = {
         end), false),
         j = mk_movement(repeat_arg(vi_down), true),
         k = mk_movement(repeat_arg(vi_up), true),
-        w = mk_movement(repeat_arg(buffer.word_right), false),
-        b = mk_movement(repeat_arg(buffer.word_left), false),
+        w = mk_movement(repeat_arg(vi_word_right), false),
+        b = mk_movement(repeat_arg(vi_word_left), false),
         e = mk_movement(repeat_arg(function()
                                       buffer.char_right()
                                       buffer.word_right_end() 
+                                      local lineno = buffer:line_from_position(buffer.current_pos)
+                                      local col = buffer.current_pos - buffer.position_from_line(lineno)
+                                      if col == 0 then
+                                        -- word_right_end sticks at start of
+                                        -- line.
+                                        buffer:word_right_end()
+                                      end
                                       buffer.char_left()
                                    end), false),
 
@@ -567,7 +608,7 @@ mode_command = {
                          lineno = lineno + 1
                          line = buffer:get_line(lineno)
                          cppcond = cpppat:match(line)
-                         if cppcond and level == 0 then
+                         if cppcond and level == 0 and nestop[cppcond] < 1 then
                              -- found!
                              buffer.goto_line(lineno)
                              return
@@ -608,6 +649,8 @@ mode_command = {
 		       -- alphabetic, so restore the mark
                return function()
                  newpos = state.marks[key]
+                 -- Go to the start of line as it's linewise.
+                 newpos = buffer:position_from_line(buffer:line_from_position(newpos))
                  if newpos ~= nil then
 		 	        do_movement(function () buffer.goto_pos(newpos) end, true)
 		         end
@@ -899,8 +942,6 @@ mode_command = {
            state.pending_action = function(start, end_)
              local line_start = buffer.line_from_position(start)
              local line_end = buffer.line_from_position(end_)
-             local ff = io.open("eq_test.txt", "w")
-             local function f(msg) ff:write(msg .. "\n") ff:flush() end
              local pat = M.lang.indents.xml.indent
              local dpat = M.lang.indents.xml.dedent
              
@@ -998,6 +1039,15 @@ mode_command = {
             end
         end
     end,
+    
+    -- Folds
+    z = {
+      o = function() buffer:fold_line(buffer:line_from_position(buffer.current_pos), buffer.FOLDACTION_EXPAND) end,
+      c = function() buffer:fold_line(buffer:line_from_position(buffer.current_pos), buffer.FOLDACTION_CONTRACT) end,
+    },
+    
+    -- Show help
+    f1 = textadept.adeptsense.show_apidoc,
 
     -- Misc: suspend the editor
     cz = M.kill.kill,
