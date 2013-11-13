@@ -407,6 +407,7 @@ local function repeat_arg(f)
         local times = state.numarg
         state.numarg = 0
         if times == 0 then times = 1 end
+        state.last_numarg = times
         for i=1,times do
             f()
         end
