@@ -407,7 +407,6 @@ local function repeat_arg(f)
         local times = state.numarg
         state.numarg = 0
         if times == 0 then times = 1 end
-        state.last_numarg = times
         for i=1,times do
             f()
         end
@@ -442,6 +441,14 @@ local function enter_command()
 end
 
 local function enter_insert_then_end_undo(cb)
+    -- Save the numeric argument
+    local rpt = 1
+    if state.numarg > 0 then
+        rpt = state.numarg
+        start.numarg = 0
+    end
+    state.last_numarg = rpt
+        
     enter_mode(mode_insert)
     insert_start_edit()
     mode_command.restart = function()
@@ -749,18 +756,29 @@ mode_command = {
         end,
 	r = function()
 	    state.pending_keyhandler = function(sym)
-	        -- TODO: Marks should move if text is inserted before them.
 	        if string.match(sym, "^.$") then
 		      -- Single character, so buffer.replace.
                    do_action(function(rpt)
-                       here = buffer.current_pos
-                       while rpt > 0 do
+                       local here = buffer.current_pos
+                       local lineno = buffer:line_from_position(here)
+                       local linestart = buffer:position_from_line(lineno)
+                       local col = here - linestart
+                       local numcols = line_length(lineno)
+                       local left = numcols - col
+                       if rpt <= left then
+                         while rpt > 0 do
                            buffer.set_sel(here, here+1)
                            buffer.replace_sel(sym)
                            buffer.current_pos = here+1
 
                            here = here + 1
                            rpt = rpt - 1
+                         end
+                         if here - linestart >= numcols then
+                           buffer.current_pos = linestart + numcols - 1
+                         end
+                       else
+                         M.err('**EOL')
                        end
                      end)
 		    end
