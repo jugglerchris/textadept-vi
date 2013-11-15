@@ -295,7 +295,7 @@ mode_insert = {
     bindings = {
         esc = function()
             insert_end_edit()
-	        local line, pos = buffer.get_cur_line()
+            local line, pos = buffer.get_cur_line()
             if pos > 0 then buffer.char_left() end
             enter_mode(mode_command)
         end,
@@ -999,6 +999,11 @@ mode_command = {
               buffer.begin_undo_action()
               state.last_action(rpt)
               buffer.end_undo_action()
+              
+              -- Slightly unclean way of making sure the cursor doesn't end
+              -- up past the end of the line.
+              local line, pos = buffer.get_cur_line()
+              if pos >= line:len() then buffer.char_left() end
            end,
 
 	-- Enter ex mode command
