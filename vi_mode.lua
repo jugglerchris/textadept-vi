@@ -507,6 +507,18 @@ local function wrap_lines(lines, width)
   return result
 end
 
+-- Check that the cursor hasn't wandered off beyond the end of the line
+local function ensure_cursor()
+  local docpos = buffer.current_pos
+  local lineno = buffer:line_from_position(docpos)
+  local linestart = buffer:position_from_line(lineno)
+  local length = line_length(lineno)
+  
+  if docpos-linestart >= length then
+      buffer.current_pos = linestart + length - 1
+  end
+end
+
 mode_command = {
     name = COMMAND,
 
@@ -774,9 +786,7 @@ mode_command = {
                            here = here + 1
                            rpt = rpt - 1
                          end
-                         if here - linestart >= numcols then
-                           buffer.current_pos = linestart + numcols - 1
-                         end
+                         ensure_cursor()
                        else
                          M.err('**EOL')
                        end
@@ -806,9 +816,7 @@ mode_command = {
                 here = here + 1
                 rpt = rpt - 1
               end
-              if here - linestart >= numcols then
-                buffer.current_pos = linestart + numcols - 1
-              end
+              ensure_cursor()
            end)
         end,
 
@@ -962,6 +970,7 @@ mode_command = {
                     here = here - 1
                 end
                 vi_cut(here, endpos, false)
+                ensure_cursor()
             end)
       end,
 
