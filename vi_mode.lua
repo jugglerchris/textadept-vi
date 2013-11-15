@@ -785,13 +785,31 @@ mode_command = {
 	    end
 	end,
         ['~'] = function()
-            do_action(repeatable(function()
-                buffer.set_selection(buffer.current_pos, buffer.current_pos+1)
+            do_action(function(rpt)
+              local here = buffer.current_pos
+              local lineno = buffer:line_from_position(here)
+              local linestart = buffer:position_from_line(lineno)
+              local col = here - linestart
+              local numcols = line_length(lineno)
+              local left = numcols - col
+              if rpt > left then
+                rpt = left
+              end
+              while rpt > 0 do
+                buffer.set_sel(here, here+1)
                 local c = buffer.get_sel_text()
                 local newc = string.upper(c)
                 if newc == c then newc = string.lower(c) end
                 buffer.replace_sel(newc)
-            end))
+                buffer.current_pos = here+1
+
+                here = here + 1
+                rpt = rpt - 1
+              end
+              if here - linestart >= numcols then
+                buffer.current_pos = linestart + numcols - 1
+              end
+           end)
         end,
 
         J = function()
