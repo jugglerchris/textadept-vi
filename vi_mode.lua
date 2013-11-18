@@ -825,14 +825,27 @@ mode_command = {
                if rpt < 2 then rpt = 2 end
 
                for i=1,rpt-1 do
-                   buffer.line_end()
-                   buffer.target_start = buffer.current_pos
-                   buffer.target_end = buffer.current_pos + 1
-                   
-                   -- Avoid an infinite loop when trying to join past the end.
-                   if buffer.target_end > buffer.text_length then break end
-                   
-                   buffer.lines_join()
+                   local lineno = buffer:line_from_position(buffer.current_pos)
+                   if lineno < buffer.line_count then
+                       local line1 = buffer:get_line(lineno)
+                       local line2 = buffer:get_line(lineno+1)
+                       local joiner = ''
+                       
+                       -- Strip line ending
+                       line1 = line1:match('(.-)[\n\r]*$')
+                       
+                       -- Add an extra space after a sentence end
+                       if line1:match('[%.$]$') then joiner = ' ' end
+                       
+                       -- Strip leading whitespace in second line
+                       line2 = line2:match('%s*(.*)')
+                       
+                       -- Set the range to change and replace it
+                       buffer.target_start = buffer:position_from_line(lineno)
+                       buffer.target_end = buffer:position_from_line(lineno+1) + buffer:line_length(lineno+1)
+                       buffer:replace_target(line1..joiner..' '..line2)
+                       buffer:goto_pos(buffer.target_start + line1:len())
+                   end
                end
            end)
         end,
