@@ -352,8 +352,20 @@ function dodigit(n)
     return function() addarg(n) end
 end
 
-local function do_movement(f, linewise)
-    -- Apply a movement command, which may be attached to an editing action.
+-- Valid movement types
+MOV_LINE = 'linewise'
+MOV_INC = 'inclusive'
+MOV_EXC = 'exclusive'
+MOV_TYPES = {
+  [MOV_LINE] = true,
+  [MOV_INC] = true,
+  [MOV_EXC] = true,
+}
+
+-- Apply a movement command, which may be attached to an editing action.
+local function do_movement(f, movtype)
+    assert(MOV_TYPES[movtype], "Invalid or missing motion type: [["..tostring(movtype).."]]")
+    
     if state.pending_action == nil then
         -- no action, just move
         f()
@@ -372,23 +384,32 @@ local function do_movement(f, linewise)
             if start > end_ then
                 start, end_ = end_, start
             end
-            if linewise then
+            if movtype == MOV_LINE then
                 start = buffer.position_from_line(buffer.line_from_position(start))
 
                 local line_end = buffer.line_from_position(end_)
                 end_ = buffer.position_from_line(line_end) +
                                       buffer.line_length(line_end)
             else
-                -- TODO: only for exclusive motions
-                -- If the end is at the start of a new line, then move it
-                -- back to the end for this.
                 local endlineno = buffer:line_from_position(end_)
                 local endcol = end_ - buffer.position_from_line(endlineno)
-                if endcol == 0 and end_ > start then
-                    end_ = buffer.line_end_position[endlineno-1]
+                
+                if movtype == MOV_INC then
+                  -- inclusive motion - include the last character
+                  if end_ < buffer.text_length and 
+                     endcol < buffer:line_length(endlineno) then
+                     end_ = end_ + 1
+                  end
+                else
+                  -- exclusive motion
+                  -- If the end is at the start of a new line, then move it
+                  -- back to the end for this.
+                  if endcol == 0 and end_ > start then
+                      end_ = buffer.line_end_position[endlineno-1]
+                  end
                 end
             end
-            action(start, end_, move, linewise)
+            action(start, end_, move, movtype == MOV_LINE)
           end
         end
         state.last_action(1)
@@ -414,14 +435,14 @@ local function repeat_arg(f)
 end
 
 -- Wrapper to turn a simple command into one which uses the numeric prefix
-local function mk_movement(f, linewise)
+local function mk_movement(f, movtype)
   -- Run f numarg times (if numarg is non-zero) and clear
   -- numarg
   return function()
-     do_movement(f, linewise)
+     do_movement(f, movtype)
      -- If this was a horizontal movement, then forget what column
      -- we were trying to stay in.
-     if not linewise then buf_state(buffer).col = nil end
+     if movtype ~= MOV_LINE then buf_state(buffer).col = nil end
   end
 end
 
@@ -531,14 +552,14 @@ mode_command = {
         h = mk_movement(repeat_arg(function ()
 	  local line, pos = buffer.get_cur_line()
 	  if pos > 0 then buffer.char_left() end
-        end), false),
+        end), MOV_EXC),
         l = mk_movement(repeat_arg(function()
           vi_right()
-        end), false),
-        j = mk_movement(repeat_arg(vi_down), true),
-        k = mk_movement(repeat_arg(vi_up), true),
-        w = mk_movement(repeat_arg(vi_word_right), false),
-        b = mk_movement(repeat_arg(vi_word_left), false),
+        end), MOV_EXC),
+        j = mk_movement(repeat_arg(vi_down), MOV_LINE),
+        k = mk_movement(repeat_arg(vi_up), MOV_LINE),
+        w = mk_movement(repeat_arg(vi_word_right), MOV_EXC),
+        b = mk_movement(repeat_arg(vi_word_left), MOV_EXC),
         e = mk_movement(repeat_arg(function()
                                       buffer.char_right()
                                       buffer.word_right_end() 
@@ -550,7 +571,7 @@ mode_command = {
                                         buffer:word_right_end()
                                       end
                                       buffer.char_left()
-                                   end), false),
+                                   end), MOV_INC),
 
         H = mk_movement(function()
              -- We can't use goto_line here as it scrolls the window slightly.
@@ -558,16 +579,16 @@ mode_command = {
              local pos = buffer.position_from_line(top_line)
              buffer.current_pos = pos
              buffer.anchor = pos
-            end, true),
+            end, MOV_LINE),
         M = mk_movement(function()
              buffer.goto_line(buffer.first_visible_line + buffer.lines_on_screen/2)
-            end, true),
+            end, MOV_LINE),
         L = mk_movement(function()
              local bot_line = buffer.first_visible_line + buffer.lines_on_screen - 1
              local pos = buffer.position_from_line(bot_line)
              buffer.current_pos = pos
              buffer.anchor = pos
-            end, true),
+            end, MOV_LINE),
         ['%'] = mk_movement(function()
              local orig_pos = buffer.current_pos
              -- Simple case: match on current character
@@ -651,7 +672,7 @@ mode_command = {
                  return
              end
              
-        end, false),
+        end, MOV_INC),
 
 	-- Mark actions
 	m = function()
@@ -672,7 +693,7 @@ mode_command = {
                  -- Go to the start of line as it's linewise.
                  newpos = buffer:position_from_line(buffer:line_from_position(newpos))
                  if newpos ~= nil then
-		 	        do_movement(function () buffer.goto_pos(newpos) end, true)
+		 	        do_movement(function () buffer.goto_pos(newpos) end, MOV_LINE)
 		         end
 		       end
 	        end
@@ -684,7 +705,7 @@ mode_command = {
                return function()
                  newpos = state.marks[key]
                  if newpos ~= nil then
-		 	        do_movement(function () buffer.goto_pos(newpos) end, false)
+		 	        do_movement(function () buffer.goto_pos(newpos) end, MOV_EXC)
 		         end
 		       end
 	        end
@@ -692,7 +713,7 @@ mode_command = {
 
 	['0'] = function()
              if state.numarg == 0 then
-                mk_movement(buffer.home, false)()
+                mk_movement(buffer.home, MOV_EXC)()
              else
                 addarg(0)
 	     end
@@ -713,11 +734,11 @@ mode_command = {
          -- If inside an action (eg d$) then we really do go to the end of
          -- the line rather than one short.
 		 if pos > 0 and state.pending_action == nil then buffer.char_left() end
-	       end, false),
+	       end, MOV_INC),
 	['^'] = mk_movement(function()
 		   buffer.home()    -- Go to beginning of line
 		   buffer.vc_home()  -- swaps between beginning/first visible
-                end, false),
+                end, MOV_EXC),
 	G = mk_movement(function()
 	       if state.numarg > 0 then
                    -- Textadept does zero-based line numbers.
@@ -728,7 +749,7 @@ mode_command = {
                  buffer.document_end()
 		 buffer.home()
 	       end
-	   end, true),
+	   end, MOV_LINE),
 
 	-- edit mode commands
         i = function() enter_insert_with_undo(post_insert(function() end)) end,

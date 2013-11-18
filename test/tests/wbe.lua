@@ -64,3 +64,10 @@ test.key('e')
 assertEq(colno(), 22) assertEq(lineno(), 2)
 test.key('e')
 assertEq(colno(), 22) assertEq(lineno(), 2)
+
+-- Test using the motion as part of an action
+test.key('2', 'G', 'w')
+test.key('d', 'e')
+assertEq(lineno(), 1)
+assertEq(colno(), 4)
+assertEq(buffer:get_line(1), 'hey  cee dee ee eff\n')
