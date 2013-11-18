@@ -239,7 +239,7 @@ end
 --  and values are equal.  REturns true or calls error()
 function M.assertEq(a, b)
     if not eq(a,b) then
-        error("Failed assertion: "..M.tostring(a).."!="..M.tostring(b).."\n", 2)
+        error("Failed assertion: [["..M.tostring(a).."]] != [["..M.tostring(b).."]]\n", 2)
     end
 end
 
