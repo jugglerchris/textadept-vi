@@ -1,0 +1,7 @@
+blah blah
+  woo woo
+erg  -- trailing spaces    
+sponge
+
+This is a sentence.
+And another.
