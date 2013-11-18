@@ -179,12 +179,20 @@ local function vi_paste(after, register)
     local pos = buffer.current_pos
     
     if buf.line then
-        local lineno = buffer.line_from_position(pos)
+        local lineno = buffer:line_from_position(pos)
         if after then
             lineno = lineno + 1
+            if lineno >= buffer.line_count then
+                -- add a line if necessary
+                buffer:line_end()
+                buffer:new_line()
+            end
         end
         pos = buffer:position_from_line(lineno)
         buffer:goto_pos(pos)
+        assert(pos == buffer.current_pos)
+        local reported_line = buffer:line_from_position(pos)
+        assert(reported_line == lineno)
     else
         if after then pos = pos + 1 end
     end

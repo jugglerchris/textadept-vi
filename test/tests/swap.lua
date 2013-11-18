@@ -15,7 +15,7 @@ test.keys('^wxp')
 assertEq(buffer:get_cur_line(), 'one htree two four five\n')
 
 -- swap line with next
-test.keys('jddp')
+test.keys('ddp')
 assertEq(buffer:get_line(0), 'hey bee cee dee ee eff\n')
 assertEq(buffer:get_line(1), 'one htree two four five\n')
 
