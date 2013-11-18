@@ -261,6 +261,14 @@ function M.key(...)
     end
 end
 
+-- Convenience to send a string of characters rather than a table.
+function M.keys(s)
+    local keys = {}
+    for i=1,s:len() do
+       M.key(s:sub(i,i))
+    end
+end
+
 function M.physkey(key)
     if key:len() == 1 then
        -- escape single characters if necessary
