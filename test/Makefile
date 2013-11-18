@@ -26,7 +26,7 @@ test: output
 	@# Remove previous output file to avoid confusion.
 	@rm -f output/results.txt output/sem.fifo
 	@mkfifo output/sem.fifo
-	$(TMUX) -S $(TMUX_SOCKET) -C new-session -d $(TMUX_SIZE) "$(TA) --nosession --userhome ./userhome ; echo Finished >> output/results.txt ; echo Finished > output/sem.fifo" $(TMUX_EXTRA)
+	$(TMUX) -S $(TMUX_SOCKET) -C new-session -d $(TMUX_SIZE) "TESTS=$(TESTS) $(TA) --nosession --userhome ./userhome ; echo Finished >> output/results.txt ; echo Finished > output/sem.fifo" $(TMUX_EXTRA)
 	@echo Waiting for test...
 	@head -1 output/sem.fifo
 	@cat output/results.txt

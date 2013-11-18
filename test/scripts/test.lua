@@ -55,8 +55,24 @@ local failures = 0
 
 local fail_immediate = false
 
+local testenv = os.getenv("TESTS")
+local test_enabled = nil
+if testenv and testenv:len() > 0 then
+    test_enabled = {}
+    for t in testenv:gmatch("(%w+)") do
+        test_enabled[t] = true
+    end
+else
+    -- enable all
+    test_enabled = setmetatable({}, {
+      __index = function(t, key) return true end
+    })
+end
+
 -- Run test <testname>, from tests/<testname>.lua
 function M.run(testname)
+    if not test_enabled[testname] then return end
+    
     log("  "..testname.."...")
     numtests = numtests + 1
     local testfile =  _USERHOME .. "/../tests/" .. testname .. ".lua"
