@@ -44,6 +44,7 @@ test.queue(function()
     test.run('c_hat')  -- c^, switch to last buffer
     test.run('fold')
     test.run('cz')     -- suspend
+    test.run('swap')
     test.physkey('c-q')
 end)
 
