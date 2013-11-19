@@ -28,3 +28,6 @@ assertEq(buffer:get_line(1), 'KKKKbeKKKKe dee ee eff\n')
 test.key('$', 'h', 'h', '.')  -- should error, as goes over the end of line
 assertEq(buffer:get_line(1), 'KKKKbeKKKKe dee ee eff\n')
 assertEq(lineno(), 1) assertEq(colno(), 19)
+
+test.keys('0r*')
+assertEq(buffer:get_line(1), '*KKKbeKKKKe dee ee eff\n')
