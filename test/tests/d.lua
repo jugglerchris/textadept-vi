@@ -41,3 +41,8 @@ assertEq(buffer:get_text(),[[
 abcdefghijklmnopqrstuvwxyz
 0123456789
 ABCDEFGHIJKLMNOPQRSTUVWXYZ]])
+test.keys('2G4ld$')
+assertEq(buffer:get_text(),[[
+abcdefghijklmnopqrstuvwxyz
+0123
+ABCDEFGHIJKLMNOPQRSTUVWXYZ]])

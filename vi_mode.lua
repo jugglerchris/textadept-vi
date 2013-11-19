@@ -12,9 +12,12 @@ M.vi_global = true
 
 M.ex_mode = require 'vi_mode_ex'
 M.search_mode = require 'vi_mode_search'
-M.tags = require 'vi_tags'
+M.vi_tags = require 'vi_tags'
 M.lang = require 'vi_lang'
-local vi_tags = M.tags
+
+local vi_motion = require 'vi_motion'
+
+local vi_tags = M.vi_tags
 res, M.kill = pcall(require,'kill')
 if not res then
     -- The extension module may not be available.
@@ -739,9 +742,7 @@ mode_command = {
 		 -- Stop just before the end
 		 buffer.line_end()
 		 local line, pos = buffer.get_cur_line()
-         -- If inside an action (eg d$) then we really do go to the end of
-         -- the line rather than one short.
-		 if pos > 0 and state.pending_action == nil then buffer.char_left() end
+		 if pos > 0 then buffer.char_left() end
 	       end, MOV_INC),
 	['^'] = mk_movement(function()
 		   buffer.home()    -- Go to beginning of line
@@ -990,6 +991,20 @@ mode_command = {
               end
               state.pending_command = 'c'
          end,
+         
+         -- Temporary binding to test improved way of doing compound commands.
+         t = vi_motion.bind_motions({
+           -- insert non-motion completions (eg tt?) here.
+           t = function() return 'asdf' end,
+         }, function(...)
+            local args = {...}
+            for i=1,#args do
+                ui.print("Arg "..i.."="..tostring(args[i]))
+                if type(args[i]) == 'function' then
+                   ui.print("  "..args[i]())
+                end
+            end
+         end),
 
         D = function()
             do_keys('d', '$')
