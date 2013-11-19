@@ -57,9 +57,13 @@ local sel_motions = setmetatable({
                                 local movtype, mov_f = table.unpack(movedesc)
                                 -- Convert simple movement into a range
                                 return function()
-                                  local pos = buffer.current_pos
+                                  local pos1 = buffer.current_pos
                                   mov_f()
-                                  return pos, buffer.current_pos
+                                  local pos2 = buffer.current_pos
+                                  if pos1 > pos2 then
+                                    pos1, pos2 = pos2, pos1
+                                  end
+                                  return pos1, pos2
                                 end
                               end)
 })
@@ -90,12 +94,17 @@ end
 -- actions: a table of overrides (subcommands which aren't motions), eg for
 -- a 'd' handler, this would include 'd' (for 'dd', which deletes the current
 -- line).
--- handler: When a motion command is finished, this will be called with a
--- function which returns the start and end of the range selected.
+-- handler: When a motion command is finished, this will be called with the
+-- start and end of the range selected.
 function M.bind_motions(actions, handler)
     local keyseq = {}
     setmetatable(actions, { __index=sel_motions })
-    return wrap_bindings(actions, handler)
+    return wrap_table(actions, function(mov) 
+        return function()
+            local start, end_ = mov()
+            handler(start, end_)
+        end
+    end)
 end
 
 return M

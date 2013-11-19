@@ -16,8 +16,9 @@ M.vi_tags = require 'vi_tags'
 M.lang = require 'vi_lang'
 
 local vi_motion = require 'vi_motion'
-
 local vi_tags = M.vi_tags
+local vi_ops = require'vi_ops'
+
 res, M.kill = pcall(require,'kill')
 if not res then
     -- The extension module may not be available.
@@ -165,12 +166,13 @@ end
 
 --- Delete a range from this buffer, and save in a register.
 --  If the register is not specified, use the unnamed register ("").
-local function vi_cut(start, end_, linewise, register)
+function M.vi_cut(start, end_, linewise, register)
     buffer.set_sel(start, end_)
     local text = buffer.get_sel_text()
     buffer.cut()
     state.registers[register or '"'] = {text=text, line=linewise}
 end
+local vi_cut = M.vi_cut
 
 --- Paste from a register (by default the unnamed register "")
 --  If after is true, then will paste after the current character or line
@@ -472,7 +474,7 @@ local function enter_command()
     enter_mode(mode_command)
 end
 
-local function enter_insert_then_end_undo(cb)
+function M.enter_insert_then_end_undo(cb)
     -- Save the numeric argument
     local rpt = 1
     if state.numarg > 0 then
@@ -489,6 +491,8 @@ local function enter_insert_then_end_undo(cb)
         if cb then cb() end
     end
 end
+local enter_insert_then_end_undo = M.enter_insert_then_end_undo
+
 local function enter_insert_with_undo(cb)
     buffer.begin_undo_action()
     enter_insert_then_end_undo(cb)
@@ -497,7 +501,7 @@ end
 --- Function to be called after an insert mode operation.
 --  Sets the last action to call prep_f() to prepare (eg go to end of
 --  line, etc.) and then insert the last-inserted text.
-local function post_insert(prep_f)
+function M.post_insert(prep_f)
   return function()
           -- This function is run when exiting from undo
           state.last_action = function(rpt)
@@ -512,6 +516,7 @@ local function post_insert(prep_f)
           end
         end
 end
+local post_insert = M.post_insert
 
 local function wrap_lines(lines, width)
   local alltext = table.concat(lines, " ")
@@ -996,15 +1001,7 @@ mode_command = {
          t = vi_motion.bind_motions({
            -- insert non-motion completions (eg tt?) here.
            t = function() return 'asdf' end,
-         }, function(...)
-            local args = {...}
-            for i=1,#args do
-                ui.print("Arg "..i.."="..tostring(args[i]))
-                if type(args[i]) == 'function' then
-                   ui.print("  "..args[i]())
-                end
-            end
-         end),
+         }, vi_ops.change),
 
         D = function()
             do_keys('d', '$')
