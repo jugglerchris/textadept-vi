@@ -59,7 +59,7 @@ local testenv = os.getenv("TESTS")
 local test_enabled = nil
 if testenv and testenv:len() > 0 then
     test_enabled = {}
-    for t in testenv:gmatch("(%w+)") do
+    for t in testenv:gmatch("(%S+)") do
         test_enabled[t] = true
     end
 else
