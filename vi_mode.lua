@@ -16,6 +16,7 @@ M.vi_tags = require 'vi_tags'
 M.lang = require 'vi_lang'
 
 local vi_motion = require 'vi_motion'
+local vi_motions = require 'vi_motions'
 local vi_tags = M.vi_tags
 local vi_ops = require'vi_ops'
 
@@ -1000,7 +1001,11 @@ mode_command = {
          -- Temporary binding to test improved way of doing compound commands.
          t = vi_motion.bind_motions({
            -- insert non-motion completions (eg tt?) here.
-           t = function() return 'asdf' end,
+           t = function() 
+               local start, end_ = vi_motions.sel_line()
+               ui.print("s,e="..start..","..end_)
+               vi_ops.change(start, end_, MOV_LINE)
+           end,
          }, vi_ops.change),
 
         D = function()

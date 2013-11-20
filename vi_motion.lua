@@ -37,12 +37,58 @@ MOV_INC = 'inclusive'
 MOV_EXC = 'exclusive'
 
 -- Table of basic motion commands.  Each is a list:
--- { type, f }
--- where f is a function to do the movement and type is one of
--- MOV_LINE, MOV_EXC, MOV_INC for linewise, exclusive or inclusive.
+-- { type, f, count }
+-- where f is a function to do the movement, type is one of
+-- MOV_LINE, MOV_EXC, MOV_INC for linewise, exclusive or inclusive,
+-- and count is the prefix count.  This may be modified when wrapped.
 local motions = {
-  h = { MOV_EXC, vi_motions.char_left },
+  h = { MOV_EXC, vi_motions.char_left, 1 },
 }
+local MOTION_ZERO = { MOV_EXC, vi_motions.line_start, 1 }
+local digits = {}
+for i=0,9 do
+    digits[i..''] = true
+end
+local PREFIX_COUNT = {} -- unique table key
+local function index_digits(t, k)
+    -- Intercept numbers to return an wrapped version.
+    if digits[k] then
+        local precount = t[PREFIX_COUNT]
+        if precount ~= nil and k == '0' then
+            return MOTION_ZERO -- special case - 0 is a motion by itself.
+        end
+        
+        -- Rely on the master table never having PREFIX_COUNT.
+        if precount == nil then
+            -- If this is the first digit, return a wrapped table
+            local newtab = setmetatable({}, {
+                __index=function(t, k)
+                    local res = motions[k]
+                    if type(res)=='table' and res[1] then
+                      -- This is a motion, so apply the multiple
+                      res = { res[1], res[2], t[PREFIX_COUNT] }
+                    end
+                    return res or index_digits(t, k)
+                end })
+            t = newtab
+            precount = 0
+        end
+            
+        -- Update the count in the (possibly new) wrapper table
+        precount = (precount * 10) + (k+0)
+        t[PREFIX_COUNT] = precount
+        
+        -- Return the wrapper
+        return t
+    else
+        -- not found
+        return nil
+    end
+end
+
+setmetatable(motions, {
+  __index = index_digits,
+})
 M.motions = motions
 
 -- Table of select (range) motions, used after some commands (eg d{motion}).
@@ -54,40 +100,23 @@ local sel_motions = setmetatable({
   },
 }, {
   __index=wrap_table(motions, function(movedesc)
-                                local movtype, mov_f = table.unpack(movedesc)
+                                local movtype, mov_f, rep = table.unpack(movedesc)
                                 -- Convert simple movement into a range
-                                return function()
+                                return { movtype, function(rep)
                                   local pos1 = buffer.current_pos
-                                  mov_f()
+                                  for i=1,rep do
+                                    mov_f()
+                                  end
                                   local pos2 = buffer.current_pos
                                   if pos1 > pos2 then
                                     pos1, pos2 = pos2, pos1
                                   end
                                   return pos1, pos2
-                                end
+                                end, rep }
                               end)
 })
   
 M.sel_motions = sel_motions
-
--- Return a proxy for a key binding table which calls handler when eventually
--- getting to a complete motion.
-local function wrap_bindings(tab, handler)
-    return setmetatable({}, {
-        __index = function(t, k)
-            local m = tab[k]
-            
-            if type(m) == 'function' then
-                return function() handler(m) end
-            end
-            if type(m) == 'table' then
-                return wrap_bindings(m, handler)
-            end
-            
-            -- implicitly return nil
-        end,
-    })
-end
 
 -- Return an entry suitable for the keys table which implements the vi motion
 -- commands.
@@ -99,10 +128,11 @@ end
 function M.bind_motions(actions, handler)
     local keyseq = {}
     setmetatable(actions, { __index=sel_motions })
-    return wrap_table(actions, function(mov) 
+    return wrap_table(actions, function(movdesc) 
         return function()
-            local start, end_ = mov()
-            handler(start, end_)
+            local movtype, movf, rep = table.unpack(movdesc)
+            local start, end_ = movf(rep)
+            handler(start, end_, movtype)
         end
     end)
 end
