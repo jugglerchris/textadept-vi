@@ -19,6 +19,8 @@ local vi_motion = require 'vi_motion'
 local vi_motions = require 'vi_motions'
 local vi_tags = M.vi_tags
 local vi_ops = require'vi_ops'
+local vi_ta_util = require 'vi_ta_util'
+local line_length = vi_ta_util.line_length
 
 res, M.kill = pcall(require,'kill')
 if not res then
@@ -205,12 +207,6 @@ local function vi_paste(after, register)
         if after then pos = pos + 1 end
     end
     buffer:insert_text(pos, buf.text)
-end
-
--- Return the number of characters on this line, without
--- line endings.
-local function line_length(lineno)
-	return buffer.line_end_position[lineno] - buffer.position_from_line(lineno)
 end
 
 ---  Move the cursor down one line.
@@ -462,17 +458,6 @@ local function mk_movement(f, movtype)
   end
 end
 
-function vi_right()
-    local line, pos = buffer.get_cur_line()
-	local docpos = buffer.current_pos
-    -- Don't include line ending characters, so we can't use buffer.line_length().
-    local lineno = buffer:line_from_position(docpos)
-	local length = line_length(lineno)
-	if pos < (length - 1) then
-	    buffer.char_right()
-	end
-end
-
 local function enter_command()
     enter_mode(mode_command)
 end
@@ -568,9 +553,6 @@ mode_command = {
 
     bindings = {
         -- movement commands
-        l = mk_movement(repeat_arg(function()
-          vi_right()
-        end), MOV_EXC),
         j = mk_movement(repeat_arg(vi_down), MOV_LINE),
         k = mk_movement(repeat_arg(vi_up), MOV_LINE),
         w = mk_movement(repeat_arg(vi_word_right), MOV_EXC),
@@ -1200,6 +1182,7 @@ if M.vi_global then
                         for i=1,rpt do
                             mov_f()
                         end
+                        if movtype ~= MOV_LINE then buf_state(buffer).col = nil end
                     end
         else
             return m

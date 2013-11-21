@@ -43,6 +43,7 @@ MOV_EXC = 'exclusive'
 -- and count is the prefix count.  This may be modified when wrapped.
 local motions = {
   h = { MOV_EXC, vi_motions.char_left, 1 },
+  l = { MOV_EXC, vi_motions.char_right, 1 },
 }
 local MOTION_ZERO = { MOV_EXC, vi_motions.line_start, 1 }
 local digits = {}

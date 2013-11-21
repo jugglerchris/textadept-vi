@@ -17,7 +17,7 @@ assert(colno() == 2)
 -- Now go up; column should go down then back up to 2.
 test.key('k')
 assert(lineno() == 11)
-assert(colno() == 1)
+assertEq(colno(), 1)
 test.key('k')
 assert(lineno() == 10)
 assert(colno() == 0)
