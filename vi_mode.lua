@@ -135,6 +135,8 @@ function update_status()
     local err = state.errmsg
     local msg
 
+    if mode == nil then return end
+    
     if mode.name == COMMAND then
         msg = "(command) "
     else
@@ -566,10 +568,6 @@ mode_command = {
 
     bindings = {
         -- movement commands
-        h = mk_movement(repeat_arg(function ()
-	  local line, pos = buffer.get_cur_line()
-	  if pos > 0 then buffer.char_left() end
-        end), MOV_EXC),
         l = mk_movement(repeat_arg(function()
           vi_right()
         end), MOV_EXC),
@@ -1186,6 +1184,28 @@ if M.vi_global then
   keys[COMMAND] = keys
   
   keys[INSERT] = mode_insert.bindings
+  
+  -- Delegate to the motion commands.
+  setmetatable(keys, {
+    __index = function(t,k)
+        local m = vi_motion.motions[k]
+        if type(m) == 'table' and m[1] then
+            local movtype, mov_f, rep = table.unpack(m)
+            return function()
+                        local rpt = 1
+                        if state.numarg and state.numarg > 0 then
+                            rpt = state.numarg
+                            state.numarg = 0
+                        end
+                        for i=1,rpt do
+                            mov_f()
+                        end
+                    end
+        else
+            return m
+        end
+    end })
+    
 else
   -- Fall back to main keymap for any unhandled keys
   local keys_mt = {
