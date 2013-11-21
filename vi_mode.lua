@@ -17,10 +17,13 @@ M.lang = require 'vi_lang'
 
 local vi_motion = require 'vi_motion'
 local vi_motions = require 'vi_motions'
+local vi_down = vi_motions.line_down
+local vi_up= vi_motions.line_up
 local vi_tags = M.vi_tags
 local vi_ops = require'vi_ops'
 local vi_ta_util = require 'vi_ta_util'
 local line_length = vi_ta_util.line_length
+local buf_state = vi_ta_util.buf_state
 
 res, M.kill = pcall(require,'kill')
 if not res then
@@ -118,14 +121,6 @@ state = {
     registers = {}            -- cut/paste registers
 }
 
---- Return the buffer-specific vi state.
-local function buf_state(buf)
-    if not buf._vi then
-        buf._vi = {}
-    end
-    return buf._vi
-end
-
 -- Make state visible.
 M.state = state
 
@@ -207,43 +202,6 @@ local function vi_paste(after, register)
         if after then pos = pos + 1 end
     end
     buffer:insert_text(pos, buf.text)
-end
-
----  Move the cursor down one line.
--- 
-local function vi_down()
-    local bufstate = buf_state(buffer)
-    
-    local lineno = buffer.line_from_position(buffer.current_pos)
-    local linestart = buffer.position_from_line(lineno)
-    if lineno < buffer.line_count then
-        local ln = lineno + 1
-        local col = bufstate.col or (buffer.current_pos - linestart)
-        bufstate.col = col  -- Try to stay in the same column
-        if col >= line_length(ln) then
-            col = line_length(ln) - 1
-        end
-        if col < 0 then col = 0 end
-        buffer.goto_pos(buffer.position_from_line(ln) + col)
-    end
-end
-
----  Move the cursor up one line.
--- 
-local function vi_up()
-    local bufstate = buf_state(buffer)
-    local lineno = buffer.line_from_position(buffer.current_pos)
-    local linestart = buffer.position_from_line(lineno)
-    if lineno >= 1 then
-        local ln = lineno - 1
-        local col = bufstate.col or buffer.current_pos - linestart
-        bufstate.col = col
-        if col >= line_length(ln) then
-            col = line_length(ln) - 1
-        end
-        if col < 0 then col = 0 end
-        buffer.goto_pos(buffer.position_from_line(ln) + col)
-    end
 end
 
 -- Move to the start of the next word
@@ -553,8 +511,6 @@ mode_command = {
 
     bindings = {
         -- movement commands
-        j = mk_movement(repeat_arg(vi_down), MOV_LINE),
-        k = mk_movement(repeat_arg(vi_up), MOV_LINE),
         w = mk_movement(repeat_arg(vi_word_right), MOV_EXC),
         b = mk_movement(repeat_arg(vi_word_left), MOV_EXC),
         e = mk_movement(repeat_arg(function()
