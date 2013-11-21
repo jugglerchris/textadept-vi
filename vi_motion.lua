@@ -46,6 +46,9 @@ local motions = {
   l = { MOV_EXC, vi_motions.char_right, 1 },
   j = { MOV_LINE, vi_motions.line_down, 1 },
   k = { MOV_LINE, vi_motions.line_up, 1 },
+  w = { MOV_EXC, vi_motions.word_right, 1 },
+  b = { MOV_EXC, vi_motions.word_left, 1 },
+  e = { MOV_INC, vi_motions.word_end, 1 },
 }
 local MOTION_ZERO = { MOV_EXC, vi_motions.line_start, 1 }
 local digits = {}

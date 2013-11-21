@@ -204,31 +204,6 @@ local function vi_paste(after, register)
     buffer:insert_text(pos, buf.text)
 end
 
--- Move to the start of the next word
-local function vi_word_right()
-    buffer.word_right()
-    local lineno = buffer.line_from_position(buffer.current_pos)
-    local col = buffer.current_pos - buffer.position_from_line(lineno)
-    -- Textadept sticks at the end of the line.
-    if col >= line_length(lineno) then
-        if lineno == buffer.line_count-1 then
-            buffer:char_left()
-        else
-            buffer:word_right()
-        end
-    end
-end
-
--- Move to the start of the previous word
-local function vi_word_left()
-    buffer.word_left()
-    local lineno = buffer.line_from_position(buffer.current_pos)
-    local col = buffer.current_pos - buffer.position_from_line(lineno)
-    -- Textadept sticks at the end of the line.
-    if col >= line_length(lineno) then
-        buffer:word_left()
-    end
-end
 --- Mark the end of an edit (either exiting insert mode, or moving the
 --  cursor).
 local function insert_end_edit()
@@ -511,21 +486,6 @@ mode_command = {
 
     bindings = {
         -- movement commands
-        w = mk_movement(repeat_arg(vi_word_right), MOV_EXC),
-        b = mk_movement(repeat_arg(vi_word_left), MOV_EXC),
-        e = mk_movement(repeat_arg(function()
-                                      buffer.char_right()
-                                      buffer.word_right_end() 
-                                      local lineno = buffer:line_from_position(buffer.current_pos)
-                                      local col = buffer.current_pos - buffer.position_from_line(lineno)
-                                      if col == 0 then
-                                        -- word_right_end sticks at start of
-                                        -- line.
-                                        buffer:word_right_end()
-                                      end
-                                      buffer.char_left()
-                                   end), MOV_INC),
-
         H = mk_movement(function()
              -- We can't use goto_line here as it scrolls the window slightly.
              local top_line = buffer.first_visible_line

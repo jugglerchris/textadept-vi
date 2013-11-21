@@ -59,6 +59,46 @@ function M.line_up()
     end
 end
 
+-- Move to the start of the next word
+function M.word_right()
+    buffer.word_right()
+    local lineno = buffer.line_from_position(buffer.current_pos)
+    local col = buffer.current_pos - buffer.position_from_line(lineno)
+    -- Textadept sticks at the end of the line.
+    if col >= line_length(lineno) then
+        if lineno == buffer.line_count-1 then
+            buffer:char_left()
+        else
+            buffer:word_right()
+        end
+    end
+end
+
+-- Move to the start of the previous word
+function M.word_left()
+    buffer.word_left()
+    local lineno = buffer.line_from_position(buffer.current_pos)
+    local col = buffer.current_pos - buffer.position_from_line(lineno)
+    -- Textadept sticks at the end of the line.
+    if col >= line_length(lineno) then
+        buffer:word_left()
+    end
+end
+
+-- Move to the end of the next word
+ function M.word_end()
+     buffer.char_right()
+     buffer.word_right_end() 
+     local lineno = buffer:line_from_position(buffer.current_pos)
+     local col = buffer.current_pos - buffer.position_from_line(lineno)
+     if col == 0 then
+         -- word_right_end sticks at start of
+         -- line.
+         buffer:word_right_end()
+     end
+     buffer.char_left()
+end
+
 -- Select motions (return start,end_)
 function M.sel_line()
   local lineno = buffer:line_from_position(buffer.current_pos)
