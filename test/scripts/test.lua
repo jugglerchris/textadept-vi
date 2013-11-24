@@ -54,6 +54,10 @@ local passes = 0
 local failures = 0
 
 local fail_immediate = false
+do
+    local failenv = os.getenv("FAILHARD")
+    if failenv == "1" then fail_immediate = true end
+end
 
 local testenv = os.getenv("TESTS")
 local test_enabled = nil
@@ -140,6 +144,13 @@ function M.run(testname)
             end
         end
     end
+    -- Close any splits
+    while #_VIEWS > 1 do
+        view:unsplit()
+    end
+    
+    -- Clear up some leftover state
+    vi_mode.state.numarg = 0
 end
 
 -- Give the test summary
