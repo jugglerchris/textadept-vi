@@ -8,7 +8,7 @@ assertEq(colno(), 0)
 assertEq(lineno(), 1)
 assertEq(buffer:get_cur_line(), "hey bee cee dee ee eff\n")
 -- Test changing the first word
-test.key('c', 'w', 'f', 'o', 'o', 'space', 'escape')
+test.key('c', 'w', 'f', 'o', 'o', 'escape')
 assertEq(colno(), 3)
 assertEq(lineno(), 1)
 assertEq(buffer:get_cur_line(), "foo bee cee dee ee eff\n")
