@@ -3,15 +3,17 @@ local M = {}
 
 -- Implements c{motion}
 function M.change(start, end_, mtype)
-  local linewise = mtype == 'linewise'
-  buffer.begin_undo_action()
-  vi_mode.vi_cut(start, end_, linewise)
-  vi_mode.enter_insert_then_end_undo(vi_mode.post_insert(function()
-    local start = buffer.current_pos
-    move()
-    local end_ = buffer.current_pos
-    vi_mode.vi_cut(start, end_, linewise)
-  end))
+  M.cut(start, end_, mtype)
+end
+
+--- Delete a range from this buffer, and save in a register.
+--  If the register is not specified, use the unnamed register ("").
+function M.cut(start, end_, mtype, register)
+    local linewise = mtype == 'linewise'
+    buffer:set_sel(start, end_)
+    local text = buffer.get_sel_text()
+    buffer.cut()
+    state.registers[register or '"'] = {text=text, line=linewise}
 end
 
 return M

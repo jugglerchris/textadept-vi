@@ -39,11 +39,11 @@ COMMAND = "vi_command"
 INSERT = "vi_insert"
 mode = nil  -- initialised below
 
-local debug = false
+local debugFlag = false
 
 function dbg(...)
-    --if debug then print(...) end
-    if debug then
+    --if debugFlag then print(...) end
+    if debugFlag then
         ui._print("vimode", ...)
     end
 end
@@ -65,10 +65,13 @@ end
 
 function do_keys(...)
     local result = nil
+    local handler = nil
     for _,sym in ipairs({...}) do
-        handler = mode.bindings[sym]
-        if handler then result = handler(sym) end
+        handler = (type(handler) == 'table' and handler or mode.bindings)[sym]
+        if type(handler) == 'function' then result = handler(sym) end
     end
+    -- We expect to have done a full action, not partial keys.
+    assert(type(handler) == 'function')
     return result
 end
 
@@ -164,13 +167,8 @@ local function insert_start_edit()
     state.insert_pos = buffer.current_pos
 end
 
---- Delete a range from this buffer, and save in a register.
---  If the register is not specified, use the unnamed register ("").
 function M.vi_cut(start, end_, linewise, register)
-    buffer.set_sel(start, end_)
-    local text = buffer.get_sel_text()
-    buffer.cut()
-    state.registers[register or '"'] = {text=text, line=linewise}
+    return vi_ops.cut(start, end_, linewise and MOV_LINE or MOV_INC)
 end
 local vi_cut = M.vi_cut
 
@@ -204,18 +202,26 @@ local function vi_paste(after, register)
     buffer:insert_text(pos, buf.text)
 end
 
---- Mark the end of an edit (either exiting insert mode, or moving the
---  cursor).
-local function insert_end_edit()
+-- Return the inserted text.  Can be called immediately after returning
+-- from insert mode.
+local function get_just_inserted_text()
+    local result = ""
     -- If the cursor moved, then assume we've inserted text.
     if state.insert_pos < buffer.current_pos then
         local curpos = buffer.current_pos
         buffer.set_selection(state.insert_pos, curpos+1)
-        state.last_insert_string = buffer.get_sel_text()
+        result = buffer.get_sel_text()
         buffer.clear_selections()
-        buffer.current_pos = curpos
         buffer.goto_pos(curpos)
     end
+    return result
+end
+
+--- Mark the end of an edit (either exiting insert mode, or moving the
+--  cursor).
+local function insert_end_edit()
+    local text = get_just_inserted_text()
+    if text:len() > 0 then state.last_insert_string = text end
 end
 
 --- Return a function which does the same as its argument, but also
@@ -271,6 +277,16 @@ function do_action(action)
     state.last_action = action
 
     raw_do_action(action)
+end
+
+-- Return the current numeric prefix (and clear it)
+-- Returns nil if not set.
+local function get_numarg()
+    local numarg = state.numarg
+    
+    state.numarg = 0
+    
+    return ((numarg == 0) and nil) or numarg
 end
 
 -- Like do_action but doesn't save to last_action
@@ -438,6 +454,114 @@ function M.post_insert(prep_f)
         end
 end
 local post_insert = M.post_insert
+
+-- Do a movement (with optional repeat override) and return the range
+-- selected for an edit, taking into account inclusive/exclusive etc.
+--
+-- movdesc: { movtype, movf, rep }
+-- rpt: 0 or an override repeat
+--
+-- returns start, end positions.
+local function movdesc_get_range(movdesc, rpt_motion, rpt_cmd)
+    local movtype, movf, rep = table.unpack(movdesc)
+
+    if rpt_motion == nil or rpt_motion < 1 then rpt_motion = rep end
+    local cmdrep = (rpt_cmd and rpt_cmd > 0) and rpt_cmd or 1
+    local rpt = rpt_motion * cmdrep
+    local start, end_ = movf(rpt)
+    
+    -- Now adjust the range depending on the movement class
+    if movtype == MOV_LINE then
+        start = buffer.position_from_line(buffer.line_from_position(start))
+
+        local line_end = buffer.line_from_position(end_)
+        end_ = buffer.position_from_line(line_end) +
+               buffer.line_length(line_end)
+    else
+        local endlineno = buffer:line_from_position(end_)
+        local endcol = end_ - buffer.position_from_line(endlineno)
+                
+        if movtype == MOV_INC then
+            -- inclusive motion - include the last character
+            if end_ < buffer.text_length and 
+                endcol < buffer:line_length(endlineno) then
+                end_ = end_ + 1
+            end
+        else
+            -- exclusive motion
+            -- If the end is at the start of a new line, then move it
+            -- back to the end for this.
+            if endcol == 0 and end_ > start then
+                end_ = buffer.line_end_position[endlineno-1]
+            end
+        end
+    end
+    return start, end_
+end
+
+-- Return a table implementing an action which can take a motion, and
+-- which does NOT involve insert mode.
+-- Also handles taking care of being able to redo the action.
+--
+-- actions: a table -f non-motion bindings.
+-- handler: a function called with (start, end, movtype)
+--       start/end are the selected range, and movtype is MOV_{INC,EXC,LINE}
+--       The handler should do its action.  The system will take care of
+--       saving the action to repeat, and undo/redo.
+local function with_motion(actions, handler)
+    wrapped_handler = function(movdesc)
+       return function()
+           local cmdrpt = get_numarg()
+           local start, end_ = movdesc_get_range(movdesc, nil, cmdrpt)
+           buffer.begin_undo_action()
+           handler(start, end_, movtype)
+           
+           state.last_action = function(rpt)
+               local start, end_ = movdesc_get_range(movdesc, rpt, 1)
+               buffer.begin_undo_action()
+               handler(start, end_, movtype)
+               buffer.end_undo_action()
+           end
+       end
+    end
+    return vi_motion.bind_motions(actions, wrapped_handler)
+end
+
+-- Return a table implementing an action which can take a motion, and
+-- which involves text being entered in insert mode.
+-- Also handles taking care of being able to redo the action.
+--
+-- actions: a table -f non-motion bindings.
+-- handler: a function called with (start, end, movtype)
+--       start/end are the selected range, and movtype is MOV_{INC,EXC,LINE}
+--       The handler should do whatever needs doing before entering insert
+--       mode and return.  The system will handle entering insert mode and
+--       being able to repeat, as well as undo.
+local function with_motion_insert(actions, handler)
+    wrapped_handler = function(movdesc)
+       return function()
+           local cmdrpt = get_numarg()
+           local start, end_ = movdesc_get_range(movdesc, nil, cmdrpt)
+           buffer.begin_undo_action()
+           handler(start, end_, movtype)
+           
+           insert_start_edit()
+           enter_mode(mode_insert)
+           mode_command.restart = function()
+               local text = get_just_inserted_text()
+               buffer.end_undo_action()
+               state.last_action = function(rpt)
+                   local start, end_ = movdesc_get_range(movdesc, rpt, 1)
+                   buffer.begin_undo_action()
+                   handler(start, end_, movtype)
+                   buffer:add_text(text)
+                   buffer.end_undo_action()
+               end
+           end
+       end
+    end
+    return vi_motion.bind_motions(actions, wrapped_handler)
+end
 
 local function wrap_lines(lines, width)
   local alltext = table.concat(lines, " ")
@@ -640,12 +764,6 @@ mode_command = {
 	['7'] = dodigit(7),
 	['8'] = dodigit(8),
 	['9'] = dodigit(9),
-	['$'] = mk_movement(function()
-		 -- Stop just before the end
-		 buffer.line_end()
-		 local line, pos = buffer.get_cur_line()
-		 if pos > 0 then buffer.char_left() end
-	       end, MOV_INC),
 	['^'] = mk_movement(function()
 		   buffer.home()    -- Go to beginning of line
 		   buffer.vc_home()  -- swaps between beginning/first visible
@@ -849,60 +967,19 @@ mode_command = {
             end,
         },
 
-        d = function()
-           if state.pending_action ~= nil and state.pending_command == 'd' then
-              -- The 'dd' command
-              local rept = 1
-              local lineno = buffer.line_from_position(buffer.current_pos)
-
-              do_action(function(rpt)
-                  local bufstate = buf_state(buffer)
-                  buffer:home()  -- Start of line
-                  bufstate.col = nil  -- don't try to jump to the wrong column.
-                  
-                  local start = buffer.current_pos
-                  for i = 1,rpt do
-                      vi_down()
-                  end
-                  local endpos = buffer.current_pos
-                  vi_cut(start, endpos, true)
-              end)
-
-              state.pending_action, state.pending_command, state.numarg = nil, nil, 0
-           else
-              state.pending_action = function(start, end_, move, linewise)
-                  raw_do_action(function()
-                      --
-                      vi_cut(start, end_, linewise)
-                  end)
-              end
-              state.pending_command = 'd'
-           end
-        end,
-
-         c = function()
-              state.pending_action = function(start, end_, move, linewise)
-                  buffer.begin_undo_action()
-                  vi_cut(start, end_, linewise)
-                  enter_insert_then_end_undo(post_insert(function()
-                      local start = buffer.current_pos
-                      move()
-                      local end_ = buffer.current_pos
-                      vi_cut(start, end_, linewise)
-                  end))
-              end
-              state.pending_command = 'c'
-         end,
-         
-         -- Temporary binding to test improved way of doing compound commands.
-         t = vi_motion.bind_motions({
+        d = with_motion({
+           d = { MOV_LINE, vi_motions.sel_line, 1 },
+        }, vi_ops.cut),
+        
+        -- Temporary binding to test improved way of doing compound commands.
+        c = with_motion_insert({
            -- insert non-motion completions (eg tt?) here.
-           t = function() 
-               local start, end_ = vi_motions.sel_line()
-               ui.print("s,e="..start..","..end_)
-               vi_ops.change(start, end_, MOV_LINE)
-           end,
-         }, vi_ops.change),
+          c = { MOV_LINE, vi_motions.sel_line, 1 },
+              
+          -- cw is a special case, and doesn't include whitespace at the end
+          -- of the words.  It behaves more like ce.
+          w = vi_motion.movf_to_self({ MOV_INC, vi_motions.word_end, 1}),
+        }, vi_ops.change),
 
         D = function()
             do_keys('d', '$')
@@ -990,12 +1067,7 @@ mode_command = {
 	cr = buffer.redo,
         ['.'] = function()
               -- Redo the last action, taking into account possible prefix arg.
-              local rpt = state.last_numarg
-              if state.numarg > 0 then
-                  rpt = state.numarg
-                  state.numarg = 0
-                  state.last_numarg = rpt
-              end
+              local rpt = get_numarg()
               buffer.begin_undo_action()
               state.last_action(rpt)
               buffer.end_undo_action()

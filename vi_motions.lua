@@ -99,10 +99,23 @@ end
      buffer.char_left()
 end
 
+-- Move to the end of the line
+function M.line_end(rep)
+    if rep and rep > 1 then
+        for i=1,rep-1 do
+            buffer:line_down()
+        end
+    end
+    buffer:line_end()
+    local line, pos = buffer.get_cur_line()
+    if pos > 0 then buffer:char_left() end
+end
+
 -- Select motions (return start,end_)
-function M.sel_line()
+function M.sel_line(numlines)
+  if not numlines or numlines < 1 then numlines = 1 end
   local lineno = buffer:line_from_position(buffer.current_pos)
-  return buffer:position_from_line(lineno), buffer.line_end_position[lineno]
+  return buffer:position_from_line(lineno), buffer.line_end_position[lineno + numlines - 1]
 end
 
 return M

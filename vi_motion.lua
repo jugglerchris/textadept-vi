@@ -36,19 +36,33 @@ MOV_LINE = 'linewise'
 MOV_INC = 'inclusive'
 MOV_EXC = 'exclusive'
 
+-- Wrap a simple movement (eg word right) into one which takes a repeat
+-- count.
+local function r(f)
+    return function(rep)
+      if rep==nil or rep < 1 then
+          rep = 1
+      end
+      for i=1,rep do
+          f()
+      end
+    end
+end
+
 -- Table of basic motion commands.  Each is a list:
 -- { type, f, count }
 -- where f is a function to do the movement, type is one of
 -- MOV_LINE, MOV_EXC, MOV_INC for linewise, exclusive or inclusive,
 -- and count is the prefix count.  This may be modified when wrapped.
 local motions = {
-  h = { MOV_EXC, vi_motions.char_left, 1 },
-  l = { MOV_EXC, vi_motions.char_right, 1 },
-  j = { MOV_LINE, vi_motions.line_down, 1 },
-  k = { MOV_LINE, vi_motions.line_up, 1 },
-  w = { MOV_EXC, vi_motions.word_right, 1 },
-  b = { MOV_EXC, vi_motions.word_left, 1 },
-  e = { MOV_INC, vi_motions.word_end, 1 },
+  h = { MOV_EXC, r(vi_motions.char_left), 1 },
+  l = { MOV_EXC, r(vi_motions.char_right), 1 },
+  j = { MOV_LINE, r(vi_motions.line_down), 1 },
+  k = { MOV_LINE, r(vi_motions.line_up), 1 },
+  w = { MOV_EXC, r(vi_motions.word_right), 1 },
+  b = { MOV_EXC, r(vi_motions.word_left), 1 },
+  e = { MOV_INC, r(vi_motions.word_end), 1 },
+  ['$'] = { MOV_INC, vi_motions.line_end, 1 },
 }
 local MOTION_ZERO = { MOV_EXC, vi_motions.line_start, 1 }
 local digits = {}
@@ -97,6 +111,21 @@ setmetatable(motions, {
 })
 M.motions = motions
 
+-- Convert a simple movement desc into a selection movdesc
+function M.movf_to_self(movedesc)
+    local movtype, mov_f, rep = table.unpack(movedesc)
+    -- Convert simple movement into a range
+    return { movtype, function(rep)
+        local pos1 = buffer.current_pos
+        mov_f(rep)
+        local pos2 = buffer.current_pos
+        if pos1 > pos2 then
+            pos1, pos2 = pos2, pos1
+        end
+        return pos1, pos2
+      end, rep }
+end
+
 -- Table of select (range) motions, used after some commands (eg d{motion}).
 -- Each entry is a function returning (start, end) positions.
 local sel_motions = setmetatable({
@@ -105,21 +134,7 @@ local sel_motions = setmetatable({
     W = function() return 'WORD' end,
   },
 }, {
-  __index=wrap_table(motions, function(movedesc)
-                                local movtype, mov_f, rep = table.unpack(movedesc)
-                                -- Convert simple movement into a range
-                                return { movtype, function(rep)
-                                  local pos1 = buffer.current_pos
-                                  for i=1,rep do
-                                    mov_f()
-                                  end
-                                  local pos2 = buffer.current_pos
-                                  if pos1 > pos2 then
-                                    pos1, pos2 = pos2, pos1
-                                  end
-                                  return pos1, pos2
-                                end, rep }
-                              end)
+  __index=wrap_table(motions, M.movf_to_self),
 })
   
 M.sel_motions = sel_motions
@@ -129,18 +144,12 @@ M.sel_motions = sel_motions
 -- actions: a table of overrides (subcommands which aren't motions), eg for
 -- a 'd' handler, this would include 'd' (for 'dd', which deletes the current
 -- line).
--- handler: When a motion command is finished, this will be called with the
--- start and end of the range selected.
+-- handler: Is called with a movdesc, and should return a no-parameter
+-- function which will implement the action.
 function M.bind_motions(actions, handler)
     local keyseq = {}
     setmetatable(actions, { __index=sel_motions })
-    return wrap_table(actions, function(movdesc) 
-        return function()
-            local movtype, movf, rep = table.unpack(movdesc)
-            local start, end_ = movf(rep)
-            handler(start, end_, movtype)
-        end
-    end)
+    return wrap_table(actions, handler)
 end
 
 return M
