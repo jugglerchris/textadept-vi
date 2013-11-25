@@ -291,7 +291,11 @@ local function no_action() end
 -- Passes the current repeat count (prefix count) to it,
 -- and saves it to be recalled with '.'.
 function do_action(action)
-    state.last_action = action
+    local saved_rpt = state.numarg
+    state.last_action = function(rpt)
+        if rpt < 1 then rpt = saved_rpt end
+        action(rpt)
+    end
 
     raw_do_action(action)
 end
