@@ -26,7 +26,7 @@ assertEq(buffer:get_cur_line(), "foo dee ee eff\n")
 test.key('u')
 assertEq(buffer:get_cur_line(), "hey bee cee dee ee eff\n")
 -- Try existing count
-test.key('2', 'c', 'w', 'r', 's', 't', 'space', 'escape')
+test.key('0', '2', 'c', 'w', 'r', 's', 't', 'escape')
 assertEq(buffer:get_cur_line(), "rst cee dee ee eff\n")
 test.key('u')
 assertEq(buffer:get_cur_line(), "hey bee cee dee ee eff\n")

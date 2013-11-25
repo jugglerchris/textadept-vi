@@ -982,7 +982,7 @@ mode_command = {
               
           -- cw is a special case, and doesn't include whitespace at the end
           -- of the words.  It behaves more like ce.
-          w = vi_motion.movf_to_self({ MOV_INC, vi_motions.word_end, 1}),
+          w = vi_motion.movf_to_self({ MOV_INC, vi_motion.r(vi_motions.word_end), 1}),
         }, vi_ops.change),
 
         D = function()

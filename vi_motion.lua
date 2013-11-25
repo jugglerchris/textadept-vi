@@ -55,6 +55,7 @@ local function r(f)
       end
     end
 end
+M.r = r
 
 -- Table of register keys, returning true.
 local registers = setmetatable({splogde=123}, {
