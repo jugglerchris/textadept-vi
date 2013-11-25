@@ -581,6 +581,60 @@ local function with_motion_insert(actions, handler)
     return vi_motion.bind_motions(actions, wrapped_handler)
 end
 
+-- Check that the cursor hasn't wandered off beyond the end of the line
+local function ensure_cursor()
+  local docpos = buffer.current_pos
+  local lineno = buffer:line_from_position(docpos)
+  local linestart = buffer:position_from_line(lineno)
+  local length = line_length(lineno)
+  
+  if docpos-linestart >= length then
+      buffer.current_pos = linestart + length - 1
+  end
+end
+
+-- A table which implements the second keypres of 'r'.
+ local handle_r = setmetatable({}, {
+    __index = function(t, sym)
+                 if string.match(sym, "^.$") then
+                   return function()
+                   local cmdrpt = get_numarg()
+                   if not (cmdrpt and cmdrpt > 0) then cmdrpt = 1 end
+                  -- Single character, so buffer.replace.
+                   local function handler(rpt)
+                       rpt = (rpt and rpt > 0) and rpt or cmdrpt
+                       local here = buffer.current_pos
+                       local lineno = buffer:line_from_position(here)
+                       local linestart = buffer:position_from_line(lineno)
+                       local col = here - linestart
+                       local numcols = line_length(lineno)
+                       local left = numcols - col
+                       begin_undo()
+                       if rpt <= left then
+                         while rpt > 0 do
+                           buffer.set_sel(here, here+1)
+                           buffer.replace_sel(sym)
+                           buffer.current_pos = here+1
+
+                           here = here + 1
+                           rpt = rpt - 1
+                         end
+                         ensure_cursor()
+                       else
+                         M.err('**EOL')
+                       end
+                       end_undo()
+                     end
+                     
+                     state.last_action = handler
+
+                     handler(cmdrpt)
+                 end
+             end
+         end
+           
+})
+
 local function wrap_lines(lines, width)
   local alltext = table.concat(lines, " ")
   local result = {}
@@ -605,18 +659,6 @@ local function wrap_lines(lines, width)
     table.insert(result, table.concat(line, " "))
   end
   return result
-end
-
--- Check that the cursor hasn't wandered off beyond the end of the line
-local function ensure_cursor()
-  local docpos = buffer.current_pos
-  local lineno = buffer:line_from_position(docpos)
-  local linestart = buffer:position_from_line(lineno)
-  local length = line_length(lineno)
-  
-  if docpos-linestart >= length then
-      buffer.current_pos = linestart + length - 1
-  end
 end
 
 mode_command = {
@@ -820,34 +862,7 @@ mode_command = {
             ins_new_line()
             enter_insert_then_end_undo(post_insert(ins_new_line))
         end,
-	r = function()
-	    state.pending_keyhandler = function(sym)
-	        if string.match(sym, "^.$") then
-		      -- Single character, so buffer.replace.
-                   do_action(function(rpt)
-                       local here = buffer.current_pos
-                       local lineno = buffer:line_from_position(here)
-                       local linestart = buffer:position_from_line(lineno)
-                       local col = here - linestart
-                       local numcols = line_length(lineno)
-                       local left = numcols - col
-                       if rpt <= left then
-                         while rpt > 0 do
-                           buffer.set_sel(here, here+1)
-                           buffer.replace_sel(sym)
-                           buffer.current_pos = here+1
-
-                           here = here + 1
-                           rpt = rpt - 1
-                         end
-                         ensure_cursor()
-                       else
-                         M.err('**EOL')
-                       end
-                     end)
-		    end
-	    end
-	end,
+        r = handle_r,
         ['~'] = function()
             do_action(function(rpt)
               local here = buffer.current_pos
@@ -1164,9 +1179,7 @@ if M.vi_global then
      return function()
                 local rpt = get_numarg()
                 if not(rpt and rpt > 0) then rpt = rep end
-                for i=1,rpt do
-                    mov_f()
-                end
+                mov_f(rpt)
                 if movtype ~= MOV_LINE then buf_state(buffer).col = nil end
             end
   end

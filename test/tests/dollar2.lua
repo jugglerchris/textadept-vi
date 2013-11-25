@@ -1,5 +1,5 @@
 -- Test $ with counts
-test.open("ramp.txt")
+test.open("ramps.txt")
 local lineno = test.lineno
 local colno = test.colno
 local assertEq = test.assertEq
