@@ -12,7 +12,7 @@ local vi_motions = require 'vi_motions'
 --   tab: the table to wrap
 --   f:   function to modify the value from tab.
 local function wrap_table(tab, f)
-    return setmetatable({}, {
+    return setmetatable({wrapped=1}, {
         __index = function(t, k)
             local m = tab[k]
             
@@ -25,11 +25,18 @@ local function wrap_table(tab, f)
                 return wrap_table(m, f)
             else
                 -- Return a (possibly modified) value.
+                do
+                    local fm = f(m)
+                    
+                    return fm
+                end
                 return f(m)
             end
         end,
     })
 end
+
+M.wrap_table = wrap_table
 
 -- Valid movement types
 MOV_LINE = 'linewise'
@@ -49,6 +56,28 @@ local function r(f)
     end
 end
 
+-- Table of register keys, returning true.
+local registers = setmetatable({splogde=123}, {
+  __index = function(t, key)
+    if string.match(key, "^%a$") then
+      return key
+    else
+      return nil
+    end
+  end,
+})
+
+local function restore_mark(reg)
+
+    return { MOV_LINE, function()
+        newpos = vi_mode.state.marks[reg]
+        newpos = buffer:position_from_line(buffer:line_from_position(newpos))
+        if newpos ~= nil then
+            buffer:goto_pos(newpos)
+        end
+     end, 1 }
+end
+
 -- Table of basic motion commands.  Each is a list:
 -- { type, f, count }
 -- where f is a function to do the movement, type is one of
@@ -63,6 +92,7 @@ local motions = {
   b = { MOV_EXC, r(vi_motions.word_left), 1 },
   e = { MOV_INC, r(vi_motions.word_end), 1 },
   ['$'] = { MOV_INC, vi_motions.line_end, 1 },
+  ["'"] = wrap_table(registers, restore_mark),
 }
 local MOTION_ZERO = { MOV_EXC, vi_motions.line_start, 1 }
 local digits = {}

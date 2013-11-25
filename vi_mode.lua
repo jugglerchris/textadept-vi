@@ -224,15 +224,32 @@ local function insert_end_edit()
     if text:len() > 0 then state.last_insert_string = text end
 end
 
+-- Start an undo action
+local function begin_undo()
+    local bst = buf_state(buffer)
+    bst.undo_level = bst.undo_level or 0
+    assert(bst.undo_level == 0)
+    buffer:begin_undo_action()
+    bst.undo_level = bst.undo_level + 1
+end
+
+-- End an undo action
+local function end_undo()
+    local bst = buf_state(buffer)
+    buffer:end_undo_action()
+    assert(bst.undo_level == 1)
+    bst.undo_level = bst.undo_level - 1
+end
+
 --- Return a function which does the same as its argument, but also
 --  restarts the undo action.
 local function break_edit(f)
     return function()
-        buffer.end_undo_action()
+        end_undo()
         insert_end_edit()
         f()
         insert_start_edit()
-        buffer.begin_undo_action()
+        begin_undo()
     end
 end
 
@@ -299,9 +316,9 @@ function raw_do_action(action)
     end
     state.last_numarg = rpt
 
-    buffer.begin_undo_action()
+    begin_undo()
     action(rpt)
-    buffer.end_undo_action()
+    end_undo()
 end
 
 function addarg(n)
@@ -424,14 +441,14 @@ function M.enter_insert_then_end_undo(cb)
     insert_start_edit()
     mode_command.restart = function()
         insert_end_edit()
-        buffer.end_undo_action()
+        end_undo()
         if cb then cb() end
     end
 end
 local enter_insert_then_end_undo = M.enter_insert_then_end_undo
 
 local function enter_insert_with_undo(cb)
-    buffer.begin_undo_action()
+    begin_undo()
     enter_insert_then_end_undo(cb)
 end
 
@@ -444,12 +461,12 @@ function M.post_insert(prep_f)
           state.last_action = function(rpt)
             local rpt = rpt
             if rpt < 1 then rpt = 1 end
-            buffer.begin_undo_action()
+            begin_undo()
             prep_f()
             for i=1,rpt do
                 buffer.add_text(state.last_insert_string)
             end
-            buffer.end_undo_action()
+            end_undo()
           end
         end
 end
@@ -513,14 +530,15 @@ local function with_motion(actions, handler)
        return function()
            local cmdrpt = get_numarg()
            local start, end_ = movdesc_get_range(movdesc, nil, cmdrpt)
-           buffer.begin_undo_action()
+           begin_undo()
            handler(start, end_, movtype)
+           end_undo()
            
            state.last_action = function(rpt)
                local start, end_ = movdesc_get_range(movdesc, rpt, 1)
-               buffer.begin_undo_action()
+               begin_undo()
                handler(start, end_, movtype)
-               buffer.end_undo_action()
+               end_undo()
            end
        end
     end
@@ -542,20 +560,20 @@ local function with_motion_insert(actions, handler)
        return function()
            local cmdrpt = get_numarg()
            local start, end_ = movdesc_get_range(movdesc, nil, cmdrpt)
-           buffer.begin_undo_action()
+           begin_undo()
            handler(start, end_, movtype)
            
            insert_start_edit()
            enter_mode(mode_insert)
            mode_command.restart = function()
                local text = get_just_inserted_text()
-               buffer.end_undo_action()
+               end_undo()
                state.last_action = function(rpt)
                    local start, end_ = movdesc_get_range(movdesc, rpt, 1)
-                   buffer.begin_undo_action()
+                   begin_undo()
                    handler(start, end_, movtype)
                    buffer:add_text(text)
-                   buffer.end_undo_action()
+                   end_undo()
                end
            end
        end
@@ -721,20 +739,6 @@ mode_command = {
 		end
 	    end
 	end,
-	['\''] = setmetatable({}, {
-        __index = function(t, key)
-	        if string.match(key, "^%a$") then
-		       -- alphabetic, so restore the mark
-               return function()
-                 newpos = state.marks[key]
-                 -- Go to the start of line as it's linewise.
-                 newpos = buffer:position_from_line(buffer:line_from_position(newpos))
-                 if newpos ~= nil then
-		 	        do_movement(function () buffer.goto_pos(newpos) end, MOV_LINE)
-		         end
-		       end
-	        end
-        end}),
 	['`'] = setmetatable({}, {
         __index = function(t, key)
 	        if string.match(key, "^%a$") then
@@ -792,7 +796,7 @@ mode_command = {
         end,
         o = function()
             buffer.line_end()
-            buffer.begin_undo_action()
+            begin_undo()
             buffer.new_line()
             enter_insert_then_end_undo(post_insert(function()
                 buffer.line_end()
@@ -802,7 +806,7 @@ mode_command = {
         O = function()
             local function ins_new_line()
               buffer.home()
-              buffer.begin_undo_action()
+              begin_undo()
               if buffer.current_pos == 0 then
                  -- start of buffer
                  buffer.new_line()
@@ -1068,9 +1072,7 @@ mode_command = {
         ['.'] = function()
               -- Redo the last action, taking into account possible prefix arg.
               local rpt = get_numarg()
-              buffer.begin_undo_action()
               state.last_action(rpt)
-              buffer.end_undo_action()
               
               -- Slightly unclean way of making sure the cursor doesn't end
               -- up past the end of the line.
@@ -1155,25 +1157,27 @@ if M.vi_global then
   
   keys[INSERT] = mode_insert.bindings
   
+  -- Convert a motion table to a key function
+  local function motion2key(movdesc)
+     local movtype, mov_f, rep = table.unpack(movdesc)
+
+     return function()
+                local rpt = get_numarg()
+                if not(rpt and rpt > 0) then rpt = rep end
+                for i=1,rpt do
+                    mov_f()
+                end
+                if movtype ~= MOV_LINE then buf_state(buffer).col = nil end
+            end
+  end
   -- Delegate to the motion commands.
   setmetatable(keys, {
     __index = function(t,k)
         local m = vi_motion.motions[k]
         if type(m) == 'table' and m[1] then
-            local movtype, mov_f, rep = table.unpack(m)
-            return function()
-                        local rpt = 1
-                        if state.numarg and state.numarg > 0 then
-                            rpt = state.numarg
-                            state.numarg = 0
-                        end
-                        for i=1,rpt do
-                            mov_f()
-                        end
-                        if movtype ~= MOV_LINE then buf_state(buffer).col = nil end
-                    end
-        else
-            return m
+            return motion2key(m)
+        elseif type(m) == 'table' then
+            return vi_motion.wrap_table(m, motion2key)
         end
     end })
     
