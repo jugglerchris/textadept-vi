@@ -118,4 +118,15 @@ function M.sel_line(numlines)
   return buffer:position_from_line(lineno), buffer.line_end_position[lineno + numlines - 1]
 end
 
+function M.goto_line(lineno)
+    if lineno > 0 then
+        -- Textadept does zero-based line numbers.
+        buffer.goto_line(lineno-1)
+    else
+        -- With no arg, go to last line.
+        buffer.document_end()
+        buffer.home()
+    end
+end
+
 return M

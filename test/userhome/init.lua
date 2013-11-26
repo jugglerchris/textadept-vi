@@ -21,7 +21,6 @@ test.queue(function()
     test.run('m_quot_bquot')
     test.run('0^dollar')  -- 0, ^, $
     test.run('dollar2')
-    test.run('count')
     test.run('G')
     test.run('i')
     test.run('a')

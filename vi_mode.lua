@@ -819,17 +819,6 @@ mode_command = {
 		   buffer.home()    -- Go to beginning of line
 		   buffer.vc_home()  -- swaps between beginning/first visible
                 end, MOV_EXC),
-	G = mk_movement(function()
-	       if state.numarg > 0 then
-                   -- Textadept does zero-based line numbers.
-		   buffer.goto_line(state.numarg - 1)
-		   state.numarg = 0
-	       else
-                 -- With no arg, go to last line.
-                 buffer.document_end()
-		 buffer.home()
-	       end
-	   end, MOV_LINE),
 
 	-- edit mode commands
         i = function() enter_insert_with_undo(post_insert(function() end)) end,
@@ -1038,44 +1027,10 @@ mode_command = {
       end,
 
          -- Re-indent the range
-         ['='] = function()
-           state.pending_action = function(start, end_)
-             local line_start = buffer.line_from_position(start)
-             local line_end = buffer.line_from_position(end_)
-             local pat = M.lang.indents.xml.indent
-             local dpat = M.lang.indents.xml.dedent
-             
-             local indent_inc = 2
-             local next_indent = nil
-             -- If this isn't the first line, then get the indent
-             -- from the previous line
-             if line_start > 1 then
-               local prev_line = buffer:get_line(line_start-1)
-               local prev_indent = prev_line:match(" *()")
-               next_indent = prev_indent + pat:match(prev_line)
-             end
-             for lineno=line_start,line_end do
-                 local line = buffer:get_line(lineno)
-                 local indent_delta = pat:match(line)
-                 -- re-indent this line
-                 if next_indent then
-                     local this_indent = next_indent
-                     -- Special case - looking at this line may
-                     -- make us want to dedent (eg closing brace/tag)
-                     this_indent = this_indent + indent_inc * dpat:match(line)
-                     line = line:gsub("^%s*", (" "):rep(this_indent))
-                     buffer:set_selection(buffer:position_from_line(lineno+1),
-                                          buffer:position_from_line(lineno))
-                     buffer:replace_sel(line)
-                 else
-                     next_indent = 0
-                 end
-                 next_indent = next_indent + indent_inc * indent_delta
-             end
-           end
-           state.pending_command = '='
-         end,
-
+         ['='] = with_motion({
+           ['='] = { MOV_LINE, vi_motion.sel_line, 1 },
+         }, vi_ops.reindent),
+         
         p = function()
             -- Paste a new line.
             do_action(repeatable(function() vi_paste(true) end))

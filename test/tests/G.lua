@@ -15,3 +15,16 @@ for i=1,12,3 do
    end
    assertEq(lineno(), i-1)
 end
+-- Delete lines 3-5.
+test.keys('3Gd5G')
+assertEq(buffer:get_text(), [[
+
+a
+aaaa
+aaa
+aa
+a
+
+a
+aa
+aaa]])
