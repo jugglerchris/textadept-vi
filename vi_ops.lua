@@ -16,4 +16,18 @@ function M.cut(start, end_, mtype, register)
     state.registers[register or '"'] = {text=text, line=linewise}
 end
 
+function M.indent(start, end_, mtype)
+    buffer:set_sel(start, end_)
+    buffer:tab()
+    buffer:clear_selections()
+    buffer:goto_pos(buffer.line_indent_position[buffer:line_from_position(start)])
+end
+
+function M.undent(start, end_, mtype)
+    buffer:set_sel(start, end_)
+    buffer:back_tab()
+    buffer:clear_selections()
+    buffer:goto_pos(buffer.line_indent_position[buffer:line_from_position(start)])
+end
+
 return M

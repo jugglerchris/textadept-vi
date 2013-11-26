@@ -1013,6 +1013,13 @@ mode_command = {
             do_keys('c', '$')
         end,
 
+        ['>'] = with_motion({
+          ['>'] = { MOV_LINE, vi_motions.sel_line, 1 },
+        }, vi_ops.indent),
+        ['<'] = with_motion({
+          ['<'] = { MOV_LINE, vi_motions.sel_line, 1 },
+        }, vi_ops.undent),
+         
         x = function()
             do_action(function(rept)
                 local here = buffer.current_pos
@@ -1030,15 +1037,6 @@ mode_command = {
             end)
       end,
 
-         ['>'] = function()
-              -- TODO: add support for >> (ideally generically)
-                state.pending_action = function(start, end_)
-                    buffer.set_sel(start, end_)
-                    buffer.tab()
-                end
-              state.pending_command = '>'
-         end,
-         
          -- Re-indent the range
          ['='] = function()
            state.pending_action = function(start, end_)
