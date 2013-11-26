@@ -131,6 +131,14 @@ function M.err(msg)
     state.errmsg = msg
 end
 
+function enter_replace()
+  enter_mode(mode_insert)
+  buffer.overtype = true
+  mode_command.restart = function()
+      buffer.overtype = false
+  end
+end
+
 function update_status()
     local err = state.errmsg
     local msg
@@ -857,6 +865,7 @@ mode_command = {
             enter_insert_then_end_undo(post_insert(ins_new_line))
         end,
         r = handle_r,
+        R = enter_replace,
         ['~'] = function()
             do_action(function(rpt)
               local here = buffer.current_pos
