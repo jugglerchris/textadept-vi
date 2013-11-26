@@ -86,11 +86,11 @@ local function close_siblings_of(v, ts)
     end
 end
 
--- Find files matching a Lua pattern
+-- Find files matching a Lua pattern (or a string match)
 local function find_matching_files(pattern)
     local results = {}
     local function f(filename)
-        if filename:match(pattern) then
+        if filename:match(pattern) or filename:find(pattern, 1, true) then
             results[#results+1] = filename
         end
     end
