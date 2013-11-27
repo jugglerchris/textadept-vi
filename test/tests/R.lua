@@ -15,6 +15,10 @@ assertEq(buffer:get_line(0), 'ABC two three four fivZYX\n')
 test.key('G', '$', 'R', 'J', 'K', 'L', 'escape')
 assertEq(lineno(), 2) assertEq(colno(), 24)
 assertEq(buffer:get_line(2), 'some miscellaneous texJKL')
+-- repeat action
+test.keys('^.')
+assertEq(lineno(), 2) assertEq(colno(), 2)
+assertEq(buffer:get_line(2), 'JKLe miscellaneous texJKL')
 
 -- Test with repeats
 test.keys('1G0')

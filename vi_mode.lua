@@ -445,7 +445,7 @@ function M.enter_insert_then_end_undo(cb)
     local rpt = 1
     if state.numarg > 0 then
         rpt = state.numarg
-        start.numarg = 0
+        state.numarg = 0
     end
     state.last_numarg = rpt
         
@@ -462,6 +462,40 @@ local enter_insert_then_end_undo = M.enter_insert_then_end_undo
 local function enter_insert_with_undo(cb)
     begin_undo()
     enter_insert_then_end_undo(cb)
+end
+
+local function enter_replace_with_undo(cb)
+    begin_undo()
+    buffer.overtype = true
+    enter_insert_then_end_undo(cb)
+end
+
+--- Function to be called after a replace mode operation.
+function M.post_replace()
+  return function()
+          -- This function is run when exiting from undo
+          buffer.overtype = false
+          
+          state.last_action = function(rpt)
+            local rpt = rpt
+            if rpt < 1 then rpt = 1 end
+            begin_undo()
+            local pos = buffer.current_pos
+            local s = state.last_insert_string
+            local slen = s:len()
+            for i=1,rpt do
+                local line_end = buffer.line_end_position[buffer:line_from_position(pos)]
+                local endpos = pos + slen
+                if endpos > line_end then endpos = line_end end
+                buffer:set_selection(pos, endpos)
+                buffer:replace_sel(s)
+                pos = pos + slen
+            end
+            buffer:clear_selections()
+            end_undo()
+            buffer:goto_pos(pos-1)
+          end
+        end
 end
 
 --- Function to be called after an insert mode operation.
@@ -865,7 +899,7 @@ mode_command = {
             enter_insert_then_end_undo(post_insert(ins_new_line))
         end,
         r = handle_r,
-        R = enter_replace,
+        R = function() enter_replace_with_undo(M.post_replace()) end,
         ['~'] = function()
             do_action(function(rpt)
               local here = buffer.current_pos
