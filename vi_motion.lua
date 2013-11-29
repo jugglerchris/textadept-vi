@@ -12,28 +12,21 @@ local vi_motions = require 'vi_motions'
 --   tab: the table to wrap
 --   f:   function to modify the value from tab.
 local function wrap_table(tab, f)
-    return setmetatable({wrapped=1}, {
+    result = setmetatable({wrapped=1, tt=tab}, {
         __index = function(t, k)
             local m = tab[k]
             
             if m == nil then
                 return nil
             elseif type(m) == 'table' and m[1] == nil then
-                -- TODO: will this work and save a table creation?:
-                --   tab = m
-                --   return t
                 return wrap_table(m, f)
             else
                 -- Return a (possibly modified) value.
-                do
-                    local fm = f(m)
-                    
-                    return fm
-                end
                 return f(m)
             end
         end,
     })
+    return result
 end
 
 M.wrap_table = wrap_table
@@ -101,27 +94,36 @@ local digits = {}
 for i=0,9 do
     digits[i..''] = true
 end
-local PREFIX_COUNT = {} -- unique table key
+local PREFIX_COUNT = 'laksdjfasdlf' --{} -- unique table key
 local function index_digits(t, k)
     -- Intercept numbers to return an wrapped version.
     if digits[k] then
         local precount = t[PREFIX_COUNT]
-        if precount ~= nil and k == '0' then
+        if precount == nil and k == '0' then
             return MOTION_ZERO -- special case - 0 is a motion by itself.
         end
         
         -- Rely on the master table never having PREFIX_COUNT.
         if precount == nil then
+            local wrapped = t
             -- If this is the first digit, return a wrapped table
             local newtab = setmetatable({}, {
-                __index=function(t, k)
-                    local res = motions[k]
-                    if type(res)=='table' and res[1] then
-                      -- This is a motion, so apply the multiple
-                      res = { res[1], res[2], t[PREFIX_COUNT] }
+                --__index=wrapped,
+                __index = function(wt, k)
+                    -- We already have a prefix count, so increment it.
+                    if digits[k] then
+                        wt[PREFIX_COUNT] = wt[PREFIX_COUNT] * 10 + (k+0)
+                        return t
+                    else
+                        local res = wrapped[k]
+                        
+                        if type(res)=='table' and res[1] then
+                            -- This is a motion, so apply the multiple
+                            res = { res[1], res[2], wt[PREFIX_COUNT] }
+                        end
+                        return res
                     end
-                    return res or index_digits(t, k)
-                end })
+                end})
             t = newtab
             precount = 0
         end

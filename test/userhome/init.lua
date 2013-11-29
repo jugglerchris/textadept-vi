@@ -2,12 +2,15 @@ ok, msg = xpcall(function()
 -- Make textadept-vi available
 package.path = _USERHOME .. "/../../?.lua;".._USERHOME .. "/../scripts/?.lua;" .. package.path
 
+function _G.cme_log(...) end
+
 test = require 'test'
 
 vi_mode = require 'vi_mode'
 
 test.queue(function()
     test.run('empty')
+    test.run('count')
     test.run('jk')
     test.run('hl')
     test.run('cols')

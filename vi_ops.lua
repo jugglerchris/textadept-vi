@@ -66,4 +66,101 @@ function M.reindent(start, end_, mtype)
     end
 end
 
+local function wrap_lines(lines, width)
+  local alltext = table.concat(lines, " ")
+  local result = {}
+
+  local linelen = 0 -- length of this line
+  local line = {} -- parts of this line
+  local sentence_end = false
+
+  for word in string.gmatch(alltext, "[^%s]+") do
+      local newlen = linelen + string.len(word) + 1
+      if linelen > 0 and newlen > width then
+          -- Doesn't fit, so start a new line
+          table.insert(result, table.concat(line, " "))
+          line = {}
+          linelen = 0
+          newlen = string.len(word)
+      end
+
+      -- double space after sentence endings, if not at end of line.
+      if linelen > 0 and sentence_end then
+          word = ' '..word
+          newlen = newlen + 1
+      end
+      table.insert(line, word)
+      sentence_end = (word:sub(-1) == '.')
+      linelen = newlen
+  end
+  if linelen > 0 then
+    table.insert(result, table.concat(line, " "))
+  end
+  return result
+end
+
+function M.wrap(start, end_)
+    local width = 78 -- FIXME: configurable
+    local line_start = buffer.line_from_position(start)
+    local line_end = buffer.line_from_position(end_)
+    local pos_start = buffer.position_from_line(line_start)
+    local pos_end = buffer.position_from_line(line_end) +
+                    buffer.line_length(line_end)
+
+    local prefix = nil
+    local lines_to_wrap = {}
+
+    while line_start <= (line_end+1) do
+        local line, new_prefix
+        if line_start <= line_end then
+            line = buffer.get_line(line_start)
+            new_prefix = string.match(line, "^[>| ]*")
+        else
+            -- A dummy end iteration to output the result
+            line = "dummy line"
+            new_prefix = "invalid prefix"
+        end
+        if prefix == nil then prefix = new_prefix end
+        local is_blank = line:sub(prefix:len()):match("^%s*$")
+        if new_prefix ~= prefix or is_blank then
+            -- New prefix; Emit previous wrapped lines and
+            -- start again
+            local endpos = buffer.position_from_line(line_start)
+            local new_lines = wrap_lines(lines_to_wrap, width-string.len(prefix))
+            local new_parts = {}
+            for _,l in ipairs(new_lines) do
+                table.insert(new_parts,prefix)
+                table.insert(new_parts,l)
+                table.insert(new_parts,"\n")
+            end
+            buffer.set_selection(pos_start, endpos)
+            local orig_end_line = buffer.line_from_position(endpos)
+            local new_text = table.concat(new_parts)
+            buffer.replace_sel(new_text)
+            pos_start = buffer.selection_end
+            local new_end_line = buffer.line_from_position(pos_start)
+                                 buffer.clear_selections()
+
+            -- Adjust line counts after wrapping text
+            line_start = line_start + (new_end_line - orig_end_line)
+            line_end= line_end + (new_end_line - orig_end_line)
+
+            prefix = new_prefix
+            lines_to_wrap = {}
+            buffer.goto_pos(pos_start)
+            buffer.line_up()
+        end
+        line_start = line_start + 1
+        -- If we're on a blank, then skip to the next line
+        if is_blank then
+            pos_start = buffer:position_from_line(line_start)
+        else
+          -- Otherwise add the line and keep looking
+          table.insert(lines_to_wrap,
+                       string.sub(line, string.len(prefix)))
+        end
+    end
+    buffer.goto_pos(start)
+end
+
 return M

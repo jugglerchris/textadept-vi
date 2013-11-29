@@ -1,4 +1,3 @@
--- Implementations of the motion functions.
 local M = {}
 
 local vi_ta_util = require 'vi_ta_util'
@@ -97,6 +96,10 @@ end
          buffer:word_right_end()
      end
      buffer.char_left()
+end
+
+function M.line_start(rep)
+    buffer:home()
 end
 
 -- Move to the end of the line

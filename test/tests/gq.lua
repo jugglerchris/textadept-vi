@@ -25,11 +25,12 @@ assertEq(buffer:get_text(), [[
 this is a paragraph
 
 this is a paragraph with a long line.  There are sentence breaks inside the
-line, and it goes on and on and on.  For at least three lines.  This should
-be wrapped to separate lines.
+line, and it goes on and on and on.  For at least three lines.  This should be
+wrapped to separate lines.
 
 this is a paragraph with a long line.  There are sentence breaks inside the
-line, and it goes on and on and on.  For at least three lines.  This should
-be wrapped to separate lines.  This paragraph also has a second line.
+line, and it goes on and on and on.  For at least three lines.  This should be
+wrapped to separate lines.  This paragraph also has a second line.
 
-And this third is a separate paragraph.]])
+And this third is a separate paragraph.
+]])
