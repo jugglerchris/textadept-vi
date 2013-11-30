@@ -88,6 +88,7 @@ local motions = {
   ['$'] = { MOV_INC, vi_motions.line_end, 1 },
   G = { MOV_LINE, vi_motions.goto_line, -1},
   ["'"] = wrap_table(registers, restore_mark),
+  ['%'] = { MOV_INC, vi_motions.match_brace, 1 },
 }
 local MOTION_ZERO = { MOV_EXC, vi_motions.line_start, 1 }
 local digits = {}

@@ -10,6 +10,26 @@ end
 --  If the register is not specified, use the unnamed register ("").
 function M.cut(start, end_, mtype, register)
     local linewise = mtype == 'linewise'
+    if not linewise then
+        -- If start/end_ are on different lines and there would only be
+        -- whitespace left after the delete, then change to linewise.
+        local sline = buffer:line_from_position(start)
+        local eline = buffer:line_from_position(end_)
+        if sline ~= eline then
+            local sline_start = buffer:position_from_line(sline)
+            local prestart = buffer:get_line(sline):sub(1, start-sline_start)
+            
+            local eline_start = buffer:position_from_line(eline)
+            local postend = buffer:get_line(eline):sub(end_-eline_start+1)
+
+            if prestart:match('^%s*$') and postend:match('^%s*$') then
+                -- Switch to linewise
+                linewise = true
+                start = sline_start
+                end_ = eline_start + buffer:line_length(eline)
+            end
+        end
+    end
     buffer:set_sel(start, end_)
     local text = buffer.get_sel_text()
     buffer.cut()

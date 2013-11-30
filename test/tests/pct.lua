@@ -78,3 +78,8 @@ for _,v in ipairs(matches) do
         end
     end
 end
+
+-- Try with an action
+assertEq(buffer.line_count, 19)
+test.keys('2Gd%')
+assertEq(buffer.line_count, 10)
