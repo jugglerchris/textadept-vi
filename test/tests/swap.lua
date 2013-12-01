@@ -34,8 +34,7 @@ test.keys('wll')
 test.keys('dawwP')
 assertEq(buffer:get_line(0), 'one two four htree five\n')
 assertEq(colno(), 18)
--- TODO: add dawbP (swap word with previous) and dawwP/dawelp (with next)
--- when implemented.
+
 test.keys('bbl')
 test.keys('dawelp')
 assertEq(buffer:get_line(0), 'one two htree four five\n')

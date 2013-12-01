@@ -208,6 +208,9 @@ local function vi_paste(after, register)
         if after then pos = pos + 1 end
     end
     buffer:insert_text(pos, buf.text)
+    if not buf.line then
+        buffer:goto_pos(pos + buf.text:len()-1)
+    end
 end
 
 -- Return the inserted text.  Can be called immediately after returning

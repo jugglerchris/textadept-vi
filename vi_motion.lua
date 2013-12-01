@@ -165,8 +165,16 @@ end
 -- Each entry is a function returning (start, end) positions.
 local sel_motions = setmetatable({
   a = {
-    w = function() return 'word' end,
-    W = function() return 'WORD' end,
+      w = { MOV_EXC, function()
+             local pos = buffer.current_pos
+             local s = buffer:word_start_position(pos, true)
+             buffer:search_anchor()
+             local e = buffer:search_next(buffer.FIND_REGEXP, "\\s\\w") + 1
+             
+             return s, e
+          end, 1},
+--    w = function() return 'word' end,
+--    W = function() return 'WORD' end,
   },
 }, {
   __index=wrap_table(motions, M.movf_to_self),
