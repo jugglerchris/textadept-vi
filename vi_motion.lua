@@ -173,7 +173,16 @@ local sel_motions = setmetatable({
              
              return s, e
           end, 1},
---    w = function() return 'word' end,
+--    W = function() return 'WORD' end,
+  },
+  i = {
+      w = { MOV_EXC, function()
+             local pos = buffer.current_pos
+             local s = buffer:word_start_position(pos, true)
+             local e = buffer:word_end_position(pos)
+             
+             return s, e
+          end, 1},
 --    W = function() return 'WORD' end,
   },
 }, {

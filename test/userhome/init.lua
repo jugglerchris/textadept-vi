@@ -48,6 +48,7 @@ test.queue(function()
     test.run('fold')
     test.run('cz')     -- suspend
     test.run('swap')
+    test.run('ai')  -- aw, iw, etc.
     test.physkey('c-q')
 end)
 
