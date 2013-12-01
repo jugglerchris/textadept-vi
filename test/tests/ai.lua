@@ -3,7 +3,7 @@ local lineno = test.lineno
 local colno = test.colno
 local assertEq = test.assertEq
 
-test.key('jwl')
+test.keys('jwl')
 -- aw
 test.keys('daw')
 assertEq(buffer:get_cur_line(), 'hey cee dee ee eff\n')
