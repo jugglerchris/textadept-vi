@@ -120,7 +120,7 @@ function M.goto_tag(tag)
         if pos >= 0 then
             buffer.goto_pos(pos)
         else
-            gui.statusbar_text = "Not found: " .. pat
+            ui.statusbar_text = "Not found: " .. pat
         end
         return
     end
