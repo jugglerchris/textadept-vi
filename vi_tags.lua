@@ -5,6 +5,7 @@ local state = {
     tagstack = {},-- current tag stack: list of { i=num, tags={tag list} }
     tagidx = 0,   -- index into tagstack of current level
     lasttag = nil,-- last tag list
+    timestamp = nil, -- tags file modification time.
 }
 M.state = state
 
@@ -14,6 +15,7 @@ local function load_tags()
     local results = {}
     local pat = "^([^\t]*)\t([^\t]*)\t(.*)$"
     if tagf then
+      state.timestamp = lfs.attributes("tags", "modification")
       for line in tagf:lines() do
           local tname, fname, excmd = line:match(pat)
           local flags
@@ -42,7 +44,7 @@ end
 -- Return or load the tags
 local function get_tags()
     -- TODO: check if tags file needs reloading
-    if state.tags == nil then
+    if state.tags == nil or lfs.attributes("tags", "modification") ~= state.timestamp then
         load_tags()
     end
     return state.tags
