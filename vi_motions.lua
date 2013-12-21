@@ -98,8 +98,15 @@ end
      buffer.char_left()
 end
 
+-- Go to column 0
 function M.line_start(rep)
     buffer:home()
+end
+
+-- Go to first non-blank on line, or if there to first column.
+function M.line_beg(rep)
+    buffer.home()    -- Go to beginning of line
+    buffer.vc_home()  -- swaps between beginning/first visible
 end
 
 -- Move to the end of the line

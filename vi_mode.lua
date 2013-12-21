@@ -759,10 +759,6 @@ mode_command = {
 	['7'] = dodigit(7),
 	['8'] = dodigit(8),
 	['9'] = dodigit(9),
-	['^'] = mk_movement(function()
-		   buffer.home()    -- Go to beginning of line
-		   buffer.vc_home()  -- swaps between beginning/first visible
-                end, MOV_EXC),
 
 	-- edit mode commands
         i = function() enter_insert_with_undo(post_insert(function() end)) end,
