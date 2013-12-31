@@ -63,8 +63,8 @@ function M.reindent(start, end_, mtype)
     -- from the previous line
     if line_start > 0 then
         local prev_line = buffer:get_line(line_start-1)
-        local prev_indent = prev_line:match(" *()")
-        next_indent = prev_indent + pat:match(prev_line)
+        local prev_indent = prev_line:match(" *()") - 1
+        next_indent = prev_indent + indent_inc * pat:match(prev_line)
     end
     for lineno=line_start,line_end do
         local line = buffer:get_line(lineno)

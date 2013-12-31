@@ -20,3 +20,6 @@ test.key('u')
 assertEq(get_indents(), {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0})
 test.keys('2G==')
 assertEq(get_indents(), {0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0})
+-- Regression test: this was returning ...,2,1,0.
+test.keys('u11G==12G==')
+assertEq(get_indents(), {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0})
