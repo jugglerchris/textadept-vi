@@ -907,7 +907,7 @@ mode_command = {
 
          -- Re-indent the range
          ['='] = with_motion({
-           ['='] = { MOV_LINE, vi_motion.sel_line, 1 },
+           ['='] = { MOV_LINE, vi_motions.sel_line, 1 },
          }, vi_ops.reindent),
          
         p = function()

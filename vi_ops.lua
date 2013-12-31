@@ -53,7 +53,7 @@ end
 -- Auto indent
 function M.reindent(start, end_, mtype)
     local line_start = buffer.line_from_position(start)
-    local line_end = buffer.line_from_position(end_)
+    local line_end = buffer.line_from_position(end_-1)
     local pat = vi_mode.lang.indents.xml.indent
     local dpat = vi_mode.lang.indents.xml.dedent
 
@@ -61,7 +61,7 @@ function M.reindent(start, end_, mtype)
     local next_indent = nil
     -- If this isn't the first line, then get the indent
     -- from the previous line
-    if line_start > 1 then
+    if line_start > 0 then
         local prev_line = buffer:get_line(line_start-1)
         local prev_indent = prev_line:match(" *()")
         next_indent = prev_indent + pat:match(prev_line)

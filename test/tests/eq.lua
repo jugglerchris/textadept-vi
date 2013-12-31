@@ -18,3 +18,5 @@ end
 assertEq(get_indents(), {0, 2, 2, 4, 4, 4, 4, 4, 4, 2, 4, 2, 0})
 test.key('u')
 assertEq(get_indents(), {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0})
+test.keys('2G==')
+assertEq(get_indents(), {0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0})
