@@ -263,11 +263,17 @@ function M.tostring(a)
 end
 
 --- Assert that a and b are equal.  Tables are equal if their keys
---  and values are equal.  REturns true or calls error()
-function M.assertEq(a, b)
+--  and values are equal.  Calls error() with level to report an error.
+local function assertEqLevel(a, b, level)
     if not eq(a,b) then
-        error("Failed assertion: [["..M.tostring(a).."]] != [["..M.tostring(b).."]]\n", 2)
+        error("Failed assertion: [["..M.tostring(a).."]] != [["..M.tostring(b).."]]\n", level)
     end
+end
+
+--- Assert that a and b are equal.  Tables are equal if their keys
+--  and values are equal.  REturns true or calls error().  
+function M.assertEq(a, b)
+    return assertEqLevel(a, b, 3)
 end
 
 -- Open a test file in the current view
@@ -306,6 +312,14 @@ function M.physkey(key)
     tmux:flush()
 end
 
+-- Send a string of characters to physkey (without the coroutine processing).
+function M.physkeys(s)
+    local keys = {}
+    for i=1,s:len() do
+       M.physkey(s:sub(i,i))
+    end
+end
+
 -- Read the current screen contents (defaulting to the whole screen).
 function M.getscreen(first, last)
     first = first or 0
@@ -322,5 +336,11 @@ end
 function M.lineno() return buffer:line_from_position(buffer.current_pos) end
 
 function M.colno() return buffer.column[buffer.current_pos] end
+
+-- Assert an absolute position
+function M.assertAt(line, col)
+    assertEqLevel(line, M.lineno(), 3)
+    assertEqLevel(col, M.colno(), 3)
+end
 
 return M
