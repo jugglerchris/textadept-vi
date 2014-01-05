@@ -42,3 +42,9 @@ test.keys('n')
 assertAt(0, 0)
 test.keys('w#')
 assertAt(2, 4)
+
+-- And test with an action
+test.keys('1Gd')
+test.physkeys('/some')
+test.key('enter')
+assertEq(buffer:get_text(), 'some miscellaneous text')
