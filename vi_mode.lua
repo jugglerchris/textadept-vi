@@ -937,10 +937,6 @@ mode_command = {
 	['ce']= function() ui.command_entry.enter_mode('lua_command') end,
 	['/'] = function() M.search_mode.start(enter_command) end,
 	['?'] = function() M.search_mode.start_rev(enter_command) end,
-        n = M.search_mode.restart,
-        N = M.search_mode.restart_rev,
-        ['*'] = M.search_mode.search_word,
-        ['#'] = M.search_mode.search_word_rev,
         
     -- Tags
     ['c]'] = function()

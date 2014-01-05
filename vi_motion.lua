@@ -90,6 +90,12 @@ local motions = {
   G = { MOV_LINE, vi_motions.goto_line, -1},
   ["'"] = wrap_table(registers, restore_mark),
   ['%'] = { MOV_INC, vi_motions.match_brace, 1 },
+  
+  -- Search motions
+  n = { MOV_EXC, r(vi_motions.search_next), 1 },
+  N = { MOV_EXC, r(vi_motions.search_prev), 1 },
+  ['*'] = { MOV_EXC, r(vi_motions.search_word_next), 1 },
+  ['#'] = { MOV_EXC, r(vi_motions.search_word_prev), 1 },
 }
 local MOTION_ZERO = { MOV_EXC, vi_motions.line_start, 1 }
 local digits = {}

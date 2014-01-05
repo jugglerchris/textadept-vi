@@ -221,7 +221,25 @@ function M.match_brace()
        end
        return
    end
-     
 end
 
+--- Redo the previous search
+function M.search_next()
+    vi_mode.search_mode.restart()
+end
+
+-- Redo the previous search in the opposite direction.
+function M.search_prev()
+    vi_mode.search_mode.restart_rev()
+end
+
+--- Search forward for the word under the cursor
+function M.search_word_next()
+    vi_mode.search_mode.search_word()
+end
+
+--- Search backwards for the word under the cursor
+function M.search_word_prev()
+    vi_mode.search_mode.search_word_rev()
+end
 return M
