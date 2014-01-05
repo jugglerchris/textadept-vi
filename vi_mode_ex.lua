@@ -155,11 +155,6 @@ M.ex_commands = {
     p = function(args)
          view:goto_buffer(-1, true)
     end,
-    c = function(args)
-        -- Leave the command entry open
-        ui.command_entry.focus()
-        return true
-    end,
     b = function(args)
         if #args > 1 then
             local bufname = args[2]
