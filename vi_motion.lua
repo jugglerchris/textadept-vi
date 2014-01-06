@@ -36,6 +36,11 @@ MOV_LINE = 'linewise'
 MOV_INC = 'inclusive'
 MOV_EXC = 'exclusive'
 
+-- Postponed movement.  The movement isn't complete (eg a search needs entering), and should
+-- be called with a continuation function, which will be called back later with the actual
+-- movement.
+MOV_LATER = 'later'
+
 -- Wrap a simple movement (eg word right) into one which takes a repeat
 -- count.
 local function r(f)
@@ -96,6 +101,8 @@ local motions = {
   N = { MOV_EXC, r(vi_motions.search_prev), 1 },
   ['*'] = { MOV_EXC, r(vi_motions.search_word_next), 1 },
   ['#'] = { MOV_EXC, r(vi_motions.search_word_prev), 1 },
+  ['/'] = { MOV_LATER, vi_motions.search_fwd, 1 },
+  ['?'] = { MOV_LATER, vi_motions.search_back, 1 },
 }
 local MOTION_ZERO = { MOV_EXC, vi_motions.line_start, 1 }
 local digits = {}

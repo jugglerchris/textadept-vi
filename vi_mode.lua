@@ -349,6 +349,7 @@ end
 MOV_LINE = 'linewise'
 MOV_INC = 'inclusive'
 MOV_EXC = 'exclusive'
+MOV_LATER = 'later'
 MOV_TYPES = {
   [MOV_LINE] = true,
   [MOV_INC] = true,
@@ -584,21 +585,34 @@ end
 --       The handler should do its action.  The system will take care of
 --       saving the action to repeat, and undo/redo.
 local function with_motion(actions, handler)
-    wrapped_handler = function(movdesc)
-       return function()
-           local cmdrpt = get_numarg()
-           local movtype = movdesc[1]
-           local start, end_ = movdesc_get_range(movdesc, nil, cmdrpt)
+    local function apply_action(mdesc)
+       local cmdrpt = get_numarg()
+       local movtype = mdesc[1]
+       local start, end_ = movdesc_get_range(mdesc, nil, cmdrpt)
+       begin_undo()
+       handler(start, end_, movtype)
+       end_undo()
+       
+       state.last_action = function(rpt)
+           local start, end_ = movdesc_get_range(mdesc, rpt, 1)
            begin_undo()
            handler(start, end_, movtype)
            end_undo()
-           
-           state.last_action = function(rpt)
-               local start, end_ = movdesc_get_range(movdesc, rpt, 1)
-               begin_undo()
-               handler(start, end_, movtype)
-               end_undo()
-           end
+       end
+    end
+    wrapped_handler = function(movdesc)
+       if movdesc[1] == MOV_LATER then
+         -- Special case - we don't get the action until later.
+         return function()
+            local mov_f = movdesc[2]
+            mov_f(function (mdesc)
+              apply_action(vi_motion.movf_to_self(mdesc))
+            end)
+         end
+       else
+         return function()
+           apply_action(movdesc)
+         end
        end
     end
     return vi_motion.bind_motions(actions, wrapped_handler)
@@ -935,8 +949,6 @@ mode_command = {
 	-- Enter ex mode command
 	[':'] = function() M.ex_mode.start(enter_command) end,
 	['ce']= function() ui.command_entry.enter_mode('lua_command') end,
-	['/'] = function() M.search_mode.start(enter_command) end,
-	['?'] = function() M.search_mode.start_rev(enter_command) end,
         
     -- Tags
     ['c]'] = function()
@@ -1008,13 +1020,23 @@ if M.vi_global then
   -- Convert a motion table to a key function
   local function motion2key(movdesc)
      local movtype, mov_f, rep = table.unpack(movdesc)
-
-     return function()
-                local rpt = get_numarg()
-                if not(rpt and rpt > 0) then rpt = rep end
-                mov_f(rpt)
-                if movtype ~= MOV_LINE then buf_state(buffer).col = nil end
-            end
+     
+     if movtype == MOV_LATER then
+       -- Call the movement function with the right count.
+       return function()
+         mov_f(function (md)
+           motion2key(md)()
+         end)
+       end
+     else
+       -- Call the movement function with the right count.
+       return function()
+                  local rpt = get_numarg()
+                  if not(rpt and rpt > 0) then rpt = rep end
+                  mov_f(rpt)
+                  if movtype ~= MOV_LINE then buf_state(buffer).col = nil end
+              end
+     end
   end
   -- Delegate to the motion commands.
   setmetatable(keys, {

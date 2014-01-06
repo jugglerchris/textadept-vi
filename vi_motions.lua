@@ -242,4 +242,21 @@ end
 function M.search_word_prev()
     vi_mode.search_mode.search_word_rev()
 end
+
+--- Begin search mode (entering a pattern).
+--  cb will be called later with or a movement description.
+function M.search_fwd(cb)
+    vi_mode.search_mode.start(function(movf)
+        cb({ 'exclusive', movf, 1 })
+    end)
+end
+
+--- Begin search mode backwards (entering a pattern).
+--  cb will be called later with or a movement description.
+function M.search_back(cb)
+    vi_mode.search_mode.start_rev(function(movf)
+        cb({ 'exclusive', movf, 1 })
+    end)
+end
+
 return M

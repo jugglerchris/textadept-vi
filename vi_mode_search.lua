@@ -120,14 +120,16 @@ end
 local ui_ce = ui.command_entry
 keys.vi_search_command = {
     ['\n'] = function ()
-              local exit = state.exitfunc
+              local exitfunc = state.exitfunc
               state.exitfunc = nil
               return ui_ce.finish_mode(function(text)
                                    if string.len(text) == 0 then
                                        text = state.pattern
                                    end
-                                   handle_search_command(text)
-                                   exit()
+                                   exitfunc(function()
+                                       state.pattern = text
+                                       do_search(state.backwards)
+                                   end)
                                end)
             end,
     cv = {
