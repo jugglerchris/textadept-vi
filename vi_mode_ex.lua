@@ -253,6 +253,8 @@ M.ex_commands = {
         local pat = args[2]
         if not pat then return end
         
+        local root = args[3] or '.'
+        
         local results = {}
         
         local function search(filename)
@@ -270,7 +272,7 @@ M.ex_commands = {
             end
             f:close()
         end
-        lfs.dir_foreach('.', search, _G.vifilter, false)
+        lfs.dir_foreach(root, search, _G.vifilter, false)
         if #results == 0 then
             ex_error("No matches found.")
         else
