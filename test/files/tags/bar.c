@@ -1,0 +1,5 @@
+int bar
+{
+    foo();
+    FOO();
+}
