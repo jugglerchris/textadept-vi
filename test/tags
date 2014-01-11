@@ -4,7 +4,7 @@
 !_TAG_PROGRAM_NAME	Exuberant Ctags	//
 !_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
 !_TAG_PROGRAM_VERSION	5.9~svn20110310	//
-FOO	foo.h	1;"	d
-f	bar.c	/^int f()$/;"	f
-foo	foo.c	/^int foo(int)$/;"	f
-foo	foo.c	/^int foo(void)$/;"	f
+FOO	files/tags/foo.h	1;"	d
+f	files/tags/bar.c	/^int f()$/;"	f
+foo	files/tags/foo.c	/^int foo(int)$/;"	f
+foo	files/tags/foo.c	/^int foo(void)$/;"	f
