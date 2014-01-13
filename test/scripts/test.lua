@@ -135,13 +135,22 @@ function M.run(testname)
         
     end
     -- Close any buffers opened for the test.
+    -- First, get a list of the buffers; if we close them during the
+    -- iteration, the table is modified and indices change, so we just
+    -- make a note and do it afterwards.
+    local toclose = {}
     for i,buf in ipairs(_G._BUFFERS) do
         if buf._vitest_owned then
-            view:goto_buffer(i)
-            buffer:set_save_point()  -- assert not dirty
-            if not io.close_buffer(buf) then
-                log('Error closing buffer ' .. tostring(buffer.filename))
-            end
+            toclose[#toclose+1] = buf
+        end
+    end
+    -- now actually close.
+    for k, buf in ipairs(toclose) do
+        -- convert back from buffer to index using _G._BUFFERS.
+        view:goto_buffer(_G._BUFFERS[buf])
+        buffer:set_save_point()  -- assert not dirty
+        if not io.close_buffer(buf) then
+            log('Error closing buffer ' .. tostring(buffer.filename))
         end
     end
     -- Close any splits
