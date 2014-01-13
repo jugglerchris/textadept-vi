@@ -158,7 +158,7 @@ function M.report()
     if failures > 0 then
       log("End of tests: "..
           green(passes.." pass ("..(100.0 * passes/(passes+failures)).."%)")..
-          ", "..red(failures.." FAIL ("..(100.0 * failures/(passes+failures))..")\n"))
+          ", "..red(failures.." FAIL ("..(100.0 * failures/(passes+failures)).."%)\n"))
     else
       log("End of tests: all "..green(passes.." passed\n"))
     end
@@ -273,12 +273,12 @@ end
 --- Assert that a and b are equal.  Tables are equal if their keys
 --  and values are equal.  REturns true or calls error().  
 function M.assertEq(a, b)
-    return assertEqLevel(a, b, 3)
+    return assertEqLevel(a, b, 2)
 end
 
 -- Open a test file in the current view
 function M.open(filebase)
-    local filename = _USERHOME .. "/../files/"..filebase
+    local filename = "files/"..filebase
     io.open_file(filename)
     buffer._vitest_owned = true
 end
