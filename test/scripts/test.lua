@@ -140,7 +140,7 @@ function M.run(testname)
     -- make a note and do it afterwards.
     local toclose = {}
     for i,buf in ipairs(_G._BUFFERS) do
-        if buf._vitest_owned then
+        if buf.filename then
             toclose[#toclose+1] = buf
         end
     end
@@ -327,6 +327,12 @@ function M.physkeys(s)
     for i=1,s:len() do
        M.physkey(s:sub(i,i))
     end
+end
+
+-- Send an arbitrary tmux command
+function M.tmux(s)
+    tmux:write(s .. '\n')
+    tmux:flush()
 end
 
 -- Read the current screen contents (defaulting to the whole screen).

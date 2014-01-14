@@ -1,6 +1,7 @@
 ok, msg = xpcall(function()
 -- Make textadept-vi available
 package.path = _USERHOME .. "/../../?.lua;".._USERHOME .. "/../scripts/?.lua;" .. package.path
+package.cpath = _USERHOME .. "/../../extension/?.so;"..package.cpath
 
 function _G.cme_log(...) end
 
@@ -49,7 +50,13 @@ test.queue(function()
     test.run('cz')     -- suspend
     test.run('swap')
     test.run('ai')  -- aw, iw, etc.
-    test.physkey('c-q')
+    -- signal the end of the test
+    io.open("output/results.txt", "a"):write("Finished\n"):flush()
+    io.open("output/sem.fifo", "w"):write("Finished\n"):flush()
+    
+    test.log('killing myself')
+    
+    test.tmux('kill-pane')
 end)
 
 
