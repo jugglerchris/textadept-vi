@@ -11,6 +11,7 @@ M.state = state
 
 -- Load a tags file
 local function load_tags()
+    vi_mode.err("Loading tags file...")
     local tagf = io.open("tags") -- TODO: configurable tags file location
     local results = {}
     local pat = "^([^\t]*)\t([^\t]*)\t(.*)$"
@@ -118,11 +119,11 @@ function M.goto_tag(tag)
         pat = pat:match("^^?(.-)$?$")
         buffer.current_pos = 0
         buffer.search_anchor()
-        local pos = buffer.search_next(0, pat)
+        local pos = buffer:search_next(buffer.FIND_REGEXP, pat)
         if pos >= 0 then
             buffer.goto_pos(pos)
         else
-            ui.statusbar_text = "Not found: " .. pat
+            vi_mode.err("Not found: " .. pat)
         end
         return
     end
