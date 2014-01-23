@@ -75,7 +75,14 @@ function M.reindent(start, end_, mtype)
             -- Special case - looking at this line may
             -- make us want to dedent (eg closing brace/tag)
             this_indent = this_indent + indent_inc * dpat:match(line)
-            line = line:gsub("^%s*", (" "):rep(this_indent))
+            
+            -- also, replace any whitespace-only line with a blank line.
+            -- (newlines are inluded here)
+            if line:match('^%s*$') then
+                line = '\n'
+            else
+                line = line:gsub("^%s*", (" "):rep(this_indent))
+            end
             buffer:set_selection(buffer:position_from_line(lineno+1),
                                  buffer:position_from_line(lineno))
             buffer:replace_sel(line)

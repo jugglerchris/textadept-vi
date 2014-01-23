@@ -14,4 +14,4 @@ local function get_indents()
   end
   return indents
 end
-assertEq(get_indents(), {0, 0, 2, 0, 0})
+assertEq(get_indents(), {0, 0, 2, 0, 0, 0})
