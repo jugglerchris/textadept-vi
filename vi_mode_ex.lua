@@ -167,6 +167,13 @@ M.ex_commands = {
             end
         end
     end,
+    bdelete = function(args)
+        if #args > 1 then
+            ex_error("Arguments to bdelete not supported yet.")
+        else
+            io.close_buffer()
+        end
+    end,
     q = function(args)
         -- Quit
         dbg("in q")
