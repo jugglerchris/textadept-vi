@@ -117,6 +117,18 @@ function M.goto_tag(tag)
         -- TODO: properly handle regexes and line number tags.
         -- For now, assume it's a fixed string possibly with ^ and $ around it.
         pat = pat:match("^^?(.-)$?$")
+        
+        -- Tag file regexes are treated as in vim's nomagic; ie most special
+        -- characters are only magic if backquoted (except .).
+        -- This is an approximation for now.
+        pat = pat:gsub("(%\\?)([%[%]*+])", function(pre, magic)
+            if pre ~= "" then
+                return pre .. magic
+            else
+                return "\\" .. magic
+            end
+          end)
+        
         buffer.current_pos = 0
         buffer.search_anchor()
         local pos = buffer:search_next(buffer.FIND_REGEXP, pat)
