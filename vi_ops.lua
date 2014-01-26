@@ -60,13 +60,21 @@ function M.reindent(start, end_, mtype)
     local indent_inc = buffer.indent
     local next_indent = nil
     -- If this isn't the first line, then get the indent
-    -- from the previous line
-    if line_start > 0 then
-        local prev_line = buffer:get_line(line_start-1)
-        local prev_indent = prev_line:match(" *()") - 1
-        next_indent = prev_indent + indent_inc * pat:match(prev_line)
-        -- disregard any dedent we would have applied to the previous line
-        next_indent = next_indent - indent_inc * dpat:match(prev_line)
+    -- from the previous non-blank line
+    local prev_lineno = line_start-1
+    while prev_lineno >= 0 do
+        local prev_line = buffer:get_line(prev_lineno)
+        if not prev_line:match('^%s*$') then
+            local prev_indent = prev_line:match(" *()") - 1
+            next_indent = prev_indent + indent_inc * pat:match(prev_line)
+            -- disregard any dedent we would have applied to the previous line
+            next_indent = next_indent - indent_inc * dpat:match(prev_line)
+            
+            -- found a non-blank line, so stop.
+            break
+        end 
+        prev_lineno = prev_lineno-1
+        break
     end
     for lineno=line_start,line_end do
         local line = buffer:get_line(lineno)
