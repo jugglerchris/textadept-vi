@@ -183,6 +183,7 @@ function M.queue(f)
             log(rest)
             error(rest)
         end
+        M.physkey('c-q') -- return control after the end.
         return rest
     end
     local testrun = coroutine.create(xpwrapped)
@@ -197,7 +198,12 @@ function M.queue(f)
             events.disconnect(events.KEYPRESS, doquit)
             events.disconnect(events.QUIT, continuetest)
             M.report()
-            M.physkey("c-q")
+            -- signal the end of the test
+            log("Finished")
+            io.open("output/sem.fifo", "w"):write("Finished\n"):flush()
+            -- kill the textadept instance
+            M.tmux('kill-pane')
+            --M.physkey("c-q")
             return false
         else
             logd("Continuing testrun\n")

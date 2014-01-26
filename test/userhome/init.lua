@@ -51,13 +51,6 @@ test.queue(function()
     -- test.run('cz')     -- suspend; tricky to test in this framework.
     test.run('swap')
     test.run('ai')  -- aw, iw, etc.
-    -- signal the end of the test
-    io.open("output/results.txt", "a"):write("Finished\n"):flush()
-    io.open("output/sem.fifo", "w"):write("Finished\n"):flush()
-    
-    test.log('killing myself')
-    
-    test.tmux('kill-pane')
 end)
 
 
