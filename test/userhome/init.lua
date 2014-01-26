@@ -48,7 +48,7 @@ test.queue(function()
     test.run('tags')   -- c], ct
     test.run('c_hat')  -- c^, switch to last buffer
     test.run('fold')
-    test.run('cz')     -- suspend
+    -- test.run('cz')     -- suspend; tricky to test in this framework.
     test.run('swap')
     test.run('ai')  -- aw, iw, etc.
     -- signal the end of the test
