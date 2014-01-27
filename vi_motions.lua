@@ -30,6 +30,14 @@ function M.line_down()
     local linestart = buffer.position_from_line(lineno)
     if lineno < buffer.line_count then
         local ln = lineno + 1
+        
+        -- Find a visible line (skip over folds)
+        while not buffer.line_visible[ln] do
+            ln = ln + 1
+            if ln >= buffer.line_count then
+                return
+            end
+        end
         local col = bufstate.col or (buffer.current_pos - linestart)
         bufstate.col = col  -- Try to stay in the same column
         if col >= line_length(ln) then
@@ -48,6 +56,13 @@ function M.line_up()
     local linestart = buffer.position_from_line(lineno)
     if lineno >= 1 then
         local ln = lineno - 1
+        -- Find a visible line (skip over folds)
+        while not buffer.line_visible[ln] do
+            ln = ln - 1
+            if ln < 0 then
+                return
+            end
+        end
         local col = bufstate.col or buffer.current_pos - linestart
         bufstate.col = col
         if col >= line_length(ln) then
