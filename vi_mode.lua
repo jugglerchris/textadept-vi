@@ -551,7 +551,8 @@ local function movdesc_get_range(movdesc, rpt_motion, rpt_cmd)
         start = buffer.position_from_line(buffer.line_from_position(start))
 
         local line_end = buffer.line_from_position(end_)
-        end_ = buffer.line_end_position[line_end]
+        end_ = buffer.position_from_line(line_end) +
+               buffer.line_length(line_end)
     else
         local endlineno = buffer:line_from_position(end_)
         local endcol = end_ - buffer.position_from_line(endlineno)

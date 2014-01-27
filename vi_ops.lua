@@ -136,10 +136,14 @@ local function wrap_lines(lines, width)
   return result
 end
 
-function M.wrap(start, end_)
+function M.wrap(start, end_, mtype)
     local width = 78 -- FIXME: configurable
     local line_start = buffer:line_from_position(start)
     local line_end = buffer:line_from_position(end_)
+    -- Linewise motions stop at the position at the start of the next line.
+    if mtype == 'linewise' and line_end >= 0 then
+        line_end = line_end - 1
+    end
     local pos_start = buffer:position_from_line(line_start)
     local pos_end = buffer.line_end_position[line_end]
 
