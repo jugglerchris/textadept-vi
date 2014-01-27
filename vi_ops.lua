@@ -138,18 +138,17 @@ end
 
 function M.wrap(start, end_)
     local width = 78 -- FIXME: configurable
-    local line_start = buffer.line_from_position(start)
-    local line_end = buffer.line_from_position(end_)
-    local pos_start = buffer.position_from_line(line_start)
-    local pos_end = buffer.position_from_line(line_end) +
-                    buffer.line_length(line_end)
+    local line_start = buffer:line_from_position(start)
+    local line_end = buffer:line_from_position(end_)
+    local pos_start = buffer:position_from_line(line_start)
+    local pos_end = buffer.line_end_position[line_end]
 
     local prefix = nil
     local lines_to_wrap = {}
 
-    while line_start < (line_end+1) do
+    while line_start <= (line_end+1) do
         local line, new_prefix
-        if line_start < line_end then
+        if line_start <= line_end then
             line = buffer:get_line(line_start)
             new_prefix = string.match(line, "^[>| ]*")
         else
@@ -197,7 +196,7 @@ function M.wrap(start, end_)
                        string.sub(line, string.len(prefix)))
         end
     end
-    buffer.goto_pos(start)
+    buffer.goto_pos(buffer:position_from_line(line_end))
 end
 
 return M
