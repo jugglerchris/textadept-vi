@@ -38,4 +38,12 @@ this is a paragraph with a long line.  There are sentence breaks inside the
 line, and it goes on and on and on.  For at least three lines.  This should be
 wrapped to separate lines.  This paragraph also has a second line.
 
-And this third is a separate paragraph.]])
+And this third is a separate paragraph.
+]])
+
+-- Undo, then wrap one paragraph and check we're left on the last line.
+test.keys('u6Ggql')
+assertEq(buffer:get_line(5), "this is a paragraph with a long line.  There are sentence breaks inside the\n")
+assertEq(buffer:get_line(6), "line, and it goes on and on and on.  For at least three lines.  This should be\n")
+assertEq(buffer:get_line(7), "wrapped to separate lines.\n")
+assertEq(lineno(), 7)
