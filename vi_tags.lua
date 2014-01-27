@@ -121,7 +121,7 @@ function M.goto_tag(tag)
         -- Tag file regexes are treated as in vim's nomagic; ie most special
         -- characters are only magic if backquoted (except .).
         -- This is an approximation for now.
-        pat = pat:gsub("(%\\?)([%[%]*+])", function(pre, magic)
+        pat = pat:gsub("(%\\?)([%[%]*+()])", function(pre, magic)
             if pre ~= "" then
                 return pre .. magic
             else
