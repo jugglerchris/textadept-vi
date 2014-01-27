@@ -147,10 +147,10 @@ function M.wrap(start, end_)
     local prefix = nil
     local lines_to_wrap = {}
 
-    while line_start <= (line_end+1) do
+    while line_start < (line_end+1) do
         local line, new_prefix
-        if line_start <= line_end then
-            line = buffer.get_line(line_start)
+        if line_start < line_end then
+            line = buffer:get_line(line_start)
             new_prefix = string.match(line, "^[>| ]*")
         else
             -- A dummy end iteration to output the result

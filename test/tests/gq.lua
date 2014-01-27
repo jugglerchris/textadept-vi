@@ -11,6 +11,12 @@ test.keys('gql')
 assertEq(buffer:get_line(0), 'this\n')
 assertEq(colno(), 0) assertEq(lineno(), 0)
 
+-- Wrap the first two lines
+test.keys('gqj')
+assertEq(buffer:get_line(0), 'this is\n')
+assertEq(colno(), 0) assertEq(lineno(), 0)
+test.keys('u1G')
+
 -- Wrap the first four lines
 test.keys('gq3j')
 assertEq(buffer:get_line(0), 'this is a paragraph\n')
@@ -32,5 +38,4 @@ this is a paragraph with a long line.  There are sentence breaks inside the
 line, and it goes on and on and on.  For at least three lines.  This should be
 wrapped to separate lines.  This paragraph also has a second line.
 
-And this third is a separate paragraph.
-]])
+And this third is a separate paragraph.]])
