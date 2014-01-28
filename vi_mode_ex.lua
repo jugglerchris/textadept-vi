@@ -116,11 +116,21 @@ local function clist_go(item)
     state.clists[state.clistidx].idx = item.idx
 end
 
+--- Expand a filename:
+--    ~/foo -> $HOME/foo
+local function expand_filename(s)
+    if s:sub(1,2) == "~/" then
+        s = os.getenv("HOME") .. s:sub(2)
+    end
+    return s
+end
+
 M.ex_commands = {
     e = function(args)
         dbg("In e handler")
         if args[2] ~= nil then
-            io.open_file(args[2])
+            local filename = expand_filename(args[2])
+            io.open_file(filename)
         else
             ex_error("No filename to open")
         end
@@ -481,6 +491,9 @@ local function complete_files(pos, text)
         -- save the length of the directory portion (that we're not going to
         -- modify).
         dirlen = dir:len()
+        
+        -- Expand ~/
+        dir = expand_filename(dir)
     else
         dir = '.'
         filepat = ''
