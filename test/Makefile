@@ -28,8 +28,7 @@ test: output
 	@mkfifo output/sem.fifo
 	$(TMUX) -S $(TMUX_SOCKET) -C new-session -d $(TMUX_SIZE) "TESTS=$(TESTS) bash " \; send-keys "$(TA) --nosession --userhome ./userhome " \; send-keys enter $(TMUX_EXTRA)
 	@echo Waiting for test...
-	@head -1 output/sem.fifo
-	@cat output/results.txt
+	@tail --follow=name output/results.txt & pid=$$! ; head -1 output/sem.fifo >/dev/null; kill $$pid
   
 # Convenience target to attach to any session still running.
 attach:
