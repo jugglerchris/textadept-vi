@@ -984,6 +984,8 @@ mode_command = {
     z = {
       o = function() buffer:fold_line(buffer:line_from_position(buffer.current_pos), buffer.FOLDACTION_EXPAND) end,
       c = function() buffer:fold_line(buffer:line_from_position(buffer.current_pos), buffer.FOLDACTION_CONTRACT) end,
+      M = function() buffer:fold_all(buffer.FOLDACTION_CONTRACT) end,
+      R = function() buffer:fold_all(buffer.FOLDACTION_EXPAND) end,
     },
     
     -- Show help

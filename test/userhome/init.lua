@@ -49,6 +49,7 @@ test.queue(function()
     test.run('c_hat')  -- c^, switch to last buffer
     test.run('fold')
     test.run('fold2')
+    test.run('fold3')
     -- test.run('cz')     -- suspend; tricky to test in this framework.
     test.run('swap')
     test.run('ai')  -- aw, iw, etc.
