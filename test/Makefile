@@ -25,10 +25,11 @@ clean:
 test: output
 	@# Remove previous output file to avoid confusion.
 	@rm -f output/results.txt output/sem.fifo
+	@touch output/results.txt
 	@mkfifo output/sem.fifo
 	$(TMUX) -S $(TMUX_SOCKET) -C new-session -d $(TMUX_SIZE) "TESTS=$(TESTS) bash " \; send-keys "$(TA) --nosession --userhome ./userhome " \; send-keys enter $(TMUX_EXTRA)
 	@echo Waiting for test...
-	@tail --follow=name output/results.txt & pid=$$! ; head -1 output/sem.fifo >/dev/null; kill $$pid
+	@head -1 output/sem.fifo >/dev/null & tail --pid=$$! --follow=name output/results.txt
   
 # Convenience target to attach to any session still running.
 attach:
