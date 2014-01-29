@@ -99,7 +99,8 @@ local function do_search(backwards)
     end
 	-- Restore global search flags
         buffer.search_flags = saved_flags
-        buffer.goto_pos(new_pos)
+        buffer:ensure_visible(buffer:line_from_position(new_pos))
+        buffer:goto_pos(new_pos)
         buffer.selection_start = new_pos
     else
 	buffer.current_pos = saved_pos
