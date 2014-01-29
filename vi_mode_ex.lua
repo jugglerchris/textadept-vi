@@ -2,6 +2,7 @@
 -- Modeled on textadept's command_entry.lua
 local M = {}
 local vi_tags = require('vi_tags')
+local vi_entry = require('vi_entry')
 
 -- Support for saving state over reset
 local state = {
@@ -12,6 +13,7 @@ local state = {
 }
 
 M.state = state
+M.use_vi_entry = true
 
 -- Save over a reset
 events.connect(events.RESET_BEFORE, function()
@@ -594,8 +596,12 @@ keys.vi_ex_command = {
 function M.start(exitfunc)
     state.exitfunc = exitfunc
     state.histidx = #state.history + 1  -- new command is after the end of the history
-    ui.command_entry.entry_text = ""
-    ui.command_entry.enter_mode('vi_ex_command')
+    if M.use_vi_entry then
+        vi_entry.enter_mode(':', handle_ex_command)
+    else
+        ui.command_entry.entry_text = ""
+        ui.command_entry.enter_mode('vi_ex_command')
+    end
 end
 
 --- Run an ex command that may not have come directly from the command line.
