@@ -484,22 +484,23 @@ local function complete_buffers(pos, text)
 end
 
 local ignore_complete_files = { ['.'] = 1, ['..'] = 1 }
-local function matching_files(text)
-    local dir, filepat, dirlen
+local function matching_files(text, include_dir)
+    local origdir, dir, filepat, dirlen
     -- Special case - a bare % becomes the current file's path.
     if text == "%" then
         return { buffer.filename }
     end
     if text then
-        dir, filepat = text:match("^(.-)([^/]*)$")
+        origdir, filepat = text:match("^(.-)([^/]*)$")
         -- save the length of the directory portion (that we're not going to
         -- modify).
-        dirlen = dir:len()
+        dirlen = origdir:len()
         
         -- Expand ~/
-        dir = expand_filename(dir)
+        dir = expand_filename(origdir)
     else
         dir = '.'
+        origdir = ''
         filepat = ''
         dirlen = 0
     end
@@ -519,7 +520,11 @@ local function matching_files(text)
           if lfs.attributes(fullpath, 'mode') == 'directory' then
               fname = fname .. "/"
           end
-          files[#files+1] = fname
+          if include_dir and origdir:len() > 0 then
+              files[#files+1] = origdir .. fname
+          else
+              files[#files+1] = fname
+          end
         end
       end
     else
@@ -563,8 +568,8 @@ M.completions = {
 -- Completers for the new entry method
 M.completions_word = {
     b = matching_buffers, 
-    e = matching_files,
-    w = matching_files,
+    e = function(text) return matching_files(text, true) end,
+    w = function(text) return matching_files(text, true) end,
     tag = vi_tags.match_tag,
     tsel = vi_tags.match_tag,
     find = find_matching_files,
