@@ -2,7 +2,10 @@
 -- Modeled on textadept's command_entry.lua
 local M = {}
 local vi_tags = require('vi_tags')
-local vi_entry = require('vi_entry')
+M.use_vi_entry = true
+if M.use_vi_entry then
+    local vi_entry = require('vi_entry')
+end
 
 -- Support for saving state over reset
 local state = {
@@ -13,7 +16,6 @@ local state = {
 }
 
 M.state = state
-M.use_vi_entry = true
 
 -- Save over a reset
 events.connect(events.RESET_BEFORE, function()
