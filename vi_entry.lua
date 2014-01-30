@@ -3,9 +3,28 @@ local M = {}
 local redux = require'textredux'
 
 local function ve_refresh(buf)
+  -- Disable fold margin
+  buffer.margin_width_n[2] = 0
+  
   buf:add_text(buf.data.prompt, redux.core.style.error)
   buf:add_text(buf.data.text, redux.core.style.comment)
   buf:goto_pos(buf.data.pos + #buf.data.prompt)
+  
+  if buf.data.completions then
+      local cs = buf.data.completions
+      local count = #buf.data.completions
+      buf:append_text('\n')
+      if count > 10 then count = 10 end
+      for i=1,count do
+          buf:append_text(cs[i].."\n", redux.core.style.string)
+      end
+      local lines = buf.line_count
+      if lines > 6 then lines = 6 end
+      view.size = ui.size[2] - 4 - (lines-1)
+  else
+      -- go back to one line if necessary
+      view.size = ui.size[2] - 4
+  end
 end
 
 -- Return a saved version of splits so that we can regenerate them.
@@ -16,7 +35,7 @@ local function save_splits(splits)
        splits[2] = save_splits(splits[2])
        return splits
     else
-       return splits.buffer
+       return { buffer=splits.buffer, current=(splits == view) }
     end
 end
 
@@ -32,18 +51,24 @@ local function unsplit_all()
     end
 end
 
+-- Returns the view which should be current, or nil
 local function restore_into(v, saved)
     if saved[1] and saved[2] then
+        local cur1, cur2
         -- restore the split
         first, second = v:split(saved.vertical)
         first.size = saved.size
-        restore_into(first, saved[1])
-        restore_into(second, saved[2])
+        cur1 = restore_into(first, saved[1])
+        cur2 = restore_into(second, saved[2])
+        -- return current if found in theis branch
+        return cur1 or cur2
     else
-        if _BUFFERS[saved] then
-            v:goto_buffer(_BUFFERS[saved])
+        local buf = saved.buffer
+        if _BUFFERS[buf] then
+            v:goto_buffer(_BUFFERS[buf])
+            if saved.current then return v end
         else
-            ui.print("Buffer not found:", saved.filename, saved)
+            ui.print("Buffer not found:", buf.filename, buf)
             for k,v in pairs(_BUFFERS) do
                 if type(v) == 'table' then
                   ui.print(k,v, v.filename)
@@ -57,11 +82,11 @@ end
 
 -- Restore split state, but with the current buffer on the bottom line.
 local function restore_saved(saved)
-    old, new = view:split()
+    local old, new = view:split()
     old.size = ui.size[2] - 4
     
-    restore_into(old,saved)
-    return new
+    local cur = restore_into(old,saved)
+    return new, cur
 end
 
 local function common_prefix(s1, s2)
@@ -80,47 +105,60 @@ local function common_prefix(s1, s2)
     return s1:sub(1, prefixlen)
 end
 
-local ve_keys = {
-    ['\t'] = function()
-        local buf = buffer._textredux
-        if not buf.data.complete then
-            return
-        end
-        local t = buf.data.text
-        local pos = buffer.current_pos - #buf.data.prompt
-        local preceding = t:sub(1, pos)
-        
-        local startpos, to_complete, endpos = preceding:match("^.-()(%S*)()$")
-        local first_word = t:match("^(%S*)")
-        local completions = buf.data.complete(to_complete, first_word)
-        
-        --[[]
-        ui.print("#completions: "..tostring(#completions))
-        for k,v in ipairs(completions) do
-            ui.print("  "..v)
-        end
-        --[[]]
-        
-        if #completions == 1 then
-            local repl = completions[1]
-            t = t:sub(1, startpos-1) .. repl .. t:sub(endpos)
-            buf.data.text = t
-            buf.data.pos = startpos + #repl - 1
-            buf:refresh()
-        elseif #completions > 1 then
-            -- See if there's a common prefix
-            local prefix = completions[1]
+-- expand=nil/false means only show completions, don't update buffer.
+local function complete_now(expand)
+    local buf = buffer._textredux
+    if not buf.data.complete then
+        return
+    end
+    buf.data.completions = nil
+    local t = buf.data.text
+    local pos = buf.data.pos
+    local preceding = t:sub(1, pos)
+    
+    local startpos, to_complete, endpos = preceding:match("^.-()(%S*)()$")
+    local first_word = t:match("^(%S*)")
+    local completions = buf.data.complete(to_complete, first_word)
+    
+    --[[]
+    ui.print("#completions: "..tostring(#completions))
+    for k,v in ipairs(completions) do
+        ui.print("  "..v)
+    end
+    --[[]]
+    
+    if #completions == 1 and expand then
+        local repl = completions[1]
+        t = t:sub(1, startpos-1) .. repl .. t:sub(endpos)
+        buf.data.text = t
+        buf.data.pos = startpos + #repl - 1
+        buf:refresh()
+    elseif #completions >= 1 then
+        -- See if there's a common prefix
+        local prefix = ""
+        if expand then
+            prefix = completions[1]
             for i=2,#completions do
                 prefix = common_prefix(prefix, completions[i])
                 if #prefix == 0 then break end
             end
-            if #prefix > #to_complete then
-                t = t:sub(1, startpos-1) .. prefix .. t:sub(endpos)
-                buf.data.text = t
-                buf.data.pos = startpos + #prefix - 1
-                buf:refresh()
-            end
         end
+        if #prefix > #to_complete then
+            t = t:sub(1, startpos-1) .. prefix .. t:sub(endpos)
+            buf.data.text = t
+            buf.data.pos = startpos + #prefix - 1
+            buf:refresh()
+        else
+            -- No common prefix, so show completions.
+            buf.data.completions = completions
+            buf:refresh()
+        end
+    end
+end
+
+local ve_keys = {
+    ['\t'] = function()
+        complete_now(true)
     end,
     ['\b'] = function()
         local buf = buffer._textredux
@@ -150,7 +188,10 @@ local ve_keys = {
         local saved = buf.data.saved
         buf:close()
         unsplit_all()
-        restore_into(view,saved)
+        local newcur = restore_into(view,saved)
+        if newcur and _VIEWS[newcur] then
+            ui.goto_view(_VIEWS[newcur])
+        end
     end,
     ['\r'] = function()
         local buf = buffer._textredux
@@ -159,7 +200,10 @@ local ve_keys = {
         local handler = buf.data.handler
         buf:close()
         unsplit_all()
-        restore_into(view,saved)
+        local newcur = restore_into(view,saved)
+        if newcur and _VIEWS[newcur] then
+          ui.goto_view(_VIEWS[newcur])
+        end
         handler(cmd)
     end
 }
@@ -171,6 +215,9 @@ local function set_key(k)
         t = t:sub(1, pos) .. k .. t:sub(pos+1, -1)
         buf.data.text = t
         buf.data.pos = pos + 1
+        if buf.data.completions then
+            complete_now()
+        end
         buf:refresh()
     end
 end
@@ -201,7 +248,7 @@ function M.enter_mode(prompt, handler, complete)
   unsplit_all()
   local new, old
   --first, second = view:split()
-  local newview = restore_saved(saved)
+  local newview, prevcur = restore_saved(saved)
   newview.size = ui.size[2] - 4
   ui.goto_view(_VIEWS[newview])
   buf.data.saved = saved
