@@ -562,6 +562,9 @@ M.completions_word = {
     b = matching_buffers, 
     e = matching_files,
     w = matching_files,
+    tag = vi_tags.match_tag,
+    tsel = vi_tags.match_tag,
+    find = find_matching_files,
 }
 
 -- Register our command_entry keybindings
