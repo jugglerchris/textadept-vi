@@ -553,6 +553,11 @@ M.completions = {
     find = complete_paths,
 }
 
+-- Completers for the new entry method
+M.completions_word = {
+    b = matching_buffers, 
+}
+
 -- Register our command_entry keybindings
 keys.vi_ex_command = {
     ['\n'] = function ()
@@ -593,11 +598,19 @@ keys.vi_ex_command = {
     end,
 }
 
+local function do_complete(word, cmd)
+    if cmd and M.completions_word[cmd] then
+        return M.completions_word[cmd](word)
+    else
+        return {}
+    end
+end
+
 function M.start(exitfunc)
     state.exitfunc = exitfunc
     state.histidx = #state.history + 1  -- new command is after the end of the history
     if M.use_vi_entry then
-        vi_entry.enter_mode(':', handle_ex_command)
+        vi_entry.enter_mode(':', handle_ex_command, do_complete)
     else
         ui.command_entry.entry_text = ""
         ui.command_entry.enter_mode('vi_ex_command')

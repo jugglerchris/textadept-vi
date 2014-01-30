@@ -66,6 +66,25 @@ end
 
 local ve_keys = {
     ['\t'] = function()
+        local buf = buffer._textredux
+        if not buf.data.complete then
+            return
+        end
+        local t = buf.data.text
+        local pos = buffer.current_pos - #buf.data.prompt
+        local preceding = t:sub(1, pos)
+        
+        local startpos, to_complete, endpos = preceding:match("^.-()(%S*)()$")
+        local first_word = t:match("^(%S*)")
+        local completions = buf.data.complete(to_complete, first_word)
+        
+        if #completions == 1 then
+            local repl = completions[1]
+            t = t:sub(1, startpos-1) .. repl .. t:sub(endpos)
+            buf.data.text = t
+            buf.data.pos = startpos + #repl - 1
+            buf:refresh()
+        end
     end,
     ['\b'] = function()
         local buf = buffer._textredux
@@ -112,7 +131,7 @@ local function set_key(k)
     ve_keys[k] = function() 
         local buf = buffer._textredux
         local t = buf.data.text
-        local pos = buffer.current_pos
+        local pos = buffer.current_pos - #buf.data.prompt
         t = t:sub(1, pos) .. k .. t:sub(pos+1, -1)
         buf.data.text = t
         buf.data.pos = pos + 1
@@ -131,11 +150,17 @@ end
 -- Set all ASCII printable keys to just insert.
 set_key_range(' ', '\x7e')
 
-function M.enter_mode(prompt, handler)
+function M.enter_mode(prompt, handler, complete)
   local buf = redux.core.buffer.new('entry')
   buf.on_refresh = ve_refresh
   buf.keys = ve_keys
-  buf.data = { prompt=prompt, text = '', pos=#prompt, handler=handler }
+  buf.data = {
+      prompt=prompt,
+      text = '',
+      pos=#prompt,
+      handler=handler,
+      complete=complete,
+  }
   local saved = save_views()
   unsplit_all()
   local new, old
