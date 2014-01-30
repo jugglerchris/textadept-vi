@@ -64,6 +64,22 @@ local function restore_saved(saved)
     return new
 end
 
+local function common_prefix(s1, s2)
+    local len = #s1
+    if #s2 < len then len = #s2 end
+    
+    local prefixlen = 0
+    
+    for i=1,len do
+        if s1:sub(i,i) == s2:sub(i,i) then
+            prefixlen = i
+        else
+            break
+        end
+    end
+    return s1:sub(1, prefixlen)
+end
+
 local ve_keys = {
     ['\t'] = function()
         local buf = buffer._textredux
@@ -78,12 +94,32 @@ local ve_keys = {
         local first_word = t:match("^(%S*)")
         local completions = buf.data.complete(to_complete, first_word)
         
+        --[[]
+        ui.print("#completions: "..tostring(#completions))
+        for k,v in ipairs(completions) do
+            ui.print("  "..v)
+        end
+        --[[]]
+        
         if #completions == 1 then
             local repl = completions[1]
             t = t:sub(1, startpos-1) .. repl .. t:sub(endpos)
             buf.data.text = t
             buf.data.pos = startpos + #repl - 1
             buf:refresh()
+        elseif #completions > 1 then
+            -- See if there's a common prefix
+            local prefix = completions[1]
+            for i=2,#completions do
+                prefix = common_prefix(prefix, completions[i])
+                if #prefix == 0 then break end
+            end
+            if #prefix > #to_complete then
+                t = t:sub(1, startpos-1) .. prefix .. t:sub(endpos)
+                buf.data.text = t
+                buf.data.pos = startpos + #prefix - 1
+                buf:refresh()
+            end
         end
     end,
     ['\b'] = function()

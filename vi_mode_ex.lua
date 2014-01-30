@@ -481,12 +481,11 @@ local function complete_buffers(pos, text)
 end
 
 local ignore_complete_files = { ['.'] = 1, ['..'] = 1 }
-local function complete_files(pos, text)
+local function matching_files(text)
     local dir, filepat, dirlen
     -- Special case - a bare % becomes the current file's path.
     if text == "%" then
-        ui_ce.entry_text = string.sub(ui_ce.entry_text, 1, pos-1) .. buffer.filename
-        return
+        return { buffer.filename }
     end
     if text then
         dir, filepat = text:match("^(.-)([^/]*)$")
@@ -523,6 +522,11 @@ local function complete_files(pos, text)
     else
       ex_error('Bad dir: '..dir)
     end
+    return files
+end
+
+local function complete_files(pos, text)
+    local files = matching_files(text)
     if #files == 0 then
         ex_error("No completions")
     elseif #files == 1 then
@@ -556,6 +560,8 @@ M.completions = {
 -- Completers for the new entry method
 M.completions_word = {
     b = matching_buffers, 
+    e = matching_files,
+    w = matching_files,
 }
 
 -- Register our command_entry keybindings
