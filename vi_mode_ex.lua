@@ -3,8 +3,9 @@
 local M = {}
 local vi_tags = require('vi_tags')
 M.use_vi_entry = true
+local vi_entry
 if M.use_vi_entry then
-    local vi_entry = require('vi_entry')
+    vi_entry = require('vi_entry')
 end
 
 -- Support for saving state over reset
