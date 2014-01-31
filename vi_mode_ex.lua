@@ -174,7 +174,7 @@ M.ex_commands = {
         if #args > 1 then
             local bufname = args[2]
             for i, buf in ipairs(_BUFFERS) do
-                if buf and buf.filename and buf.filename:match(bufname) then
+                if buf and buf.filename and (buf.filename:match(bufname) or buf.filename:find(bufname, 1, true)) then
                    -- TODO: handle more than one matching
                    view:goto_buffer(i)
                    return
