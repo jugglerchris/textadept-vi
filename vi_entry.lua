@@ -126,12 +126,13 @@ local function complete_now(expand)
         ui.print("  "..v)
     end
     --[[]]
+    local skip_prefix = completions.skip_prefix or 0
     
     if #completions == 1 and expand then
         local repl = completions[1]
-        t = t:sub(1, startpos-1) .. repl .. t:sub(endpos)
+        t = t:sub(1, startpos+skip_prefix-1) .. repl .. t:sub(endpos)
         buf.data.text = t
-        buf.data.pos = startpos + #repl - 1
+        buf.data.pos = startpos + skip_prefix + #repl - 1
         buf:refresh()
     elseif #completions >= 1 then
         -- See if there's a common prefix
@@ -143,10 +144,10 @@ local function complete_now(expand)
                 if #prefix == 0 then break end
             end
         end
-        if #prefix > #to_complete then
-            t = t:sub(1, startpos-1) .. prefix .. t:sub(endpos)
+        if #prefix > (#to_complete - skip_prefix) then
+            t = t:sub(1, startpos+skip_prefix-1) .. prefix .. t:sub(endpos)
             buf.data.text = t
-            buf.data.pos = startpos + #prefix - 1
+            buf.data.pos = startpos + skip_prefix + #prefix - 1
             buf:refresh()
         else
             -- No common prefix, so show completions.

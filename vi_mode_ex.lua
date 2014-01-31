@@ -484,7 +484,7 @@ local function complete_buffers(pos, text)
 end
 
 local ignore_complete_files = { ['.'] = 1, ['..'] = 1 }
-local function matching_files(text, include_dir)
+local function matching_files(text)
     local origdir, dir, filepat, dirlen
     -- Special case - a bare % becomes the current file's path.
     if text == "%" then
@@ -520,16 +520,13 @@ local function matching_files(text, include_dir)
           if lfs.attributes(fullpath, 'mode') == 'directory' then
               fname = fname .. "/"
           end
-          if include_dir and origdir:len() > 0 then
-              files[#files+1] = origdir .. fname
-          else
-              files[#files+1] = fname
-          end
+          files[#files+1] = fname
         end
       end
     else
       ex_error('Bad dir: '..dir)
     end
+    files.skip_prefix = dirlen
     return files
 end
 
@@ -568,8 +565,8 @@ M.completions = {
 -- Completers for the new entry method
 M.completions_word = {
     b = matching_buffers, 
-    e = function(text) return matching_files(text, true) end,
-    w = function(text) return matching_files(text, true) end,
+    e = function(text) return matching_files(text) end,
+    w = function(text) return matching_files(text) end,
     tag = vi_tags.match_tag,
     tsel = vi_tags.match_tag,
     find = find_matching_files,
