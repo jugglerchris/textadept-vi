@@ -35,12 +35,17 @@ local function save_splits(splits)
        splits[2] = save_splits(splits[2])
        return splits
     else
-       return {
+       local curview = view
+       ui.goto_view(_VIEWS[splits])
+       local result = {
            buffer=splits.buffer,
-           current=(splits == view),
+           current=(splits == curview),
            pos=splits.buffer.current_pos,
+           anchor=splits.buffer.anchor,
            firstline = splits.buffer.first_visible_line,
        }
+       ui.goto_view(_VIEWS[curview])
+       return result
     end
 end
 
@@ -74,6 +79,7 @@ local function restore_into(v, saved)
             v:goto_buffer(_BUFFERS[buf])
             buffer.first_visible_line = saved.firstline
             buffer.current_pos = saved.pos
+            buffer.anchor = saved.anchor
             if saved.current then return v end
         else
             ui.print("Buffer not found:", buf.filename, buf)
