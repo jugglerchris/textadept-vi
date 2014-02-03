@@ -248,16 +248,16 @@ end
 -- Set all ASCII printable keys to just insert.
 set_key_range(' ', '\x7e')
 
-function M.enter_mode(prompt, handler, complete)
+local function do_start(context)
   local buf = redux.core.buffer.new('entry')
   buf.on_refresh = ve_refresh
   buf.keys = ve_keys
   buf.data = {
-      prompt=prompt,
+      prompt=context._prompt,
       text = '',
-      pos=#prompt,
-      handler=handler,
-      complete=complete,
+      pos=#context._prompt,
+      handler=context._handler,
+      complete=context._complete,
   }
   local saved = save_views()
   unsplit_all()
@@ -268,6 +268,18 @@ function M.enter_mode(prompt, handler, complete)
   ui.goto_view(_VIEWS[newview])
   buf.data.saved = saved
   buf:show()
+end
+
+-- Create a new entry context
+function M.new(prompt, handler, complete)
+    local result = {
+        _prompt=prompt,
+        _handler=handler,
+        _complete=complete,
+        _history={},
+        start = do_start,
+    }
+    return result
 end
 
 return M

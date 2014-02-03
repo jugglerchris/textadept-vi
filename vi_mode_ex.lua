@@ -4,9 +4,6 @@ local M = {}
 local vi_tags = require('vi_tags')
 M.use_vi_entry = true
 local vi_entry
-if M.use_vi_entry then
-    vi_entry = require('vi_entry')
-end
 
 -- Support for saving state over reset
 local state = {
@@ -14,6 +11,7 @@ local state = {
     histidx = 1,
     clists = {},  -- Stack of { list=items, idx=n } for :clist etc.
     clistidx = 0,
+    entry_state = nil, -- vi_entry state
 }
 
 M.state = state
@@ -620,11 +618,16 @@ local function do_complete(word, cmd)
     end
 end
 
+if M.use_vi_entry then
+    vi_entry = require('vi_entry')
+    state.entry_state = vi_entry.new(':', handle_ex_command, do_complete)
+end
+
 function M.start(exitfunc)
     state.exitfunc = exitfunc
     state.histidx = #state.history + 1  -- new command is after the end of the history
     if M.use_vi_entry then
-        vi_entry.enter_mode(':', handle_ex_command, do_complete)
+        state.entry_state:start()
     else
         ui.command_entry.entry_text = ""
         ui.command_entry.enter_mode('vi_ex_command')
