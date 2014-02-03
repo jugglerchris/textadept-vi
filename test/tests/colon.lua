@@ -12,12 +12,7 @@ vi_mode.ex_mode.add_ex_command('tester', function(args)
 -- test.key doesn't currently work from the command entry, so we instead
 -- need to use physkey, with one final key at the end (which will wait for
 -- the keypress to have been handled).
-test.physkey(':')
-test.physkey('tester')
-test.physkey('space')
-test.physkey('arg1')
-test.physkey('space')
-test.physkey('arg2')
+test.keys(':tester arg1 arg2')
 test.key('enter')
 
 assertEq(myvar,'success')
