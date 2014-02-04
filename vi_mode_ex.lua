@@ -13,6 +13,7 @@ local state = {
     clistidx = 0,
     last_cmd = nil,
     entry_state = nil, -- vi_entry state
+    cur_buf = nil,     -- The current buffer before starting the entry
 }
 
 M.state = state
@@ -488,7 +489,7 @@ local function matching_files(text)
     local origdir, dir, filepat, dirlen
     -- Special case - a bare % becomes the current file's path.
     if text == "%" then
-        return { buffer.filename }
+        return { state.cur_buf.filename }
     end
     if text then
         origdir, filepat = text:match("^(.-)([^/]*)$")
@@ -628,6 +629,9 @@ end
 function M.start(exitfunc)
     state.exitfunc = exitfunc
     state.histidx = #state.history + 1  -- new command is after the end of the history
+    
+    -- If using vi_entry, the current buffer won't be easily available.
+    state.cur_buf = buffer
     if M.use_vi_entry then
         state.entry_state:start()
     else
