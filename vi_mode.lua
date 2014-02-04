@@ -948,6 +948,9 @@ mode_command = {
 
 	-- Enter ex mode command
 	[':'] = function() M.ex_mode.start(enter_command) end,
+        ['@'] = {
+            [':'] = M.ex_mode.repeat_last_command,
+        },
 	['ce']= function() ui.command_entry.enter_mode('lua_command') end,
         
     -- Tags

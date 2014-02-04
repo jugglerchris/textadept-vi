@@ -11,6 +11,7 @@ local state = {
     histidx = 1,
     clists = {},  -- Stack of { list=items, idx=n } for :clist etc.
     clistidx = 0,
+    last_cmd = nil,
     entry_state = nil, -- vi_entry state
 }
 
@@ -425,6 +426,7 @@ local function handle_ex_command(command)
         if handler ~= nil then
             handler = debugwrap(handler)
 
+            state.last_cmd = command
             result = handler(cmd)
         else
             ex_error("Bad command <" .. tostring(cmd[1]) .. ">")
@@ -637,6 +639,13 @@ end
 --- Run an ex command that may not have come directly from the command line.
 function M.run_ex_command(text)
     handle_ex_command(text)
+end
+
+-- Repeat the previous command, if any.
+function M.repeat_last_command()
+    if state.last_cmd then
+        handle_ex_command(state.last_cmd)
+    end
 end
 
 --- Add a new custom ex command.
