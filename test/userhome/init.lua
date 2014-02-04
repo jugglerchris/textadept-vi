@@ -53,6 +53,7 @@ test.queue(function()
     -- test.run('cz')     -- suspend; tricky to test in this framework.
     test.run('swap')
     test.run('ai')  -- aw, iw, etc.
+    test.run('_e')  -- :e
 end)
 
 

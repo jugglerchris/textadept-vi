@@ -291,6 +291,10 @@ function M.assertEq(a, b)
     return assertEqLevel(a, b, 2)
 end
 
+function M.assert(a)
+    return assertEqLevel(not a, false, 2)
+end
+
 -- Open a test file in the current view
 function M.open(filebase)
     local filename = "files/"..filebase
