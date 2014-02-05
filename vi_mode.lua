@@ -1,5 +1,4 @@
 local M = {}
-local lpeg = require'lpeg'
 
 ------ Configuration (should make it possible to pass it in) ------
 -- If true, then convert alt-x or meta-x into ESC x (NCURSES only).  This means

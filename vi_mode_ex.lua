@@ -2,6 +2,7 @@
 -- Modeled on textadept's command_entry.lua
 local M = {}
 local vi_tags = require('vi_tags')
+local vi_quickfix = require('vi_quickfix')
 M.use_vi_entry = true
 local vi_entry
 
@@ -114,10 +115,11 @@ local function choose_list(title, items, cb)
     list:show()
 end
 
--- Jump to an item in a clist ({ filename, lineno, text })
+-- Jump to an item in a clist ({ text, path=filename, lineno=lineno, idx=idx })
+-- Jump to a quickfix item
 local function clist_go(item)
-    io.open_file(item[1])
-    buffer.goto_line(item[2]-1)
+    io.open_file(item.path)
+    buffer.goto_line(item.lineno-1)
     state.clists[state.clistidx].idx = item.idx
 end
 
@@ -289,7 +291,8 @@ M.ex_commands = {
                 lineno = lineno + 1
                 if line:match(pat) then
                     local idx = #results+1
-                    results[idx] = { filename, lineno, line, idx=idx }
+                    local text = filename .. ":" .. lineno .. ":" .. line
+                    results[idx] = { text, path=filename, lineno=lineno, idx=idx }
                 end
             end
             f:close()
@@ -302,6 +305,15 @@ M.ex_commands = {
             state.clistidx = #state.clists+1
             state.clists[state.clistidx] = { list=results, idx=1 }
             choose_list('Matches found', results, clist_go)
+        end
+    end,
+    cb = function(args)
+        local results = vi_quickfix.quickfix_from_buffer(buffer)
+        if results then
+            -- Push the results list to the stack
+            state.clistidx = #state.clists+1
+            state.clists[state.clistidx] = { list=results, idx=1 }
+            choose_list('Errors', results, clist_go)
         end
     end,
     cn = function(args)
