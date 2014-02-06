@@ -134,12 +134,6 @@ local function complete_now(expand)
     local first_word = t:match("^(%S*)")
     local completions = buf.data.complete(to_complete, first_word)
     
-    --[[]
-    ui.print("#completions: "..tostring(#completions))
-    for k,v in ipairs(completions) do
-        ui.print("  "..v)
-    end
-    --[[]]
     local skip_prefix = completions.skip_prefix or 0
     
     if #completions == 1 and expand then
@@ -213,13 +207,45 @@ local ve_keys = {
         local saved = buf.data.saved
         local cmd = buf:get_text():sub(#buf.data.prompt + 1)
         local handler = buf.data.handler
+        local hist = buf.data.context._history
+        local histsaveidx = buf.data.histsaveidx
         buf:close()
         unsplit_all()
         local newcur = restore_into(view,saved)
         if newcur and _VIEWS[newcur] then
           ui.goto_view(_VIEWS[newcur])
         end
+        -- Save the command in the history
+        hist[histsaveidx] = cmd
         handler(cmd)
+    end,
+    up = function()
+        local buf = buffer._textredux
+        local idx = buf.data.histidx
+        local hist = buf.data.context._history
+        -- Save this item
+        if idx == buf.data.histsaveidx then
+            buf.data.context._history[idx] = buf.data.text
+        end
+        if idx > 1 then
+            idx = idx - 1
+            buf.data.histidx = idx
+        end
+        buf.data.text = hist[idx]
+        buf.data.pos = #buf.data.text
+        buf:refresh()
+    end,
+    down = function()
+        local buf = buffer._textredux
+        local idx = buf.data.histidx
+        local hist = buf.data.context._history
+        if idx < buf.data.histsaveidx then
+            idx = idx + 1
+            buf.data.histidx = idx
+            buf.data.text = hist[idx]
+            buf.data.pos = #buf.data.text
+            buf:refresh()
+        end
     end
 }
 local function set_key(k)
@@ -258,6 +284,9 @@ local function do_start(context)
       pos=#context._prompt,
       handler=context._handler,
       complete=context._complete,
+      context=context,
+      histidx=#context._history+1,
+      histsaveidx=#context._history+1,
   }
   local saved = save_views()
   unsplit_all()
