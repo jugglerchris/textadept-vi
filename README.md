@@ -58,7 +58,7 @@ Dependencies
 Besides textadept (currently tested on 7.0), some features depend on:
 * The included "kill" extension to suspend with ^Z
 * For split views in textadept-curses, a modified textadept (from
-  [https://bitbucket.org/jugglerchris/textadept](https://bitbucket.org/jugglerchris/textadept)
+  [https://bitbucket.org/jugglerchris/textadept](https://bitbucket.org/jugglerchris/textadept))
 * For error/tag lists, and an experimental buffer-based command entry,
   [textredux](http://rgieseke.github.io/textredux/)
 
