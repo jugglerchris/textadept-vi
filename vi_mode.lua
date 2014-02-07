@@ -219,7 +219,7 @@ local function get_just_inserted_text()
     -- If the cursor moved, then assume we've inserted text.
     if state.insert_pos < buffer.current_pos then
         local curpos = buffer.current_pos
-        buffer.set_selection(state.insert_pos, curpos+1)
+        buffer.set_selection(state.insert_pos, curpos)
         result = buffer.get_sel_text()
         buffer.clear_selections()
         buffer.goto_pos(curpos)
@@ -455,7 +455,6 @@ function M.enter_insert_then_end_undo(cb)
     enter_mode(mode_insert)
     insert_start_edit()
     mode_command.restart = function()
-        insert_end_edit()
         end_undo()
         if cb then cb() end
     end
@@ -491,7 +490,6 @@ local function enter_replace_with_undo(cb)
     insert_start_edit()
     mode_command.restart = function()
         buffer.overtype = false
-        insert_end_edit()
         
         if rpt > 1 then
           do_replace(buffer.current_pos+1, string.rep(state.last_insert_string, rpt-1))
@@ -638,7 +636,7 @@ local function with_motion_insert(actions, handler)
            insert_start_edit()
            enter_mode(mode_insert)
            mode_command.restart = function()
-               local text = get_just_inserted_text()
+               local text = state.last_insert_string
                end_undo()
                state.last_action = function(rpt)
                    local start, end_ = movdesc_get_range(movdesc, rpt, 1)
