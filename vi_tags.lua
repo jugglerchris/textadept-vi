@@ -131,7 +131,7 @@ function M.goto_tag(tag)
         
         buffer.current_pos = 0
         buffer.search_anchor()
-        local pos = buffer:search_next(buffer.FIND_REGEXP, pat)
+        local pos = buffer:search_next(buffer.FIND_REGEXP + buffer.FIND_MATCHCASE, pat)
         if pos >= 0 then
             buffer.goto_pos(pos)
         else

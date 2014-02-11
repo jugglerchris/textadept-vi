@@ -37,36 +37,36 @@ local function do_search(backwards)
     set_colours()
 
     if pos >= 0 then
-	local saved_flags = buffer.search_flags
-	buffer.search_flags = search_flags
+        local saved_flags = buffer.search_flags
+        buffer.search_flags = search_flags
 
-    local new_pos = nil
+        local new_pos = nil
 
-	-- Need to use search_in_target to find the actual search extents.
-	buffer.target_start = 0
-	buffer.target_end = buffer.length
-	local occurences = 0
-    local first_pos = nil
-    local last_pos = nil
-	while buffer.search_in_target(state.pattern) >= 0 do
-	    local match_len = buffer.target_end - buffer.target_start
-        last_pos = buffer.target_start
-        if first_pos == nil then
-            first_pos = buffer.target_start
-        end
-
-        -- Work out the current pos, ie first hit after the saved position.
-        if backwards then
-            if buffer.target_start < saved_pos then
-                new_pos = buffer.target_start
+        -- Need to use search_in_target to find the actual search extents.
+        buffer.target_start = 0
+        buffer.target_end = buffer.length
+        local occurences = 0
+        local first_pos = nil
+        local last_pos = nil
+        while buffer:search_in_target(state.pattern) >= 0 do
+            local match_len = buffer.target_end - buffer.target_start
+            last_pos = buffer.target_start
+            if first_pos == nil then
+                first_pos = buffer.target_start
             end
-        else
-            -- Forwards - take the first one after saved_pos
-            if new_pos == nil and buffer.target_start > saved_pos then
-                new_pos = buffer.target_start
+
+            -- Work out the current pos, ie first hit after the saved position.
+            if backwards then
+                if buffer.target_start < saved_pos then
+                    new_pos = buffer.target_start
+                end
+            else
+                -- Forwards - take the first one after saved_pos
+                if new_pos == nil and buffer.target_start > saved_pos then
+                    new_pos = buffer.target_start
+                end
             end
-        end
-	    buffer:indicator_fill_range(buffer.target_start, match_len)
+            buffer:indicator_fill_range(buffer.target_start, match_len)
             if buffer.target_end == buffer.target_start then
                 -- Zero length match - not useful, abort here.
                 buffer.current_pos = saved_pos
@@ -79,41 +79,41 @@ local function do_search(backwards)
             else
                     buffer.target_start = buffer.target_end
             end
-	    buffer.target_end = buffer.length
+            buffer.target_end = buffer.length
             if buffer.target_start >= buffer.length then
                 break
             end
 
-	    occurences = occurences + 1
-	end
-    -- Handle wrapping search
-    if new_pos == nil then
-        if backwards then
-            new_pos = last_pos
-        else
-            new_pos = first_pos
+            occurences = occurences + 1
         end
-        ui.statusbar_text = "WRAPPED SEARCH"
-    else
-	ui.statusbar_text = "Found " .. tostring(occurences)
-    end
-	-- Restore global search flags
+        -- Handle wrapping search
+        if new_pos == nil then
+            if backwards then
+                new_pos = last_pos
+            else
+                new_pos = first_pos
+            end
+            ui.statusbar_text = "WRAPPED SEARCH"
+        else
+            ui.statusbar_text = "Found " .. tostring(occurences)
+        end
+        -- Restore global search flags
         buffer.search_flags = saved_flags
         buffer:ensure_visible(buffer:line_from_position(new_pos))
         buffer:goto_pos(new_pos)
         buffer.selection_start = new_pos
     else
-	buffer.current_pos = saved_pos
-	ui.statusbar_text = "Not found"
+        buffer.current_pos = saved_pos
+        vi_mode.err("Not found")
     end
 end
 
 local function handle_search_command(command)
     if state.in_search_mode then
         state.pattern = command
-	do_search(state.backwards)
-	state.in_search_mode = false
-	return false  -- make sure this isn't handled again
+        do_search(state.backwards)
+        state.in_search_mode = false
+        return false  -- make sure this isn't handled again
     end
 end
 
@@ -143,8 +143,8 @@ keys.vi_search_command = {
     },
     ['esc'] = function()
               ui_ce.enter_mode(nil)  -- Exit command_entry mode
-	      keys.MODE = "vi_command"
-	    end,
+              keys.MODE = "vi_command"
+          end,
 }
 
 local function start_common(exitfunc)
