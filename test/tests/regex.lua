@@ -25,3 +25,18 @@ assertEq(pat:match('jfoo'), { _start=1, _end=4 })
 assertEq(pat:match('jjfoo'), nil)
 assertEq(pat:match('foo'), nil)
 assertEq(pat:match('foo then foo'), nil)
+
+local pat = compile('a.?b')
+
+assertEq(pat:match('abooo'), { _start=1,_end=2 })
+assertEq(pat:match('axbooo'), { _start=1,_end=3 })
+assertEq(pat:match('axxbooo'), nil)
+
+local pat = compile('a.*b')
+lpeg.print(pat._pat)
+
+assertEq(pat:match('axbcdef'), { _start=1,_end=3 })
+assertEq(pat:match('axxbcdef'), { _start=1,_end=4 })
+assertEq(pat:match('abcdef'), { _start=1,_end=2 })
+assertEq(pat:match('abcdebf'), { _start=1,_end=6 })
+assertEq(pat:match('ababab'), { _start=1, _end=6 })

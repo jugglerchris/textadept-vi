@@ -2,7 +2,7 @@ STRACE :=
 TMUX_EXTRA :=
 
 ifeq ($(DEBUG),1)
-STRACE := strace -o output/ta.strace
+STRACE := strace -s4096 -o output/ta.strace
 TMUX_EXTRA :=  \; attach
 endif
 TA := $(STRACE) ../../ta_hg/textadept-curses
