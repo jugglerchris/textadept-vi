@@ -54,6 +54,7 @@ test.queue(function()
     test.run('swap')
     test.run('ai')  -- aw, iw, etc.
     test.run('_e')  -- :e
+    test.run('regex')
 end)
 
 
