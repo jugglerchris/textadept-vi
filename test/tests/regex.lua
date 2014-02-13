@@ -17,3 +17,11 @@ assertEq(pat:match("asdfoo"), { _start=4, _end=6 })
 assertEq(pat:match("asdfobar"), { _start=6, _end=8 })
 assertEq(pat:match("asdfoofoobarjkl;"), { _start=4, _end=12 })
 assertEq(pat:match("asdfabulous", nil))
+
+local pat = compile('^.foo')
+
+assertEq(pat:match('afoo'), { _start=1, _end=4 })
+assertEq(pat:match('jfoo'), { _start=1, _end=4 })
+assertEq(pat:match('jjfoo'), nil)
+assertEq(pat:match('foo'), nil)
+assertEq(pat:match('foo then foo'), nil)
