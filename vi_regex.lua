@@ -32,19 +32,21 @@ local range = (C(P(1) - charset_special) * P"-" * C(P(1) - charset_special)) /
 local charset_char = C(P(1) - charset_special) / P
 local charset = P"[" * Cf((range + charset_char)^0, add) * P"]"
 local char = (P(1) - special) / P
-local atom = any + charset + char
 
-local atom_star = (atom * P"*") / function(x) return x ^ 0 end
-local atom_plus = (atom * P"+") / function(x) return x ^ 1 end
-local atom_query = (atom * P"?") / function(x) return x ^ -1 end
-local atom_multi = atom_star + atom_plus + atom_query + atom
-local piece = atom_multi
-local concat = Cf(piece ^ 0, mul)
-local branch = concat -- in vim, \& concat \& concat ...
-local subpattern = Cf(branch * (P"|" * branch)^0, add)
 local _start = Cg(Cp(), "_start")
 local _end = Cg(Cp()/sub1, "_end")
-local pattern = subpattern
+local pattern = P{
+    "subpattern",
+    subpattern = Cf(V"branch" * (P"|" * V"branch")^0, add),
+    branch = V"concat",
+    concat = Cf(V"piece" ^ 0, mul), -- in vim, \& concat \& concat ...
+    piece = V"atom_multi",
+    atom_multi = V"atom_star" + V"atom_plus" + V"atom_query" + V"atom",
+    atom_star = (V"atom" * P"*") / function(x) return x ^ 0 end,
+    atom_plus = (V"atom" * P"+") / function(x) return x ^ 1 end,
+    atom_query = (V"atom" * P"?") / function(x) return x ^ -1 end,
+    atom = any + charset + (P"(" * V"subpattern" * P")") + char,
+}
 
 local mt = {
     __index = {
