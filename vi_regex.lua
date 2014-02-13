@@ -36,7 +36,10 @@ local char = (P(1) - special) / P
 local _start = Cg(Cp(), "_start")
 local _end = Cg(Cp()/sub1, "_end")
 local pattern = P{
-    "subpattern",
+    "matcher",
+    matcher = (P"^" * V"pattern") + V"unanchored",
+    unanchored = V"pattern" / function(pat) return P{pat + 1*V(1)} end,
+    pattern = V"subpattern" / function(pat) return _start * pat * _end end,
     subpattern = Cf(V"branch" * (P"|" * V"branch")^0, add),
     branch = V"concat",
     concat = Cf(V"piece" ^ 0, mul), -- in vim, \& concat \& concat ...
@@ -58,15 +61,7 @@ local mt = {
 
 -- Parse a regular expression string and return a compiled pattern.
 function M.compile(re)
-    local anchored = false
-    if re:sub(1,1) == "^" then
-        anchored = true
-        re = re:sub(2)
-    end
-    local _pat = _start * (pattern:match(re)) * _end
-    if not anchored then
-        _pat = P{_pat + 1*V(1)}
-    end
+    local _pat = pattern:match(re)
     return setmetatable({
         _pat = Ct(_pat)
     }, mt)
