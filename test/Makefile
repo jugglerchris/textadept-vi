@@ -34,6 +34,9 @@ test: output
 # Convenience target to attach to any session still running.
 attach:
 	$(TMUX) -S $(TMUX_SOCKET) attach
+# Convenience target to kill any sessions
+kill:
+	$(TMUX) -S $(TMUX_SOCKET) -C kill-server
   
 # Convenience to print out the current screen
 show:
