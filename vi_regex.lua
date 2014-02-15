@@ -17,44 +17,13 @@ local Ct = lpeg.Ct
 -- expression from:
 -- http://www.inf.puc-rio.br/~roberto/docs/ry10-01.pdf
 
-local function add(a,b)
-    return a + b
-end
-local function mul(a,b)
-    return a * b
-end
 local function sub1(x)
     return x - 1
 end
 
 -- Parts of a regular expression, returning an LPEG pattern which matches it.
-local special = S"()\\?*+|"
-local any = P"." * Cc(P(1))
-local charset_special = S"]-"
-local range = (C(P(1) - charset_special) * P"-" * C(P(1) - charset_special)) /
-            function(a,b) return R(a .. b) end
-local charset_char = C(P(1) - charset_special) / P
-local charset = P"[" * Ct(Cg(Cc("set"), 0) * (range + charset_char)^0, add) * P"]"
-local char = (P(1) - special) / P
-
 local _start = Cg(Cp(), "_start")
 local _end = Cg(Cp()/sub1, "_end")
-local pattern_ = P{
-    "matcher",
-    matcher = (P"^" * V"pattern") + V"unanchored",
-    unanchored = V"pattern" / function(pat) return P{pat + 1*V(1)} end,
-    pattern = V"subpattern" / function(pat) return _start * pat * _end end,
-    subpattern = Cf(V"branch" * (P"|" * V"branch")^0, add),
-    branch = V"concat",
-    concat = Cf(V"piece" ^ 0, mul), -- in vim, \& concat \& concat ...
-    piece = V"atom_multi",
-    atom_multi = V"atom_star" + V"atom_plus" + V"atom_query" + V"atom",
-    atom_star = (V"atom" * P"*") / function(x) return x ^ 0 end,
-    atom_plus = (V"atom" * P"+") / function(x) return x ^ 1 end,
-    atom_query = (V"atom" * P"?") / function(x) return x ^ -1 end,
-    atom = any + charset + (P"(" * V"subpattern" * P")") + char,
-}
-
 local mt = {
     __index = {
         match = function(t, s)
@@ -63,17 +32,9 @@ local mt = {
     },
 }
 
--- Parse a regular expression string and return a compiled pattern.
-function M.compile_(re)
-    local _pat = pattern_:match(re)
-    return setmetatable({
-        _pat = Ct(_pat)
-    }, mt)
-end
-
-local patend = Cc(P(0)) -- doesn't match anything
-
+local special = S"()\\?*+|"
 local any = P"." * Cc({[0] = "."})
+local charset_special = S"]-"
 local charset_char = C(P(1) - charset_special) /
      function(c) return { [0] = "char", c } end
 local range = (C(P(1) - charset_special) * P"-" * C(P(1) - charset_special)) /
@@ -114,7 +75,6 @@ local pattern = P{
 }
 
 local function foldr(f, t, init)
-print("foldr: #t=", #t, ", init=", tostring(init))
     local res = init
     local start = #t
     if res == nil then
@@ -125,17 +85,14 @@ print("foldr: #t=", #t, ", init=", tostring(init))
     for i=start,1,-1 do
         res = f(t[i], res)
     end
-print("end foldr")
     return res
 end
 
 local function map(f, t)
-print("map")
     local result = {}
     for i=1,#t do
         result[i] = f(t[i])
     end
-    print("done map")
     return result
 end
 
@@ -146,7 +103,6 @@ end
 -- Convert a charset fragment to a PEG
 local function charset_to_peg(charfrag)
     local t = charfrag[0]
-    print("charset: t=",t,", 1=",charfrag[1])
     if t == "char" then
         assert(#charfrag == 1)
         return P(charfrag[1])
@@ -155,21 +111,6 @@ local function charset_to_peg(charfrag)
     end
 end
 
-local function pprint(indent, x, k)
-    if type(x) == "table" then
-        print(indent .. '{')
-        for k,v in pairs(x) do
-            pprint(indent .. " ", v, k)
-        end
-        print(indent .. '}')
-    else
-        if k == nil then
-          print(indent .. type(x) .. '/' ..tostring(x))
-        else
-          print(indent .. type(k) .. '/' ..tostring(k) .. "=>" .. type(x) .. '/' ..tostring(x))
-        end
-    end
-end
 local function re_to_peg(retab, k)
     local t = retab[0]
     if t == "pattern" then
@@ -191,7 +132,6 @@ local function re_to_peg(retab, k)
             return re_to_peg(retab[1], k)
         else
             local parts = map(function(x) return re_to_peg(x, k) end, retab)
-            print("alt: foldring")
             return foldr(add, parts)
         end
     elseif t == "concat" then
@@ -200,7 +140,6 @@ local function re_to_peg(retab, k)
         assert(#retab == 1)
         return P(retab[1]) * k
     elseif t == "charset" then
-        print("charset")
         local charset_pat = foldr(add, map(charset_to_peg, retab))
         return charset_pat * k
     elseif t == "*" then
