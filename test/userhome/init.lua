@@ -1,3 +1,5 @@
+-- Turn on coverage analysis if available
+pcall(require, 'luacov')
 ok, msg = xpcall(function()
 -- Make textadept-vi available
 package.path = _USERHOME .. "/../../?.lua;".._USERHOME .. "/../scripts/?.lua;" .. package.path

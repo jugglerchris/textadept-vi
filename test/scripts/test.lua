@@ -202,8 +202,7 @@ function M.queue(f)
             log("Finished")
             io.open("output/sem.fifo", "w"):write("Finished\n"):flush()
             -- kill the textadept instance
-            M.tmux('kill-pane')
-            --M.physkey("c-q")
+            os.exit()
             return false
         else
             logd("Continuing testrun\n")
