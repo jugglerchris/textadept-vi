@@ -13,15 +13,15 @@ test.assertEq(buffer:get_text(), ':e files/1_10')
 test.key('tab')
 local t = buffer:get_text()
 
-test.assert(t:find('1_10.txt', nil, true))
-test.assert(t:find('1_100.txt', nil, true))
+test.assert(t:find('1_10%.txt', nil, true))
+test.assert(t:find('1_100%.txt', nil, true))
 
 test.key('escape')
 
 -- % should expand to the current filename
 test.keys(':e %')
 test.key('tab')
-test.assertEq(buffer:get_text(), ':e files/foo.xml')
+test.assertEq(buffer:get_text(), ':e files/foo%.xml')
 
 -- Exit the entry to avoid confusion in later tests.
 test.key('escape')
