@@ -39,6 +39,8 @@ end)
 
 local ui_ce = ui.command_entry
 
+local matching_files
+
 local do_debug = false
 local function dbg(...)
     if do_debug then ui._print("ex", ...) end
@@ -129,6 +131,8 @@ local function expand_filename(s)
     if s:sub(1,2) == "~/" then
         s = os.getenv("HOME") .. s:sub(2)
     end
+    local files = matching_files(s, false)
+    if #files >= 1 then return files[1] end
     return s
 end
 
@@ -496,50 +500,152 @@ local function complete_buffers(pos, text)
     end
 end
 
+-- Escape a Lua pattern to make it an exact match.
+-- TODO: find a more general place for this.
+local function luapat_escape(s)
+    -- replace metacharacters
+    s = s:gsub("[%(%)%%%.%[%]%*%+%-%?]", function (s) return "%"..s end)
+    
+    -- ^ and $ only apply at the start/end
+    if s:sub(1,1) == "^" then s = "%" .. s end
+    if s:sub(-1,-1) == "$" then s = s:sub(1,-2) .. "%$" end
+    return s
+end
+
 local ignore_complete_files = { ['.'] = 1, ['..'] = 1 }
-local function matching_files(text)
-    local origdir, dir, filepat, dirlen
+function matching_files(text, doescape)
+    -- Escape by default
+    local escape
+    if doescape == nil or doescape then
+        escape = luapat_escape
+    else
+        escape = function(s) return s end
+    end
+    cme_log('matching_files('..text..')')
     -- Special case - a bare % becomes the current file's path.
     if text == "%" then
         return { state.cur_buf.filename }
     end
+    
+    local patparts = {} -- the pieces of the pattern
+    -- Split the pattern into parts separated by /
     if text then
-        origdir, filepat = text:match("^(.-)([^/]*)$")
-        -- save the length of the directory portion (that we're not going to
-        -- modify).
-        dirlen = origdir:len()
-        
-        -- Expand ~/
-        dir = expand_filename(origdir)
-    else
-        dir = '.'
-        origdir = ''
-        filepat = ''
-        dirlen = 0
+        for part in text:gmatch('[^/]+') do
+            table.insert(patparts, part)
+        end
+        -- If tab on trailing /, then will want to complete on files in the
+        -- directory.
+        if text:sub(-1) == '/' then
+            table.insert(patparts, '')
+        end
     end
-    local files = { }
+    -- partmatches[n] is a list of matches for patparts[n] at that level
+    local parts = { }
+    -- Set of directories to look in
+    local dirs = { }
+    
+    -- The start depends on whether the path is absolute or relative
+    if text and text:sub(1, 1) == '/' then
+        table.insert(dirs, '/')
+    else
+        table.insert(dirs, './')
+    end
 
-    -- Default to current directory, but save the original length
-    if dir == '' then dir = '.' end
-
-    -- Assume this is a prefix.
-    filepat = '^' .. filepat
-
-    local mode = lfs.attributes(dir, 'mode')
-    if mode and mode == 'directory' then
-      for fname in lfs.dir(dir) do
-        if (not ignore_complete_files[fname]) and fname:match(filepat) then
-          local fullpath = dir .. "/" .. fname
-          if lfs.attributes(fullpath, 'mode') == 'directory' then
-              fname = fname .. "/"
+    -- For each path section
+    for level, patpart in ipairs(patparts) do
+      local last = (level == #patparts)
+      
+      -- The set of components at this level which match; this is
+      -- a foo => true/false to remove duplicates,but also adding the parts
+      -- as a list.  The true value is used if every match is a directory.
+      local matchingParts = {}
+      parts[level] = matchingParts
+      
+      -- If the last part, then allow trailing parts
+      -- TODO: if we complete from a middle-part, then
+      -- this test should be for where the cursor is.
+      if last then patpart = patpart .. ".*" end
+      -- should only match the start of each component
+      patpart = "^" .. patpart
+      
+      cme_log("level="..level.." patpart={"..patpart.."},last="..tostring(last))
+      
+      -- The set of paths for the following loop
+      local newdirs = {}
+      
+      -- For each possible directory at this level
+      for _,dir in ipairs(dirs) do
+        cme_log("dir=<"..dir..">")
+        for fname in lfs.dir(dir) do
+          cme_log("  file:{"..fname.."}")
+          if not ignore_complete_files[fname] and fname:match(patpart) then
+            cme_log("      Match!")
+            local fullpath
+            if dir == "./" then
+                fullpath = fname
+            else
+                fullpath = dir .. fname
+            end
+            local isdir = lfs.attributes(fullpath, 'mode') == 'directory'
+            
+            if matchingParts[fname] == nil then
+              matchingParts[fname] = isdir
+              table.insert(matchingParts, fname)
+            elseif matchingParts[fname] and not isdir then
+              matchingParts[fname] = false
+            end
+            
+            -- Record this path if it's not a non-directory with more path
+            -- parts to go.
+            if lfs.attributes(fullpath, 'mode') == 'directory' then
+                table.insert(newdirs, fullpath .. '/')
+            elseif last then
+                table.insert(newdirs, fullpath)
+            end
           end
-          files[#files+1] = fname
         end
       end
-    else
-      ex_error('Bad dir: '..dir)
+      -- Switch to the next level of items
+      dirs = newdirs
+    end  -- loop through pattern parts
+    
+    -- Now rebuild the pattern, with some ambiguities removed
+    local narrowed = false  -- whether we've added more unambiguous info
+    local newparts = {}
+    -- keep absolute or relative
+    if text:sub(1,1) == '/' then
+        table.insert(newparts,  '/')
     end
-    files.skip_prefix = dirlen
+    for level,matches in ipairs(parts) do
+        local last = (level == #parts)
+        if #matches == 1 then
+            -- Only one thing, so use that.
+            local newpart = escape(matches[1])
+            if newpart ~= patparts[level] then
+            cme_log('Narrowed: {'..newpart..'} ~= {'..patparts[level]..'}')
+                narrowed = true
+            end
+            table.insert(newparts, newpart)
+            -- matches[fname] is true if all options are directories
+            if last and matches[matches[1]] then
+                table.insert(newparts, '/')
+            end
+        else
+            table.insert(newparts, patparts[level])
+        end
+        if not last then table.insert(newparts, '/') end
+    end
+    local files
+    if narrowed then
+        files = { table.concat(newparts) }
+    else
+        files = {}
+        table.sort(dirs)
+        for i,d  in ipairs(dirs) do
+            files[i] = escape(d)
+        end
+    end
+    cme_log('Return { '..table.concat(files, ', ') .. ' }')
     return files
 end
 
