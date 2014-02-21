@@ -524,7 +524,7 @@ function matching_files(text, doescape)
     cme_log('matching_files('..text..')')
     -- Special case - a bare % becomes the current file's path.
     if text == "%" then
-        return { state.cur_buf.filename }
+        return { escape(state.cur_buf.filename) }
     end
     
     local patparts = {} -- the pieces of the pattern
@@ -555,12 +555,6 @@ function matching_files(text, doescape)
     for level, patpart in ipairs(patparts) do
       local last = (level == #patparts)
       
-      -- The set of components at this level which match; this is
-      -- a foo => true/false to remove duplicates,but also adding the parts
-      -- as a list.  The true value is used if every match is a directory.
-      local matchingParts = {}
-      parts[level] = matchingParts
-      
       -- If the last part, then allow trailing parts
       -- TODO: if we complete from a middle-part, then
       -- this test should be for where the cursor is.
@@ -588,13 +582,6 @@ function matching_files(text, doescape)
             end
             local isdir = lfs.attributes(fullpath, 'mode') == 'directory'
             
-            if matchingParts[fname] == nil then
-              matchingParts[fname] = isdir
-              table.insert(matchingParts, fname)
-            elseif matchingParts[fname] and not isdir then
-              matchingParts[fname] = false
-            end
-            
             -- Record this path if it's not a non-directory with more path
             -- parts to go.
             if lfs.attributes(fullpath, 'mode') == 'directory' then
@@ -608,6 +595,22 @@ function matching_files(text, doescape)
       -- Switch to the next level of items
       dirs = newdirs
     end  -- loop through pattern parts
+    
+    -- Find out the set of components at each level
+    -- parts[level] is a table { fname=1,fname2=1, fname,fname2}
+    local parts = {}
+    for _,res in ipairs(dirs) do
+        local level = 1
+        for piece in res:gmatch('[^/]*') do
+            ps = parts[level] or {}
+            parts[level] = ps
+            
+            if ps[piece] == nil then
+              ps[piece] = 1
+              table.insert(ps, piece)
+            end
+        end
+    end
     
     -- Now rebuild the pattern, with some ambiguities removed
     local narrowed = false  -- whether we've added more unambiguous info
