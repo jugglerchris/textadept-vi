@@ -521,7 +521,6 @@ function matching_files(text, doescape)
     else
         escape = function(s) return s end
     end
-    cme_log('matching_files('..text..')')
     -- Special case - a bare % becomes the current file's path.
     if text == "%" then
         return { escape(state.cur_buf.filename) }
@@ -562,18 +561,13 @@ function matching_files(text, doescape)
       -- should only match the start of each component
       patpart = "^" .. patpart
       
-      cme_log("level="..level.." patpart={"..patpart.."},last="..tostring(last))
-      
       -- The set of paths for the following loop
       local newdirs = {}
       
       -- For each possible directory at this level
       for _,dir in ipairs(dirs) do
-        cme_log("dir=<"..dir..">")
         for fname in lfs.dir(dir) do
-          cme_log("  file:{"..fname.."}")
           if not ignore_complete_files[fname] and fname:match(patpart) then
-            cme_log("      Match!")
             local fullpath
             if dir == "./" then
                 fullpath = fname
@@ -625,7 +619,6 @@ function matching_files(text, doescape)
             -- Only one thing, so use that.
             local newpart = escape(matches[1])
             if newpart ~= patparts[level] then
-            cme_log('Narrowed: {'..newpart..'} ~= {'..patparts[level]..'}')
                 narrowed = true
             end
             table.insert(newparts, newpart)
@@ -648,7 +641,6 @@ function matching_files(text, doescape)
             files[i] = escape(d)
         end
     end
-    cme_log('Return { '..table.concat(files, ', ') .. ' }')
     return files
 end
 
