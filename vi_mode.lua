@@ -13,6 +13,7 @@ M.ex_mode = require 'vi_mode_ex'
 M.search_mode = require 'vi_mode_search'
 M.vi_tags = require 'vi_tags'
 M.lang = require 'vi_lang'
+local vi_search_regex = require 'vi_search_regex'
 
 local vi_motion = require 'vi_motion'
 local vi_motions = require 'vi_motions'
@@ -1090,5 +1091,8 @@ events.connect(events.BUFFER_BEFORE_SWITCH, function()
         M.enter_cmd()
     end
 end)
+
+-- Install the events.FIND handler
+vi_search_regex.install()
 
 return M

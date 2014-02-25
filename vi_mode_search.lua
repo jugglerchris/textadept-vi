@@ -21,6 +21,10 @@ M.state = {
 local state = M.state
 
 local function do_search(backwards)
+    events.emit(events.FIND, state.pattern, not backwards)
+end
+
+local function xxx(backwards)
     ui.statusbar_text = "Search: "..state.pattern
     local saved_pos = buffer.current_pos
     buffer:search_anchor()

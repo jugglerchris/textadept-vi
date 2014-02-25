@@ -106,6 +106,9 @@ local function charset_to_peg(charfrag)
     if t == "char" then
         assert(#charfrag == 1)
         return P(charfrag[1])
+    elseif t == "range" then
+        assert(#charfrag == 2)
+        return R(charfrag[1] .. charfrag[2])
     else
         error("Got charset bit: "..tostring(t).."/"..tostring(t and t[0]))
     end
