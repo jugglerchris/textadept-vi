@@ -7,6 +7,7 @@ local R = lpeg.R
 local S = lpeg.S
 local C = lpeg.C
 local V = lpeg.V
+local B = lpeg.B
 local Cc = lpeg.Cc
 local Cf = lpeg.Cf
 local Cp = lpeg.Cp
@@ -43,6 +44,13 @@ local charset = P"[" * Ct((range + charset_char)^0) * P"]" /
     function(x) x[0] = "charset" return x end
 local char = C(P(1) - special) / function(c) return { [0] = "char", c } end
 
+local wordchar = R("AZ", "az") + S("_")
+local nonwordchar = 1 - wordchar
+
+-- word boundaries
+local word_start = P"\\<" * Cc({[0] = "\\<"})
+local word_end = P"\\>" * Cc({[0] = "\\>"})
+
 local pattern = P{
     "pattern",
     
@@ -71,7 +79,7 @@ local pattern = P{
     atom_query = (V"atom" * P"?") /
              function(atom) return { [0] = "?", atom } end,
     
-    atom = any + charset + (P"(" * V"subpat" * P")") + char,
+    atom = any + word_start + word_end + charset + (P"(" * V"subpat" * P")") + char,
 }
 
 local function foldr(f, t, init)
@@ -155,6 +163,12 @@ local function re_to_peg(retab, k)
     elseif t == "?" then
         assert(#retab == 1)
         return re_to_peg(retab[1], k) + k
+    elseif t == "\\<" then
+        assert(#retab == 0)
+        return -B(wordchar) * #wordchar * k
+    elseif t == "\\>" then
+        assert(#retab == 0)
+        return B(wordchar) * (-#wordchar) * k
     else
         error("Not implemented op: " ..tostring(t) .. "/" .. tostring(retab))
     end
