@@ -31,7 +31,7 @@ function M.find(regex, forward)
         local s, e = m._start, m._end
         buffer:set_sel(e, s)
     else
-        ui.print("Not found")
+        ui.statusbar_text = "Not found"
     end
     
     return false
