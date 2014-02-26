@@ -12,9 +12,8 @@ end
 function M.find(regex, forward)
     local pat = vi_regex.compile(regex)
     
-    local startpos = buffer.current_pos + 1
-    local endpos = buffer.length
-    
+    -- Search a subset of the buffer, and adjust the match to set the
+    -- start/end pointers correctly.
     local function search(startpos, endpos)
         local m = pat:match(buffer:text_range(startpos, endpos))
         if m then
@@ -25,7 +24,39 @@ function M.find(regex, forward)
         return m
     end
     
-    local m = search(startpos, endpos) or search(0, endpos)
+    -- As search(), but search backwards.
+    -- This isn't as efficient, as it searches forward and waits for the
+    -- last match.
+    local function search_rev(startpos, endpos)
+        local res = nil
+        while true do
+            local m = search(startpos, endpos)
+            if m then
+                -- a later match than we'd previously had
+                res = m
+
+                -- Start searching from this point (non-overlapping)
+                startpos = m._end
+            else
+                -- no other matches - return the last we got.
+                break
+            end
+        end
+        return res
+    end
+    
+    local m = nil
+    if forward then
+        local startpos = buffer.current_pos + 1
+        local endpos = buffer.length
+    
+        m = search(startpos, endpos) or search(0, endpos)
+    else
+        local startpos = 0
+        local endpos = buffer.current_pos
+        
+        m = search_rev(startpos, endpos) or search_rev(0, buffer.length)
+    end
     
     if m then
         local s, e = m._start, m._end
