@@ -160,7 +160,7 @@ local function re_to_peg(retab, k)
         return re_to_peg(retab[1], P{"A", A=re_to_peg(retab[1], V"A") + k})
     elseif t == "." then
         assert(#retab == 0)
-        return P(1) * k
+        return (P(1) - P"\n") * k
     elseif t == "?" then
         assert(#retab == 1)
         return re_to_peg(retab[1], k) + k
