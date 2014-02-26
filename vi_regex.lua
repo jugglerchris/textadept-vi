@@ -33,7 +33,7 @@ local mt = {
     },
 }
 
-local special = S"()\\?*+|"
+local special = S"()\\?*+|."
 local any = P"." * Cc({[0] = "."})
 local charset_special = S"]-"
 local charset_char = C(P(1) - charset_special) /
@@ -43,6 +43,7 @@ local range = (C(P(1) - charset_special) * P"-" * C(P(1) - charset_special)) /
 local charset = P"[" * Ct((range + charset_char)^0) * P"]" /
     function(x) x[0] = "charset" return x end
 local char = C(P(1) - special) / function(c) return { [0] = "char", c } end
+local escapechar = (P"\\" * C(special)) / function(c) return { [0] = "char", c } end
 
 local wordchar = R("AZ", "az") + S("_")
 local nonwordchar = 1 - wordchar
@@ -79,7 +80,7 @@ local pattern = P{
     atom_query = (V"atom" * P"?") /
              function(atom) return { [0] = "?", atom } end,
     
-    atom = any + word_start + word_end + charset + (P"(" * V"subpat" * P")") + char,
+    atom = any + word_start + word_end + escapechar + charset + (P"(" * V"subpat" * P")") + char,
 }
 
 local function foldr(f, t, init)
