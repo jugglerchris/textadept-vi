@@ -1,4 +1,4 @@
--- Copyright (C) Chris Emerson <github@mail.nosreme.org>
+-- Copyright (C) 2014 Chris Emerson <github@mail.nosreme.org>
 -- See LICENSE for details (MIT license).
 local M = {}
 
