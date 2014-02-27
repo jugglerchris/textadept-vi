@@ -1,3 +1,6 @@
-local find = require 'regex_find'
+-- Copyright (C) Chris Emerson <github@mail.nosreme.org>
+-- See LICENSE for details (MIT license).
 
-return find
+local M = require 'regex_find'
+
+return M
