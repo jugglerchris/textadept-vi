@@ -14,14 +14,14 @@ natively in Textadept (which eg don't include "|").
 |--------|---------|
 | .      | Any character except newline |
 | [abA-Z]| The characters a,b, or any capital letter |
-| \<     | Zero-length, matches just before the start of a word |
-| \>     | Zero-length, matches just after the end of a word |
+| \\<     | Zero-length, matches just before the start of a word |
+| \\>     | Zero-length, matches just after the end of a word |
 | foo&#124;bar      | Match foo or bar |
 | (pat)  | Match the same as pat (subgroup) |
 | x*     | Match zero or more x |
 | x+     | match one or more x |
 | x?     | match zero or one x |
-| \x     | Where x is one of: ()\?*+&#124;. : match the character x |
+| \\x     | Where x is one of: ()\\?*+&#124;. : match the character x |
 
 Installation
 ------------
