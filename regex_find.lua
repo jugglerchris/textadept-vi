@@ -2,7 +2,7 @@
 -- See LICENSE for details (MIT license).
 local M = {}
 
-local regex = require'regex'
+local ta_regex = require 'ta-regex.regex'
 
 -- Replace textadept's events.FIND handler with one implementing better regex.
 
@@ -12,7 +12,7 @@ end
 
 -- Find expression forwards from the current point.
 function M.find(regex, forward)
-    local pat = vi_regex.compile(regex)
+    local pat = ta_regex.compile(regex)
     
     -- Search a subset of the buffer, and adjust the match to set the
     -- start/end pointers correctly.
