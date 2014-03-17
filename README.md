@@ -20,7 +20,7 @@ following:
 ```lua
 package.path = "/home/username/.textadept/textadept-vi/?.lua;" .. package.path
 package.cpath = "/home/username/.textadept/textadept-vi/?.so;" .. package.cpath
-_M.vi_mode = require 'vi_mode'
+_G.vi_mode = require 'vi_mode'
 ```
 
 Support
