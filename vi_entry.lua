@@ -9,6 +9,9 @@ local function ve_refresh(buf)
   buf:add_text(buf.data.prompt, redux.core.style.error)
   buf:add_text(buf.data.text, redux.core.style.comment)
   buf:goto_pos(buf.data.pos + #buf.data.prompt)
+
+  local linesize = CURSES and 1 or 20
+  local offset = CURSES and 4 or 100
   
   if buf.data.completions then
       local cs = buf.data.completions
@@ -20,10 +23,10 @@ local function ve_refresh(buf)
       end
       local lines = buf.line_count
       if lines > 6 then lines = 6 end
-      view.size = ui.size[2] - 4 - (lines-1)
+      view.size = ui.size[2] - offset - linesize * (lines-1)
   else
       -- go back to one line if necessary
-      view.size = ui.size[2] - 4
+      view.size = ui.size[2] - offset
   end
 end
 
@@ -165,6 +168,24 @@ local function complete_now(expand)
     end
 end
 
+local function do_enter()
+    local buf = buffer._textredux
+    local saved = buf.data.saved
+    local cmd = buf:get_text():sub(#buf.data.prompt + 1)
+    local handler = buf.data.handler
+    local hist = buf.data.context._history
+    local histsaveidx = buf.data.histsaveidx
+    buf:close()
+    unsplit_all()
+    local newcur = restore_into(view,saved)
+    if newcur and _VIEWS[newcur] then
+      ui.goto_view(_VIEWS[newcur])
+    end
+    -- Save the command in the history
+    hist[histsaveidx] = cmd
+    handler(cmd)
+end
+
 local ve_keys = {
     ['\t'] = function()
         complete_now(true)
@@ -202,23 +223,8 @@ local ve_keys = {
             ui.goto_view(_VIEWS[newcur])
         end
     end,
-    ['\r'] = function()
-        local buf = buffer._textredux
-        local saved = buf.data.saved
-        local cmd = buf:get_text():sub(#buf.data.prompt + 1)
-        local handler = buf.data.handler
-        local hist = buf.data.context._history
-        local histsaveidx = buf.data.histsaveidx
-        buf:close()
-        unsplit_all()
-        local newcur = restore_into(view,saved)
-        if newcur and _VIEWS[newcur] then
-          ui.goto_view(_VIEWS[newcur])
-        end
-        -- Save the command in the history
-        hist[histsaveidx] = cmd
-        handler(cmd)
-    end,
+    ['\r'] = do_enter,
+    ['\n'] = do_enter,
     up = function()
         local buf = buffer._textredux
         local idx = buf.data.histidx
