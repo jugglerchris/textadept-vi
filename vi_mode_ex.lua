@@ -5,6 +5,8 @@ local vi_tags = require('vi_tags')
 local vi_quickfix = require('vi_quickfix')
 M.use_vi_entry = true
 local vi_entry
+local lpeg = require 'lpeg'
+local P, R, Cc, Cf, Cp = lpeg.P, lpeg.R, lpeg.Cc, lpeg.Cf, lpeg.Cp
 
 -- Support for saving state over reset
 local state = {
@@ -53,6 +55,47 @@ local function split(s)
         ret[#ret+1] = word
     end
     return ret
+end
+
+-- Helper functions for parsing addresses
+local function _curline()
+    return buffer:line_from_position(buffer.current_pos) + 1
+end
+local function _lastline()
+    return buffer.line_count
+end
+
+local function _tolinenum(a)
+    return tonumber(a)
+end
+
+-- Take two numbers and produce a range.
+local function _mk_range(a, b)
+    return { a, b }
+end
+
+local function neg(a) return -a end
+local function add(a,b) return a+b end
+    
+-- Pattern for matching an address.  Returns a line number.
+local ex_addr_num = (R"09" ^ 1) / _tolinenum
+local ex_addr_here = (P".") / _curline
+local ex_addr_end = (P"$") / _lastline
+local ex_addr_base = ex_addr_num + ex_addr_here + ex_addr_end
+local addr_adder = (P"+" * ex_addr_num)
+local addr_subber = (P"-" * ex_addr_num) / neg
+local ex_addr = Cf(ex_addr_base * (addr_adder + addr_subber)^0, add)
+
+-- And a range returns a pair of line numbers { start, end }
+local ex_range = ((ex_addr * "," * ex_addr)/_mk_range + (P(0) * Cc(nil))) * Cp()
+
+-- Parse an ex command, including optional range and command
+function M.parse_ex_cmd(s)
+    local range, nextpos = ex_range:match(s)
+    
+    local args = split(s:sub(nextpos))
+    
+    return args, range
 end
 
 local function ex_error(msg)
@@ -435,7 +478,7 @@ local function handle_ex_command(command)
       if not command:match("^%s*$") then
         ui.statusbar_text = "Ex: "..command
         state.history[state.histidx] = command
-        local cmd = split(command)
+        local cmd, range = M.parse_ex_cmd(command)
         -- For now, a very simple command parser
         local handler = M.ex_commands[cmd[1]]
         
