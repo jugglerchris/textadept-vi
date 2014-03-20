@@ -15,8 +15,8 @@ M.debug = false
 
 -- Catch any errors that happen.
 events.connect(events.ERROR, function(...)
-    log(M.tostring({...}).."\n")
-    log(debug.traceback())
+    log(M.tostring(...).."\n")
+    if M.debug then log(debug.traceback()) end
 end, 1)
 
 local function logd(msg)
@@ -354,8 +354,16 @@ function M.getscreen(first, last)
     
     local tmux = io.popen("TMUX= tmux -q -S ./output/tmux-socket -C capture-pane -S "..first.." -E "..last.." -p", "r")
     
-    data = tmux:read("*a")
+    local parts = {}
+    for line in tmux:lines("*L") do
+        if line:match('^%%begin') or line:match('^%%end') then
+           -- skip this line
+        else
+            parts[#parts+1] = line
+        end
+    end
     tmux:close()
+    local data = table.concat(parts)
     return data
 end
 

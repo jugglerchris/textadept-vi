@@ -487,7 +487,7 @@ local function handle_ex_command(command)
             handler = debugwrap(handler)
 
             state.last_cmd = command
-            result = handler(cmd)
+            result = handler(cmd, range)
         else
             ex_error("Bad command <" .. tostring(cmd[1]) .. ">")
         end
