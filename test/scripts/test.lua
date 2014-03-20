@@ -14,7 +14,10 @@ M.log = log
 M.debug = false
 
 -- Catch any errors that happen.
-events.connect(events.ERROR, log, 1)
+events.connect(events.ERROR, function(...)
+    log(M.tostring({...}).."\n")
+    log(debug.traceback())
+end, 1)
 
 local function logd(msg)
     if M.debug then log(msg) end
@@ -349,7 +352,7 @@ function M.getscreen(first, last)
     first = first or 0
     last = last or 23
     
-    local tmux = io.popen("TMUX= tmux -S ./output/tmux-socket -C capture-pane -S "..first.." -E "..last.." -p", "r")
+    local tmux = io.popen("TMUX= tmux -q -S ./output/tmux-socket -C capture-pane -S "..first.." -E "..last.." -p", "r")
     
     data = tmux:read("*a")
     tmux:close()
