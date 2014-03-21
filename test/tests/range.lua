@@ -15,11 +15,14 @@ local ranges = {
   { '4+4,10xx', { { 8, 10} , {'xx'} } },
   { '.,.+4xx yy', { { 1, 5}, {'xx', 'yy'} } },
   { '1,$blah', { { 1, 101 }, {'blah'}}},
+  { '/10/,3xx', { { 10, 3 }, {'xx'}}},
+  { '4,/10/xx', { { 4, 10 }, {'xx'}}},
+  { '4,/33/xx', { { 4, 33 }, {'xx'}}},
 }
 
 for _, data in pairs(ranges) do
     local addrstring = data[1]
     local cmd, addr = vi_mode_ex.parse_ex_cmd(addrstring)
-    assertEq(addr, data[2][1])
     assertEq(cmd, data[2][2])
+    assertEq(addr, data[2][1])
 end

@@ -3,10 +3,11 @@
 local M = {}
 local vi_tags = require('vi_tags')
 local vi_quickfix = require('vi_quickfix')
+local vi_regex = require('vi_regex')
 M.use_vi_entry = true
 local vi_entry
 local lpeg = require 'lpeg'
-local P, R, Cc, Cf, Cp = lpeg.P, lpeg.R, lpeg.Cc, lpeg.Cf, lpeg.Cp
+local P, R, C, Cc, Cf, Cp = lpeg.P, lpeg.R, lpeg.C, lpeg.Cc, lpeg.Cf, lpeg.Cp
 
 -- Support for saving state over reset
 local state = {
@@ -69,6 +70,18 @@ local function _tolinenum(a)
     return tonumber(a)
 end
 
+local function _searchfwd(re)
+    local pat = vi_regex.compile(re)
+    local lineno = _curline()
+    
+    for i=lineno,_lastline() do
+        if pat:match(buffer:get_line(i-1)) then
+            return i
+        end
+    end
+    error("Pattern '"..re.."' not found")
+end
+
 -- Take two numbers and produce a range.
 local function _mk_range(a, b)
     return { a, b }
@@ -81,7 +94,8 @@ local function add(a,b) return a+b end
 local ex_addr_num = (R"09" ^ 1) / _tolinenum
 local ex_addr_here = (P".") / _curline
 local ex_addr_end = (P"$") / _lastline
-local ex_addr_base = ex_addr_num + ex_addr_here + ex_addr_end
+local ex_addr_fwd = (P"/" * C((1 - P("/")) ^ 1) * P"/") / _searchfwd
+local ex_addr_base = ex_addr_num + ex_addr_here + ex_addr_end + ex_addr_fwd
 local addr_adder = (P"+" * ex_addr_num)
 local addr_subber = (P"-" * ex_addr_num) / neg
 local ex_addr = Cf(ex_addr_base * (addr_adder + addr_subber)^0, add)
