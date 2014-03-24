@@ -65,7 +65,7 @@ function M.reindent(start, end_, mtype)
     while prev_lineno >= 0 do
         local prev_line = buffer:get_line(prev_lineno)
         if not prev_line:match('^%s*$') then
-            local prev_indent = prev_line:match(" *()") - 1
+            local prev_indent = buffer.line_indentation[prev_lineno]
             next_indent = prev_indent + indent_inc * pat:match(prev_line)
             -- disregard any dedent we would have applied to the previous line
             next_indent = next_indent - indent_inc * dpat:match(prev_line)
@@ -86,16 +86,8 @@ function M.reindent(start, end_, mtype)
             -- make us want to dedent (eg closing brace/tag)
             this_indent = this_indent + indent_inc * dpat:match(line)
             
-            -- also, replace any whitespace-only line with a blank line.
-            -- (newlines are inluded here)
-            if line:match('^%s*$') then
-                line = '\n'
-            else
-                line = line:gsub("^%s*", (" "):rep(this_indent))
-            end
-            buffer:set_selection(buffer:position_from_line(lineno+1),
-                                 buffer:position_from_line(lineno))
-            buffer:replace_sel(line)
+            -- If a line is all blanks, remove any whitespace.
+            buffer.line_indentation[lineno] = line:match('^%s*$') and 0 or this_indent
         else
             next_indent = 0
         end
