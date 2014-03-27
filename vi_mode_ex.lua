@@ -3,7 +3,7 @@
 local M = {}
 local vi_tags = require('vi_tags')
 local vi_quickfix = require('vi_quickfix')
-local vi_regex = require('vi_regex')
+local vi_regex = require('regex.regex')
 M.use_vi_entry = true
 local vi_entry
 local lpeg = require 'lpeg'
@@ -73,7 +73,7 @@ end
 local function _searchfwd(re)
     local pat = vi_regex.compile(re)
     local lineno = _curline()
-    
+
     for i=lineno,_lastline() do
         if pat:match(buffer:get_line(i-1)) then
             return i
@@ -94,7 +94,7 @@ end
 
 local function neg(a) return -a end
 local function add(a,b) return a+b end
-    
+
 -- Pattern for matching an address.  Returns a line number.
 local ex_addr_num = (R"09" ^ 1) / _tolinenum
 local ex_addr_here = (P".") / _curline
@@ -111,9 +111,9 @@ local ex_range = ((((ex_addr + P(0)/_curline) * "," * ex_addr)/_mk_range) + (ex_
 -- Parse an ex command, including optional range and command
 function M.parse_ex_cmd(s)
     local range, nextpos = ex_range:match(s)
-    
+
     local args = split(s:sub(nextpos))
-    
+
     return args, range
 end
 
@@ -326,10 +326,10 @@ M.ex_commands = {
                 if cur_view ~= my_view then
                     ui.goto_view(_VIEWS[my_view])
                 end
-                    
+
                 msgbuf:append_text(s)
                 msgbuf:goto_pos(msgbuf.length)
-                
+
                 if my_view ~= cur_view then
                     ui.goto_view(_VIEWS[cur_view])
                 end
@@ -337,16 +337,16 @@ M.ex_commands = {
         end
         os.spawn(nil, command, nil, nil, getoutput, getoutput)
     end,
-    
+
     -- Search files
     lgrep = function(args)
         local pat = args[2]
         if not pat then return end
-        
+
         local root = args[3] or '.'
-        
+
         local results = {}
-        
+
         local function search(filename)
             local f, err = io.open(filename)
             if not f then
@@ -500,7 +500,7 @@ local function handle_ex_command(command)
         local cmd, range = M.parse_ex_cmd(command)
         -- For now, a very simple command parser
         local handler = M.ex_commands[cmd[1]]
-        
+
         ui.command_entry.entry_text = ""
         if handler ~= nil then
             handler = debugwrap(handler)
@@ -567,7 +567,7 @@ end
 local function luapat_escape(s)
     -- replace metacharacters
     s = s:gsub("[%(%)%%%.%[%]%*%+%-%?]", function (s) return "%"..s end)
-    
+
     -- ^ and $ only apply at the start/end
     if s:sub(1,1) == "^" then s = "%" .. s end
     if s:sub(-1,-1) == "$" then s = s:sub(1,-2) .. "%$" end
@@ -587,7 +587,7 @@ function matching_files(text, doescape)
     if text == "%" then
         return { escape(state.cur_buf.filename) }
     end
-    
+
     local patparts = {} -- the pieces of the pattern
     -- Split the pattern into parts separated by /
     if text then
@@ -604,7 +604,7 @@ function matching_files(text, doescape)
     local parts = { }
     -- Set of directories to look in
     local dirs = { }
-    
+
     -- The start depends on whether the path is absolute or relative
     if text and text:sub(1, 1) == '/' then
         table.insert(dirs, '/')
@@ -615,17 +615,17 @@ function matching_files(text, doescape)
     -- For each path section
     for level, patpart in ipairs(patparts) do
       local last = (level == #patparts)
-      
+
       -- If the last part, then allow trailing parts
       -- TODO: if we complete from a middle-part, then
       -- this test should be for where the cursor is.
       if last then patpart = patpart .. ".*" end
       -- should only match the start of each component
       patpart = "^" .. patpart
-      
+
       -- The set of paths for the following loop
       local newdirs = {}
-      
+
       -- For each possible directory at this level
       for _,dir in ipairs(dirs) do
         for fname in lfs.dir(dir) do
@@ -637,7 +637,7 @@ function matching_files(text, doescape)
                 fullpath = dir .. fname
             end
             local isdir = lfs.attributes(fullpath, 'mode') == 'directory'
-            
+
             -- Record this path if it's not a non-directory with more path
             -- parts to go.
             if lfs.attributes(fullpath, 'mode') == 'directory' then
@@ -651,7 +651,7 @@ function matching_files(text, doescape)
       -- Switch to the next level of items
       dirs = newdirs
     end  -- loop through pattern parts
-    
+
     -- Find out the set of components at each level
     -- parts[level] is a table { fname=1,fname2=1, fname,fname2}
     local parts = {}
@@ -660,14 +660,14 @@ function matching_files(text, doescape)
         for piece in res:gmatch('[^/]*') do
             ps = parts[level] or {}
             parts[level] = ps
-            
+
             if ps[piece] == nil then
               ps[piece] = 1
               table.insert(ps, piece)
             end
         end
     end
-    
+
     -- Now rebuild the pattern, with some ambiguities removed
     local narrowed = false  -- whether we've added more unambiguous info
     local newparts = {}
@@ -741,7 +741,7 @@ M.completions = {
 
 -- Completers for the new entry method
 M.completions_word = {
-    b = matching_buffers, 
+    b = matching_buffers,
     e = function(text) return matching_files(text) end,
     w = function(text) return matching_files(text) end,
     tag = vi_tags.match_tag,
@@ -774,7 +774,7 @@ keys.vi_ex_command = {
         if state.histidx > 1 then
             -- Save current text
             state.history[state.histidx] = ui_ce.entry_text
-            
+
             state.histidx = state.histidx - 1
             ui_ce.entry_text = state.history[state.histidx]
         end
@@ -783,7 +783,7 @@ keys.vi_ex_command = {
         if state.histidx < #state.history then
             -- Save current text
             state.history[state.histidx] = ui_ce.entry_text
-            
+
             state.histidx = state.histidx + 1
             ui_ce.entry_text = state.history[state.histidx]
         end
@@ -806,7 +806,7 @@ end
 function M.start(exitfunc)
     state.exitfunc = exitfunc
     state.histidx = #state.history + 1  -- new command is after the end of the history
-    
+
     -- If using vi_entry, the current buffer won't be easily available.
     state.cur_buf = buffer
     if M.use_vi_entry then

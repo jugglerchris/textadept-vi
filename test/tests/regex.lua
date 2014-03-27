@@ -1,6 +1,6 @@
 local assertEq = test.assertEq
 local function log(x) test.log(tostring(x) .. "\n") end
-local vi_regex = require('vi_regex')
+local vi_regex = require('regex.regex')
 local compile = vi_regex.compile
 
 local pat = compile('fo+[ab]ar')
