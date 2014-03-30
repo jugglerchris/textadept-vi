@@ -11,6 +11,7 @@ local S = lpeg.S
 local C = lpeg.C
 local V = lpeg.V
 local B = lpeg.B
+local Carg = lpeg.Carg
 local Cb = lpeg.Cb
 local Cc = lpeg.Cc
 local Cf = lpeg.Cf
@@ -36,7 +37,7 @@ local mt = {
             
             if result == nil then return result end
             -- Post-process to put the matches into a nicer form
-            local groups = {}
+            local groups = nil
             for k,v in pairs(result) do
                 if k:sub(1,1) == "s" then
                     local grpname= k:sub(2)
@@ -45,6 +46,7 @@ local mt = {
                         if grpname:match("(%d+)") then
                             grpname = tonumber(grpname)
                         end
+                        groups = groups or {}
                         groups[grpname] = {v,endpos}
                         result[k] = nil
                         result["e"..grpname] = nil
@@ -103,7 +105,7 @@ local pattern = P{
     "pattern",
     
     -- A complete pattern, starting from an empty pattern.
-    pattern = Cg(Cc({open={}}),"groups") * Ct((P"^"*Cg(Cc(1),"anchorstart") + P(0)) * V"subpat" * (P"$"*(-P(1))*Cg(Cc(1),"anchorend") + (-P(1)))) / 
+    pattern = Cg(Carg(1),"groups") * Ct((P"^"*Cg(Cc(1),"anchorstart") + P(0)) * V"subpat" * (P"$"*(-P(1))*Cg(Cc(1),"anchorend") + (-P(1)))) / 
              function(t) t[0] = "pattern" ; return t end,
     
     -- A set of alternate branches
@@ -233,13 +235,13 @@ local function re_to_peg(retab, k)
 end
 
 function M.parse(re)
-    return pattern:match(re)
+    return pattern:match(re, 1, {open={}})
 end
 function M.compile(re)
     -- Since the RE->Peg construction starts backwards (using the
     -- continuation), it's more convenient to parse the regular expression
     -- backwards.
-    local retab = pattern:match(re)
+    local retab = M.parse(re)
     if retab == nil then
         error("Failed to parse regular expression: {"..re.."}", 2)
     end
