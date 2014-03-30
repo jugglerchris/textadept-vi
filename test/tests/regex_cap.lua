@@ -18,3 +18,8 @@ pat = compile('a(foo|bar)*b')
 assertEq(pat:match("ab"), {_start=1,_end=2,})
 assertEq(pat:match("afoob"), {_start=1,_end=5, groups={{2,4}},})
 assertEq(pat:match("afoobarb"), {_start=1,_end=8, groups={{5,7}},})
+
+pat = compile('a([a-z]*)z X([0-9]*)Y')
+
+assertEq(pat:match('az XY'), {_start=1, _end=5})
+assertEq(pat:match('aasdfz X123Y'), {_start=1, _end=12, groups={{2,5},{9,11}}})
