@@ -57,6 +57,7 @@ test.queue(function()
     test.run('ai')  -- aw, iw, etc.
     test.run('_e')  -- :e
     test.run('regex')
+    test.run('regex_cap')
     test.run('range')
     test.run('colonrange')
 end)

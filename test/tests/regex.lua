@@ -11,7 +11,7 @@ assertEq(pat:match("foblahfoobar"), {_start=7, _end=12})
 assertEq(pat:match("foblahfooaar"), {_start=7, _end=12})
 assertEq(pat:match("fbar"), nil)
 
-local pat = compile('(foo|bar)+')
+local pat = compile('(?:foo|bar)+')
 
 assertEq(pat:match("asdfoo"), { _start=4, _end=6 })
 assertEq(pat:match("asdfobar"), { _start=6, _end=8 })
@@ -40,3 +40,12 @@ assertEq(pat:match('axxbcdef'), { _start=1,_end=4 })
 assertEq(pat:match('abcdef'), { _start=1,_end=2 })
 assertEq(pat:match('abcdebf'), { _start=1,_end=6 })
 assertEq(pat:match('ababab'), { _start=1, _end=6 })
+
+local pat = compile('\\<foo\\>')
+
+assertEq(pat:match('foo'), { _start=1, _end=3 })
+assertEq(pat:match('afoo'), nil)
+assertEq(pat:match('foob'), nil)
+assertEq(pat:match('a foo b'), { _start=3, _end=5 })
+assertEq(pat:match('a afoo b'), nil)
+assertEq(pat:match('a foob b'), nil)
