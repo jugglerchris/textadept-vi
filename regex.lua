@@ -11,6 +11,7 @@ local S = lpeg.S
 local C = lpeg.C
 local V = lpeg.V
 local B = lpeg.B
+local Cb = lpeg.Cb
 local Cc = lpeg.Cc
 local Cf = lpeg.Cf
 local Cp = lpeg.Cp
@@ -31,7 +32,27 @@ local _end = Cg(Cp()/sub1, "_end")
 local mt = {
     __index = {
         match = function(t, s)
-            return t._pat:match(s)
+            local result = t._pat:match(s)
+            
+            if result == nil then return result end
+            -- Post-process to put the matches into a nicer form
+            local groups = {}
+            for k,v in pairs(result) do
+                if k:sub(1,1) == "s" then
+                    local grpname= k:sub(2)
+                    local endpos = result["e"..grpname]
+                    if v and endpos then
+                        if grpname:match("(%d+)") then
+                            grpname = tonumber(grpname)
+                        end
+                        groups[grpname] = {v,endpos}
+                        result[k] = nil
+                        result["e"..grpname] = nil
+                    end
+                end
+            end
+            result.groups = groups
+            return result
         end,
     },
 }
@@ -55,11 +76,34 @@ local nonwordchar = 1 - wordchar
 local word_start = P"\\<" * Cc({[0] = "\\<"})
 local word_end = P"\\>" * Cc({[0] = "\\>"})
 
+-- Grouping
+local newgrp = (Cb("groups") * Cp()) /
+                   function(groups, pos)
+                      local grp = #groups+1
+                      groups[grp] = {pos}
+                      groups.open[#groups.open] = grp
+                   end
+                   
+-- endgrp leaves the group number or name as a capture
+local endgrp = (Cb("groups") * Cp()) /
+                   function(groups, pos)
+                       local grp = groups.open[#groups.open]
+                       groups.open[#groups.open] = nil
+                       groups[grp][2] = pos
+                       return grp
+                   end
+     
+local bra = P"(" * newgrp
+local ket = P")" * endgrp
+
+local anonbra = P"(?:"
+local anonket = P")"
+
 local pattern = P{
     "pattern",
     
     -- A complete pattern, starting from an empty pattern.
-    pattern = Ct((P"^"*Cg(Cc(1),"anchorstart") + P(0)) * V"subpat" * (P"$"*(-P(1))*Cg(Cc(1),"anchorend") + (-P(1)))) / 
+    pattern = Cg(Cc({open={}}),"groups") * Ct((P"^"*Cg(Cc(1),"anchorstart") + P(0)) * V"subpat" * (P"$"*(-P(1))*Cg(Cc(1),"anchorend") + (-P(1)))) / 
              function(t) t[0] = "pattern" ; return t end,
     
     -- A set of alternate branches
@@ -83,7 +127,10 @@ local pattern = P{
     atom_query = (V"atom" * P"?") /
              function(atom) return { [0] = "?", atom } end,
     
-    atom = any + word_start + word_end + escapechar + charset + (P"(" * V"subpat" * P")") + char,
+    anongroup = (anonbra * V"subpat" * anonket),
+    group = (bra * V"subpat" * ket) /
+             function(subpat, grpname) return { [0] = "group", subpat, grpname } end,
+    atom = any + word_start + word_end + escapechar + charset + V"anongroup" + V"group" + char,
 }
 
 local function foldr(f, t, init)
@@ -141,6 +188,13 @@ local function re_to_peg(retab, k)
         if retab.anchorend then
             error("$ not implemented")
         end
+        return pat
+    elseif t == "group" then
+        assert(#retab == 2)
+        local grpname = tostring(retab[2])
+        local newk = Cg(Cp()/sub1, "e"..grpname) * k
+        local pat = re_to_peg(retab[1], newk)
+        pat = Cg(Cp(), "s"..grpname) * pat
         return pat
     elseif t == "alt" then
         if #retab == 1 then
