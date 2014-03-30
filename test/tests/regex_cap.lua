@@ -12,6 +12,9 @@ assertEq(pat:match("axyzbb"), {_start=1,_end=6, groups={{2,5}},})
 
 pat = compile('a(foo|bar)*b')
 
-assertEq(pat:match("ab"), {_start=1,_end=2, groups={},})
+--log(test.tostring(vi_regex.parse('a(foo|bar)*b'), ''))
+--log(test.tostring(vi_regex.parse('a(foo|bar)*b'), ''))
+
+assertEq(pat:match("ab"), {_start=1,_end=2,})
 assertEq(pat:match("afoob"), {_start=1,_end=5, groups={{2,4}},})
 assertEq(pat:match("afoobarb"), {_start=1,_end=8, groups={{5,7}},})
