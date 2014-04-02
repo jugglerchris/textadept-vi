@@ -32,8 +32,8 @@ local _start = Cg(Cp(), "_start")
 local _end = Cg(Cp()/sub1, "_end")
 local mt = {
     __index = {
-        match = function(t, s)
-            local result = t._pat:match(s)
+        match = function(t, s, index)
+            local result = t._pat:match(s, index)
             
             if result == nil then return result end
             -- Post-process to put the matches into a nicer form
