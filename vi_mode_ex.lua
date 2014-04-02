@@ -91,7 +91,13 @@ local function add(a,b) return a+b end
 local ex_addr_num = (R"09" ^ 1) / _tolinenum
 local ex_addr_here = (P".") / _curline
 local ex_addr_end = (P"$") / _lastline
-local ex_addr_fwd = (P"/" * C((1 - P("/")) ^ 1) * P"/") / _searchfwd
+
+-- A regular expressions.
+local ex_quoted_slash = (P"\\/" + (1 - P"/"))
+local ex_pattern_nonempty = ex_quoted_slash ^ 1
+local ex_pattern = ex_pattern_nonempty + P(0)
+
+local ex_addr_fwd = (P"/" * C(ex_pattern_nonempty ^ 1) * P"/") / _searchfwd
 local ex_addr_base = ex_addr_num + ex_addr_here + ex_addr_end + ex_addr_fwd
 local addr_adder = (P"+" * ex_addr_num)
 local addr_subber = (P"-" * ex_addr_num) / neg
@@ -102,11 +108,25 @@ local ex_range = ((((ex_addr + P(0)/_curline) * "," * ex_addr)/_mk_range) + (ex_
 
 local ex_ws = S" \t"
 
-local ex_cmd = ex_range * (ex_ws ^ 0) * Ct((C((1 - ex_ws) ^ 1) * (ex_ws ^ 0)) ^0)
+-- A simple command (plain words).  TODO: add quoting.
+local ex_cmd_simple = (C((1 - ex_ws) ^ 1) * (ex_ws ^ 0)) ^ 1
+
+local function unquote_slash(s)
+    -- In () to lose the second return value
+    return (s:gsub("\\/", "/"))
+end
+
+-- The s command
+local ex_cmd_s = C(P("s")) * P("/") * (ex_pattern/unquote_slash) * P("/") * 
+                                   ((ex_quoted_slash ^ 0)/unquote_slash) * P("/") * C(R("az")^0)
+
+local ex_cmd = Ct(ex_cmd_s + ex_cmd_simple)
+
+local ex_cmdline = ex_range * (ex_ws ^ 0) * ex_cmd
 
 -- Parse an ex command, including optional range and command
 function M.parse_ex_cmd(s)
-    local range, args = ex_cmd:match(s)
+    local range, args = ex_cmdline:match(s)
 
     return args, range
 end

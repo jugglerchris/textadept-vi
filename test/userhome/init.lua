@@ -59,6 +59,7 @@ test.queue(function()
     test.run('regex')
     test.run('regex_cap')
     test.run('range')
+    test.run('ex_parse')
     test.run('colonrange')
 end)
 
