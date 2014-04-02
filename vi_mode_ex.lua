@@ -7,7 +7,8 @@ local vi_regex = require('regex.regex')
 M.use_vi_entry = true
 local vi_entry
 local lpeg = require 'lpeg'
-local P, R, C, Cc, Cf, Cp = lpeg.P, lpeg.R, lpeg.C, lpeg.Cc, lpeg.Cf, lpeg.Cp
+local P, R, S = lpeg.P, lpeg.R, lpeg.S
+local C, Cc, Cf, Cp, Ct = lpeg.C, lpeg.Cc, lpeg.Cf, lpeg.Cp, lpeg.Ct
 
 -- Support for saving state over reset
 local state = {
@@ -47,15 +48,6 @@ local matching_files
 local do_debug = false
 local function dbg(...)
     if do_debug then ui._print("ex", ...) end
-end
-
-local function split(s)
-    local ret = {}
-    --dbg("split(" .. s ..")")
-    for word in string.gmatch(s, "%S+") do
-        ret[#ret+1] = word
-    end
-    return ret
 end
 
 -- Helper functions for parsing addresses
@@ -106,13 +98,15 @@ local addr_subber = (P"-" * ex_addr_num) / neg
 local ex_addr = Cf(ex_addr_base * (addr_adder + addr_subber)^0, add)
 
 -- And a range returns a pair of line numbers { start, end }
-local ex_range = ((((ex_addr + P(0)/_curline) * "," * ex_addr)/_mk_range) + (ex_addr / _mk_range_single) + (P(0) * Cc(nil))) * Cp()
+local ex_range = ((((ex_addr + P(0)/_curline) * "," * ex_addr)/_mk_range) + (ex_addr / _mk_range_single) + (P(0) * Cc(nil)))
+
+local ex_ws = S" \t"
+
+local ex_cmd = ex_range * (ex_ws ^ 0) * Ct((C((1 - ex_ws) ^ 1) * (ex_ws ^ 0)) ^0)
 
 -- Parse an ex command, including optional range and command
 function M.parse_ex_cmd(s)
-    local range, nextpos = ex_range:match(s)
-
-    local args = split(s:sub(nextpos))
+    local range, args = ex_cmd:match(s)
 
     return args, range
 end
