@@ -61,6 +61,7 @@ test.queue(function()
     test.run('range')
     test.run('ex_parse')
     test.run('colonrange')
+    test.run('subst')
 end)
 
 

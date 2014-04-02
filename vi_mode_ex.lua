@@ -212,6 +212,71 @@ local function expand_filename(s)
     return s
 end
 
+local function command_substitute(args, range)
+    local searchpat = args[2]
+    local replace = args[3]
+    local flagstring = args[4]
+    local flags = {}
+    
+    for i=1,#flagstring do
+        flags[flagstring:sub(i,i)] = true
+    end
+    
+    if range == nil then
+        local lineno = buffer:line_from_position(buffer.current_pos)
+        range = { lineno, lineno }
+    else
+        -- convert from 1-based to 0-based line numbers
+        range = { range[1]-1, range[2]-1 }
+    end
+    
+    local pat = vi_regex.compile(searchpat)
+    if pat == nil then
+        ex_error("Bad pattern.")
+        return
+    end
+    
+    buffer:begin_undo_action()
+    for lineno = range[1], range[2] do
+        local line = buffer:get_line(lineno)
+        local m = pat:match(line)
+        cme_log(m)
+        if m then
+          for k,v in pairs(m) do
+            cme_log(k)
+          end
+        end
+        while m do
+            local groups = {}
+            if m.groups then
+            cme_log(#m.groups)
+            for k,v in pairs(m.groups or {}) do
+                local grp = line:sub(v[1], v[2])
+                groups[tostring(k)] = grp
+            end
+            end
+            local repl = replace:gsub("\\(%d)", function(ref)
+                      return groups[ref] or "<<<"..ref..":"..tostring(groups[ref])..">>>"
+                   end)
+            cme_log("repl: <"..repl..">")
+            line = line:sub(1,m._start-1) .. repl .. line:sub(m._end+1)
+            -- Do the replace
+            local linepos = buffer:position_from_line(lineno)
+            cme_log("linepos:"..linepos)
+            buffer:set_selection(linepos+buffer:line_length(lineno), linepos)
+            buffer:replace_sel(line)
+            
+            -- Keep looking?
+            if flags.g then
+                m = pat:match(line, m._start + #repl)
+            else
+                break
+            end
+        end
+    end
+    buffer:end_undo_action()
+end
+
 M.ex_commands = {
     e = function(args)
         dbg("In e handler")
@@ -487,6 +552,7 @@ M.ex_commands = {
             end)
         end
     end,
+    s = command_substitute,
 }
 
 local function errhandler(msg)
