@@ -67,11 +67,12 @@ local function _searchfwd(re)
     local lineno = _curline()
 
     for i=lineno,_lastline() do
-        if pat:match(buffer:get_line(i-1)) then
+        local line = buffer:get_line(i-1)
+        if pat:match(line) then
             return i
         end
     end
-    error("Pattern '"..re.."' not found")
+    error("Pattern '"..re.."' not found from "..tostring(buffer.filename)..":"..lineno.." (lastline=".._lastline()..")")
 end
 
 -- Take two numbers and produce a range.

@@ -49,3 +49,8 @@ assertEq(pat:match('foob'), nil)
 assertEq(pat:match('a foo b'), { _start=3, _end=5 })
 assertEq(pat:match('a afoo b'), nil)
 assertEq(pat:match('a foob b'), nil)
+
+local pat = compile('10')
+
+assertEq(pat:match('10'), { _start=1, _end=2 })
+assertEq(pat:match('10\n'), { _start=1, _end=2 })
