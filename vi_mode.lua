@@ -255,11 +255,28 @@ end
 --  restarts the undo action.
 local function break_edit(f)
     return function()
+        -- Cancel any autocomplete list if active
+        if buffer:auto_c_active() then
+            buffer:auto_c_cancel()
+        end
         end_undo()
         insert_end_edit()
         f()
         insert_start_edit()
         begin_undo()
+    end
+end
+
+-- Wraps a key handler function to pass the key through to the
+-- autocomplete list if present.
+local function allow_autoc(f)
+    return function()
+        if buffer:auto_c_active() then
+            -- Allow the next handler
+            return false
+        else
+            return f()
+        end
     end
 end
 
@@ -278,14 +295,14 @@ mode_insert = {
             enter_mode(mode_command)
         end,
 
-        up    = break_edit(vi_up),
-        down  = break_edit(vi_down),
+        up    = allow_autoc(break_edit(vi_up)),
+        down  = allow_autoc(break_edit(vi_down)),
         left  = break_edit(buffer.char_left),
         right = break_edit(buffer.char_right),
-        home  = break_edit(buffer.vc_home),
-        ['end']   = break_edit(buffer.line_end),
-        pgup =  break_edit(buffer.page_up),
-        pgdn =  break_edit(buffer.page_down),
+        home  = allow_autoc(break_edit(buffer.vc_home)),
+        ['end'] = allow_autoc(break_edit(buffer.line_end)),
+        pgup =  allow_autoc(break_edit(buffer.page_up)),
+        pgdn =  allow_autoc(break_edit(buffer.page_down)),
 
         -- These don't quite behave as vim, but they'll do for now.
         cp = textadept.editing.autocomplete_word,
