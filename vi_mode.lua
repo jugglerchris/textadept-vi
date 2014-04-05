@@ -13,6 +13,7 @@ M.ex_mode = require 'vi_mode_ex'
 M.search_mode = require 'vi_mode_search'
 M.vi_tags = require 'vi_tags'
 M.lang = require 'vi_lang'
+M.vi_complete = require 'vi_complete'
 
 local vi_motion = require 'vi_motion'
 local vi_motions = require 'vi_motions'
@@ -36,6 +37,7 @@ Make textadept behave a bit like vim.
 -- The current mode (command, insert, etc.)
 COMMAND = "vi_command"
 INSERT = "vi_insert"
+INSERT_CNP = "vi_complete"  -- Ctrl-P/Ctrl-N search mode
 mode = nil  -- initialised below
 
 local debugFlag = false
@@ -305,8 +307,8 @@ mode_insert = {
         pgdn =  allow_autoc(break_edit(buffer.page_down)),
 
         -- These don't quite behave as vim, but they'll do for now.
-        cp = textadept.editing.autocomplete_word,
-        cn = textadept.editing.autocomplete_word,
+        cp = M.vi_complete.complete_backwards,
+        cn = M.vi_complete.complete_forwards,
 
         cv = self_insert_tab,
     }
@@ -1035,6 +1037,7 @@ if M.vi_global then
   keys[COMMAND] = keys
   
   keys[INSERT] = mode_insert.bindings
+  keys[INSERT_CNP] = M.vi_complete.get_keys(keys[INSERT])
   
   -- Convert a motion table to a key function
   local function motion2key(movdesc)

@@ -62,6 +62,7 @@ test.queue(function()
     test.run('ex_parse')
     test.run('colonrange')
     test.run('subst')
+    test.run('vicomp')
 end)
 
 
