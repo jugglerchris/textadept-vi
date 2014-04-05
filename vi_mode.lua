@@ -38,6 +38,11 @@ Make textadept behave a bit like vim.
 COMMAND = "vi_command"
 INSERT = "vi_insert"
 INSERT_CNP = "vi_complete"  -- Ctrl-P/Ctrl-N search mode
+
+M.COMMAND = COMMAND
+M.INSERT = INSERT
+M.INSERT_CNP = INSERT_CNP
+
 mode = nil  -- initialised below
 
 local debugFlag = false

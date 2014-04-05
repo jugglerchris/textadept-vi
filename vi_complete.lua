@@ -1,29 +1,43 @@
 -- Implement word completion (with ctrl-p/ctrl-n) in insert mode.
 local M = {}
 
+-- update the display from the current word after moving.
+local function update_word()
+    -- Save and restore the selection
+    local pos = M.state.pos
+    local sel_start = buffer.selection_start
+    local word = (pos == 0) and M.state.prefix or M.state.words[pos]
+    buffer:replace_sel(word)
+    buffer:set_selection(sel_start + #word, sel_start)
+    return true
+end
+
 local function next_backwards()
     local pos = M.state.pos
-    if pos <= 1 then
+    if pos < 1 then
         pos = #M.state.words
     else
         pos = pos - 1
     end
     M.state.pos = pos
-    buffer:replace_sel(M.state.words[pos])
+    update_word()
 end
 
 local function next_forwards()
     local pos = M.state.pos
     if pos >= #M.state.words then
-        pos = 1
+        pos = 0
     else
         pos = pos + 1
     end
     M.state.pos = pos
-    buffer:replace_sel(M.state.words[pos])
+    update_word()
 end
 
 local function exit_complete()
+    local pos = buffer.current_pos
+    buffer:clear_selections()
+    buffer:goto_pos(pos)
     keys.MODE = vi_mode.INSERT
 end
 
@@ -38,8 +52,8 @@ function M.get_keys(insert_keys)
     }, {
       __index = function(t,k)
                    local f = insert_keys[k]
+                   exit_complete()
                    if f then
-                       exit_complete()
                        return f()
                    end
                 end,
