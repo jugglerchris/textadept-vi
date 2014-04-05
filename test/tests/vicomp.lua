@@ -19,3 +19,6 @@ assertEq({t.find_prefix()}, {4, 't'})
 -- Get the list of matching words
 keys('1G0wl')
 assertEq(t.get_words(true, 4, 't'), {'three', 'text'})
+
+keys('1G0wl')
+assertEq(t.get_words(false, 4, 't'), {'three', 'text'})

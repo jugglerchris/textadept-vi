@@ -50,14 +50,13 @@ M.wordchars = 'a-zA-Z0-9_'
 
 local function get_words(forwards, here, prefix)
     local words = {}  -- ordered list of words
-    local seen = {}
     
     local wordstart = here - #prefix
     
-    search = forwards and buffer.search_next or buffer.search_prev
+    search = buffer.search_next
     
     -- Avoid finding the current word
-    buffer.current_pos = forwards and here or wordstart-1
+    buffer.current_pos = here+1
     buffer.search_anchor()
     
     local endpos = here
@@ -74,37 +73,48 @@ cme_log('Searching for: <<'..pat..'>>, wordstart='..wordstart..', cur='..endpos)
             
             -- Start from the end
             wrapped = true
-            if forwards then
-                buffer.current_pos = 0
-            else
-                buffer.current_pos = buffer.length-1
-            end
+            buffer.current_pos = 0
+            cme_log("Wrapping to "..buffer.current_pos)
             buffer:search_anchor()
             --buffer.anchor = forwards and 0 or buffer.length
-        elseif wrapped and (forwards and (nextpos >= wordstart) or
-                                          (nextpos <= wordstart)) then
+        elseif wrapped and nextpos >= wordstart then
             break
         else
           cme_log('nextpos='..nextpos)
           if nextpos == wordstart or nextpos < 0 then break end
           local word = buffer:get_sel_text()
-          if not seen[word] then
-              seen[word] = true
-              words[#words+1] = word
-          end
-          buffer.current_pos = forwards and nextpos+1 or nextpos-1
+          words[#words+1] = word
+          
+          buffer.current_pos = nextpos+1
           buffer:search_anchor()
         end
-      end
-    -- keep the list in forwards order, so reverse it if needed
-    if not forwards then
-        local newwords = {}
-        for i=#words,1,-1 do
-            newwords[#newwords+1] = words[i]
-        end
-        words = newwords
     end
-    return words
+    -- Remove duplicates in the appropriate direction
+    local result = {}
+    local seen = {}
+    
+    local s, e, step = 1, #words, 1
+    if not forwards then
+        -- Start from the end
+        s, e = e, s
+        step = -1
+    end
+    for i=s,e,step do
+        local w = words[i]
+        if not seen[w] then
+            seen[w] = true
+            result[#result+1] = w
+        end
+    end
+    if not forwards then
+        -- Need to reverse the order
+        local newwords = {}
+        for i=#result,1,-1 do
+            newwords[#newwords+1] = result[i]
+        end
+        result = newwords
+    end
+    return result
 end
 
 -- Return position of first character, and the prefix string.
