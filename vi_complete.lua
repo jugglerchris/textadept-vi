@@ -63,24 +63,20 @@ local function get_words(forwards, here, prefix)
     
     local pat = '\\<'..prefix..'['..M.wordchars..']*\\>'
     
-cme_log('Searching for: <<'..pat..'>>, wordstart='..wordstart..', cur='..endpos)
     local wrapped = false
     while true do
         nextpos = search(buffer, buffer.FIND_REGEXP + buffer.FIND_MATCHCASE, pat) 
-        cme_log('Anextpos='..nextpos)
         if nextpos < 0 then
             if wrapped then break end
             
             -- Start from the end
             wrapped = true
             buffer.current_pos = 0
-            cme_log("Wrapping to "..buffer.current_pos)
             buffer:search_anchor()
             --buffer.anchor = forwards and 0 or buffer.length
         elseif wrapped and nextpos >= wordstart then
             break
         else
-          cme_log('nextpos='..nextpos)
           if nextpos == wordstart or nextpos < 0 then break end
           local word = buffer:get_sel_text()
           words[#words+1] = word
@@ -140,7 +136,6 @@ local function enter_complete(forwards)
         wordstart = wordstart,
         prefix = prefix
     }
-    cme_log('Words: ' .. table.concat(M.state.words, '/'))
     -- And select the current word
     buffer:set_selection(here, wordstart)
 end
