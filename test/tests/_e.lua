@@ -18,6 +18,13 @@ test.assert(t:find('1_100%.txt', nil, true))
 
 test.key('escape')
 
+-- test completion with '..'
+test.keys(':e ../test/files/1_1')
+test.key('tab')
+
+test.assertEq(buffer:get_text(), ':e %.%./test/files/1_10')
+test.key('escape')
+
 -- % should expand to the current filename
 test.keys(':e %')
 test.key('tab')

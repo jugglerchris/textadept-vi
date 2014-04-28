@@ -655,7 +655,7 @@ local function luapat_escape(s)
     return s
 end
 
-local ignore_complete_files = { ['.'] = 1, ['..'] = 1 }
+local ignore_complete_files = { ['.'] = 1 }
 function matching_files(text, doescape)
     -- Escape by default
     local escape
@@ -702,7 +702,7 @@ function matching_files(text, doescape)
       -- this test should be for where the cursor is.
       if last then patpart = patpart .. ".*" end
       -- should only match the start of each component
-      patpart = "^" .. patpart
+      patpart = "^" .. patpart .. "$"
 
       -- The set of paths for the following loop
       local newdirs = {}
