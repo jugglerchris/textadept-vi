@@ -260,7 +260,9 @@ end
 
 -- Pretty-print tables
 function M.tostring(a)
-    if type(a) ~= 'table' then return tostring(a) end
+    if type(a) == "string" then
+        return '"' .. a .. '"'
+    elseif type(a) ~= 'table' then return tostring(a) end
     local maxn = 0
     local sbits = {'{'}
     for i,v in ipairs(a) do
