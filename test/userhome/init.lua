@@ -58,6 +58,7 @@ test.queue(function()
     test.run('_e')  -- :e
     test.run('regex')
     test.run('regex_cap')
+    test.run('regex_backref')
     test.run('range')
     test.run('ex_parse')
     test.run('colonrange')

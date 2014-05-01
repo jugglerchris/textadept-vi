@@ -18,6 +18,7 @@ local Cf = lpeg.Cf
 local Cp = lpeg.Cp
 local Cg = lpeg.Cg
 local Ct = lpeg.Ct
+local Cmt = lpeg.Cmt
 
 -- We use the algorithm to convert from a regular expression to a Peg
 -- expression from:
@@ -70,6 +71,7 @@ local charset = P"[" * Ct((range + charset_char)^0) * P"]" /
     function(x) x[0] = "charset" return x end
 local char = C(P(1) - special) / function(c) return { [0] = "char", c } end
 local escapechar = (P"\\" * C(special)) / function(c) return { [0] = "char", c } end
+local backref = (P"\\" * C(R"19")) / function(c) return { tonumber(c), [0] = "backref" } end
 
 local wordchar = R("AZ", "az") + S("_")
 local nonwordchar = 1 - wordchar
@@ -132,7 +134,7 @@ local pattern = P{
     anongroup = (anonbra * V"subpat" * anonket),
     group = (bra * V"subpat" * ket) /
              function(subpat, grpname) return { [0] = "group", subpat, grpname } end,
-    atom = any + word_start + word_end + escapechar + charset + V"anongroup" + V"group" + char,
+    atom = any + word_start + word_end + escapechar + charset + V"anongroup" + V"group" + char + backref,
 }
 
 local function foldr(f, t, init)
@@ -229,6 +231,18 @@ local function re_to_peg(retab, k)
     elseif t == "\\>" then
         assert(#retab == 0)
         return B(wordchar) * (-#wordchar) * k
+    elseif t == "backref" then
+        local grpname = retab[1]
+        return Cmt(P(0) * Cb("s"..grpname) * Cb("e"..grpname),
+             function(subject, pos, s, e)
+                 local backval = subject:sub(s, e)
+                 local here = subject:sub(pos, pos+e-s)
+                 if backval == here then
+                     return pos+e-s+1
+                 else
+                     return false
+                 end
+             end)
     else
         error("Not implemented op: " ..tostring(t) .. "/" .. tostring(retab))
     end
