@@ -67,7 +67,7 @@ local charset_char = C(P(1) - charset_special) /
      function(c) return { [0] = "char", c } end
 local range = (C(P(1) - charset_special) * P"-" * C(P(1) - charset_special)) /
             function(a,b) return { [0]="range", a, b } end
-local charset = P"[" * Ct((range + charset_char)^0) * P"]" /
+local charset = (P"[" * Ct((Cg(P"^"*Cc(true), "negate") + P(0)) * (range + charset_char)^0) * P"]") /
     function(x) x[0] = "charset" return x end
 local char = C(P(1) - special) / function(c) return { [0] = "char", c } end
 local escapechar = (P"\\" * C(special)) / function(c) return { [0] = "char", c } end
@@ -214,6 +214,9 @@ local function re_to_peg(retab, k)
         return P(retab[1]) * k
     elseif t == "charset" then
         local charset_pat = foldr(add, map(charset_to_peg, retab))
+        if retab.negate then
+            charset_pat = 1 - charset_pat
+        end
         return charset_pat * k
     elseif t == "*" then
         return P{"A", A=re_to_peg(retab[1], V"A") + k}
