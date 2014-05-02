@@ -54,3 +54,12 @@ local pat = compile('10')
 
 assertEq(pat:match('10'), { _start=1, _end=2 })
 assertEq(pat:match('10\n'), { _start=1, _end=2 })
+
+local pat = compile('ab[^a-z,]de')
+
+assertEq(pat:match('abcde'), nil)
+assertEq(pat:match('abade'), nil)
+assertEq(pat:match('abzde'), nil)
+assertEq(pat:match('abCde'), { _start=1, _end=5 })
+assertEq(pat:match('ab.de'), { _start=1, _end=5 })
+assertEq(pat:match('ab,de'), nil)
