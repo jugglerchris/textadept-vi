@@ -18,10 +18,18 @@ natively in Textadept (which eg don't include "|").
 | \\>     | Zero-length, matches just after the end of a word |
 | foo&#124;bar      | Match foo or bar |
 | (pat)  | Match the same as pat (subgroup) |
+| (?:pat)  | Match the same as pat (subgroup), non-capturing |
 | x*     | Match zero or more x |
 | x+     | match one or more x |
 | x?     | match zero or one x |
 | \\x     | Where x is one of: ()\\?*+&#124;. : match the character x |
+| \\w     | Any "word" character [a-zA-Z_] |
+| \\W     | Any non-"word" character [^a-zA-Z_] |
+| \\d     | Any digit character [0-9] |
+| \\D     | Any non-digit character [^0-9] |
+| \\s     | Any whitespace character [ \\t\\n\\v\\r] |
+| \\S     | Any non-whitespace character [^ \\t\\n\\v\\r] |
+| \\1 ... \\9 | Back reference to Nth (subgroup) |
 
 Installation
 ------------
