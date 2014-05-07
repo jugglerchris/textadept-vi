@@ -60,8 +60,53 @@ local mt = {
     },
 }
 
+-- Make special character sets
+local function make_b_s()
+    return { { " \t\v\n\r", [0]="set" }, [0]="charset" }
+end
+local function make_b_S()
+    return { { " \t\v\n\r", [0]="set" }, [0]="charset",
+             negate=true}
+end
+local function make_b_w()
+    return { [0]="charset",
+             { [0]="range", "a", "z" },
+             { [0]="range", "A", "Z" },
+             { [0]="char", "_" },
+           }
+end
+local function make_b_W()
+    return { [0]="charset",
+             { [0]="range", "a", "z" },
+             { [0]="range", "A", "Z" },
+             { [0]="char", "_" },
+             negate=true
+           }
+end
+local function make_b_d()
+    return { [0]="charset",
+             { [0]="range", "0", "9" },
+           }
+end
+local function make_b_D()
+    return { [0]="charset",
+             { [0]="range", "0", "9" },
+             negate=true,
+           }
+end
+
 local special = S"()\\?*+|."
 local any = P"." * Cc({[0] = "."})
+
+-- Perl-style character classes
+local b_s = P"\\s" / make_b_s
+local b_S = P"\\S" / make_b_S
+local b_w = P"\\w" / make_b_w
+local b_W = P"\\W" / make_b_W
+local b_d = P"\\d" / make_b_d
+local b_D = P"\\D" / make_b_D
+
+local backcharset = b_s + b_S + b_w + b_W + b_d + b_D
 local charset_special = S"]-"
 local charset_char = C(P(1) - charset_special) /
      function(c) return { [0] = "char", c } end
@@ -137,7 +182,7 @@ local pattern = P{
     anongroup = (anonbra * V"subpat" * anonket),
     group = (bra * V"subpat" * ket) /
              function(subpat, grpname) return { [0] = "group", subpat, grpname } end,
-    atom = any + word_start + word_end + escapechar + charset + V"anongroup" + V"group" + char + backref,
+    atom = any + word_start + word_end + escapechar + charset + V"anongroup" + V"group" + char + backref + backcharset,
 }
 
 local function foldr(f, t, init)
@@ -175,6 +220,8 @@ local function charset_to_peg(charfrag)
     elseif t == "range" then
         assert(#charfrag == 2)
         return R(charfrag[1] .. charfrag[2])
+    elseif t == "set" then
+        return S(charfrag[1])
     else
         error("Got charset bit: "..tostring(t).."/"..tostring(t and t[0]))
     end
