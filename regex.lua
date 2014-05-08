@@ -94,6 +94,12 @@ local function make_b_D()
              negate=true,
            }
 end
+local function make_charset(c)
+    return function() return { [0]="charset", { [0]="char", c } } end
+end
+local function make_char(c)
+    return function() return { [0]="char", c } end
+end
 
 local special = S"()\\?*+|."
 local any = P"." * Cc({[0] = "."})
@@ -105,16 +111,25 @@ local b_w = P"\\w" / make_b_w
 local b_W = P"\\W" / make_b_W
 local b_d = P"\\d" / make_b_d
 local b_D = P"\\D" / make_b_D
+local b_t = P"\\t" / make_charset('\t')
+local b_n = P"\\n" / make_charset('\n')
+local b_r = P"\\r" / make_charset('\r')
+local b_f = P"\\f" / make_charset('\f')
+local b_e = P"\\e" / make_charset('\x1b')
+local b_a = P"\\a" / make_charset('\x07')
 
-local backcharset = b_s + b_S + b_w + b_W + b_d + b_D
+local backcharset = b_s + b_S + b_w + b_W + b_d + b_D + 
+                    b_t + b_n + b_r + b_f + b_e + b_a
 local charset_special = S"]-"
+local charset_escapes = (b_t + b_n + b_r + b_f + b_e + b_a) /
+            function(c) return c[1] end
 local charset_char = C(P(1) - charset_special) /
      function(c) return { [0] = "char", c } end
 local range = (C(P(1) - charset_special) * P"-" * C(P(1) - charset_special)) /
             function(a,b) return { [0]="range", a, b } end
 local charset = (P"[" * 
                  Ct((Cg(P"^"*Cc(true), "negate") + P(0))
-                 * (range + charset_char)^0) *
+                 * (range + charset_escapes + charset_char)^0) *
                  P"]") /
     function(x) x[0] = "charset" return x end
 local char = C(P(1) - special) / function(c) return { [0] = "char", c } end
