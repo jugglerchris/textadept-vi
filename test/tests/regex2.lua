@@ -26,3 +26,26 @@ assertEq(pat:match("askdfj1317 jlj"), {_start=7, _end=10})
 
 pat = compile('\\D+')
 assertEq(pat:match("1230 _abc;_ 8"), {_start=5, _end=12})
+
+-- Check C-style escapes
+pat = compile('\\t+')
+assertEq(pat:match("abc\t\t foo"), {_start=4, _end=5})
+
+pat = compile('\\n+')
+assertEq(pat:match("abc\n\n foo"), {_start=4, _end=5})
+
+pat = compile('\\r+')
+assertEq(pat:match("abc\r\r foo"), {_start=4, _end=5})
+
+pat = compile('\\f+')
+assertEq(pat:match("abc\f\f foo"), {_start=4, _end=5})
+
+pat = compile('\\a+')
+assertEq(pat:match("abc\a\a foo"), {_start=4, _end=5})
+
+pat = compile('\\e+')
+assertEq(pat:match("abc\027\027 foo"), {_start=4, _end=5})
+
+-- Check them inside charsets
+pat = compile('[ \\t]+')
+assertEq(pat:match("abc\t\t tfoo"), {_start=4, _end=6})
