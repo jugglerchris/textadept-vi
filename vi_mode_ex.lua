@@ -241,16 +241,9 @@ local function command_substitute(args, range)
     for lineno = range[1], range[2] do
         local line = buffer:get_line(lineno)
         local m = pat:match(line)
-        cme_log(m)
-        if m then
-          for k,v in pairs(m) do
-            cme_log(k)
-          end
-        end
         while m do
             local groups = {}
             if m.groups then
-            cme_log(#m.groups)
             for k,v in pairs(m.groups or {}) do
                 local grp = line:sub(v[1], v[2])
                 groups[tostring(k)] = grp
@@ -259,11 +252,9 @@ local function command_substitute(args, range)
             local repl = replace:gsub("\\(%d)", function(ref)
                       return groups[ref] or "<<<"..ref..":"..tostring(groups[ref])..">>>"
                    end)
-            cme_log("repl: <"..repl..">")
             line = line:sub(1,m._start-1) .. repl .. line:sub(m._end+1)
             -- Do the replace
             local linepos = buffer:position_from_line(lineno)
-            cme_log("linepos:"..linepos)
             buffer:set_selection(linepos+buffer:line_length(lineno), linepos)
             buffer:replace_sel(line)
             
