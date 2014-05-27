@@ -410,9 +410,11 @@ M.ex_commands = {
     end,
 
     -- Search files
-    lgrep = function(args)
+    grep = function(args)
         local pat = args[2]
         if not pat then return end
+        
+        local re = vi_regex.compile(pat)
 
         local root = args[3] or '.'
 
@@ -426,7 +428,7 @@ M.ex_commands = {
             local lineno = 0
             for line in f:lines() do
                 lineno = lineno + 1
-                if line:match(pat) then
+                if re:match(line) then
                     local idx = #results+1
                     local text = filename .. ":" .. lineno .. ":" .. line
                     results[idx] = { text, path=filename, lineno=lineno, idx=idx }
