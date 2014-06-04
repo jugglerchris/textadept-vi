@@ -116,8 +116,6 @@ function M.goto_tag(tag)
     if pat then
         -- TODO: properly handle regexes and line number tags.
         -- For now, assume it's a fixed string possibly with ^ and $ around it.
-        pat = pat:match("^^?(.-)$?$")
-        
         -- Tag file regexes are treated as in vim's nomagic; ie most special
         -- characters are only magic if backquoted (except .).
         -- This is an approximation for now.
