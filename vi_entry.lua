@@ -135,7 +135,7 @@ local function complete_now(expand)
     
     local startpos, to_complete, endpos = preceding:match("^.-()(%S*)()$")
     local first_word = t:match("^(%S*)")
-    local completions = buf.data.complete(to_complete, first_word)
+    local completions = buf.data.complete(to_complete, first_word) or {}
     
     local skip_prefix = completions.skip_prefix or 0
     
