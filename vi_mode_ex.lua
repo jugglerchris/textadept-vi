@@ -682,6 +682,11 @@ function matching_files(text, doescape)
     -- The start depends on whether the path is absolute or relative
     if text and text:sub(1, 1) == '/' then
         table.insert(dirs, '/')
+    elseif patparts[1] == '~' then
+        -- Handle ~/...
+        table.insert(dirs, os.getenv("HOME") .. "/")
+        -- Remove the initial ~
+        table.remove(patparts, 1)
     else
         table.insert(dirs, './')
     end
