@@ -136,7 +136,7 @@ local char = C(P(1) - special) / function(c) return { [0] = "char", c } end
 local escapechar = (P"\\" * C(special)) / function(c) return { [0] = "char", c } end
 local backref = (P"\\" * C(R"19")) / function(c) return { tonumber(c), [0] = "backref" } end
 
-local wordchar = R("AZ", "az") + S("_")
+local wordchar = R("AZ", "az", "09") + S("_")
 local nonwordchar = 1 - wordchar
 
 -- word boundaries
