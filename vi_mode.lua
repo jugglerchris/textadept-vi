@@ -1013,7 +1013,7 @@ mode_command = {
     },
     
     -- Show help
-    f1 = textadept.adeptsense.show_apidoc,
+    f1 = textadept.editing.show_documentation,
 
     -- Misc: suspend the editor
     cz = M.kill.kill,
