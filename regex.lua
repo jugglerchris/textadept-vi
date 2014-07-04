@@ -333,4 +333,7 @@ function M.compile(re)
     }, mt)
 end
 
+-- Increase match complexity
+lpeg.setmaxstack(1000)
+
 return M
