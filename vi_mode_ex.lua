@@ -312,8 +312,10 @@ M.ex_commands = {
     b = function(args)
         if #args > 1 then
             local bufname = args[2]
+            -- Try as a regular expression too.
+            local bufpat = vi_regex.compile(bufname)
             for i, buf in ipairs(_BUFFERS) do
-                if buf and buf.filename and (buf.filename:match(bufname) or buf.filename:find(bufname, 1, true)) then
+                if buf and buf.filename and ((bufpat and bufpat:match(buf.filename)) or buf.filename:find(bufname, 1, true)) then
                    -- TODO: handle more than one matching
                    view:goto_buffer(i)
                    return
@@ -618,9 +620,10 @@ local function matching_buffers(text)
         -- Match any filename if no pattern given.
         text = "."
     end
+    local pat = vi_regex.compile(text)
 
     for k,buf in ipairs(_BUFFERS) do
-        if buf.filename and buf.filename:match(text) then
+        if buf.filename and pat and pat:match(buf.filename) then
           buffers[#buffers+1] = buf.filename
         end
     end
