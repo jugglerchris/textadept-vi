@@ -819,7 +819,7 @@ M.completions = {
     tag = complete_tags,
     tsel = complete_tags,
     find = complete_paths,
-    lgrep = complete_files,  -- for the search root
+    grep = complete_files,  -- for the search root
 }
 
 -- Completers for the new entry method
@@ -830,7 +830,7 @@ M.completions_word = {
     tag = vi_tags.match_tag,
     tsel = vi_tags.match_tag,
     find = find_matching_files,
-    lgrep = matching_files,  -- for the search root
+    grep = matching_files,  -- for the search root
 }
 
 -- Register our command_entry keybindings
