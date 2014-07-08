@@ -352,9 +352,17 @@ M.ex_commands = {
     end,
     split = function(args)
         view.split(view, false)
+        if args[1] then
+            local filename = expand_filename(args[2])
+            io.open_file(filename)
+        end
     end,
     vsplit = function(args)
         view.split(view, true)
+        if args[1] then
+            local filename = expand_filename(args[2])
+            io.open_file(filename)
+        end
     end,
     ds = function(args)
         local st = ui.get_split_table()
@@ -827,6 +835,8 @@ M.completions_word = {
     b = matching_buffers,
     e = function(text) return matching_files(text) end,
     w = function(text) return matching_files(text) end,
+    split = matching_files,
+    vsplit = matching_files,
     tag = vi_tags.match_tag,
     tsel = vi_tags.match_tag,
     find = find_matching_files,
