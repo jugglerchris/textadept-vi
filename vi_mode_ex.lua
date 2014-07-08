@@ -538,7 +538,7 @@ M.ex_commands = {
 
         if #tags == 1 then
             -- Only one, just jump to it.
-            vi_tags.goto_tag(loc1)
+            vi_tags.goto_tag(tags[1])
         else
             local items = {}
             for i,t in ipairs(tags) do
