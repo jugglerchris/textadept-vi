@@ -176,7 +176,7 @@ local function find_matching_files(pattern)
     local results = {}
     local pat = vi_regex.compile(pattern)
     local function f(filename)
-        if (pattern and pattern:match(filename)) or filename:find(pattern, 1, true) then
+        if (pat and pat:match(filename)) or filename:find(pattern, 1, true) then
             results[#results+1] = filename
         end
     end
@@ -661,19 +661,7 @@ local function luapat_escape(s)
 end
 
 local ignore_complete_files = { ['.'] = 1 }
-function matching_files(text, doescape)
-    -- Escape by default
-    local escape
-    if doescape == nil or doescape then
-        escape = luapat_escape
-    else
-        escape = function(s) return s end
-    end
-    -- Special case - a bare % becomes the current file's path.
-    if text == "%" then
-        return { escape(state.cur_buf.filename) }
-    end
-
+function do_matching_files(text, mk_matcher, escape)
     local patparts = {} -- the pieces of the pattern
     -- Split the pattern into parts separated by /
     if text then
@@ -720,7 +708,8 @@ function matching_files(text, doescape)
       -- For each possible directory at this level
       for _,dir in ipairs(dirs) do
         for fname in lfs.dir(dir) do
-          if not ignore_complete_files[fname] and fname:match(patpart) then
+          local matcher = mk_matcher(fname)
+          if not ignore_complete_files[fname] and matcher(patpart) then
             local fullpath
             if dir == "./" then
                 fullpath = fname
@@ -797,6 +786,27 @@ function matching_files(text, doescape)
     return files
 end
 
+local function mkmatch_luapat(pat)
+    return function(text) return pat:match(text) end
+end
+
+-- Find files with patterns
+function matching_files(text, doescape)
+    -- Escape by default
+    local escape
+    if doescape == nil or doescape then
+        escape = luapat_escape
+    else
+        escape = function(s) return s end
+    end
+    -- Special case - a bare % becomes the current file's path.
+    if text == "%" then
+        return { escape(state.cur_buf.filename) }
+    end
+
+    return do_matching_files(text, mkmatch_luapat, escape)
+end
+
 local function complete_files(pos, text)
     local files = matching_files(text)
     if #files == 0 then
@@ -834,7 +844,7 @@ M.completions = {
 M.completions_word = {
     b = matching_buffers,
     e = function(text) return matching_files(text) end,
-    w = function(text) return matching_files(text) end,
+    w = function(text) return matching_files(text, false) end,
     split = matching_files,
     vsplit = matching_files,
     tag = vi_tags.match_tag,
