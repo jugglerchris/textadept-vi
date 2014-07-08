@@ -698,18 +698,16 @@ function do_matching_files(text, mk_matcher, escape)
       -- If the last part, then allow trailing parts
       -- TODO: if we complete from a middle-part, then
       -- this test should be for where the cursor is.
-      if last then patpart = patpart .. ".*" end
-      -- should only match the start of each component
-      patpart = "^" .. patpart .. "$"
+      local allow_wild_end = last
 
       -- The set of paths for the following loop
       local newdirs = {}
+      local matcher = mk_matcher(patpart, allow_wild_end)
 
       -- For each possible directory at this level
       for _,dir in ipairs(dirs) do
         for fname in lfs.dir(dir) do
-          local matcher = mk_matcher(fname)
-          if not ignore_complete_files[fname] and matcher(patpart) then
+          if not ignore_complete_files[fname] and matcher(fname) then
             local fullpath
             if dir == "./" then
                 fullpath = fname
@@ -786,8 +784,16 @@ function do_matching_files(text, mk_matcher, escape)
     return files
 end
 
-local function mkmatch_luapat(pat)
-    return function(text) return pat:match(text) end
+local function mkmatch_luapat(pat, allow_wild_end)
+    local fullpat = '^' .. pat
+    if allow_wild_end then
+        fullpat = fullpat .. '.*'
+    end
+    fullpat = fullpat .. '$'
+    return function(text) 
+        local result = text:match(fullpat)
+        return result
+    end
 end
 
 -- Find files with patterns
@@ -805,6 +811,24 @@ function matching_files(text, doescape)
     end
 
     return do_matching_files(text, mkmatch_luapat, escape)
+end
+
+local function mkmatch_null(pat, allow_wild_end)
+    local escaped_pat = '^' .. luapat_escape(pat)
+    if allow_wild_end then
+        escaped_pat = escaped_pat .. '.*'
+    end
+    escaped_pat = escaped_pat .. '$'
+    return function(text)
+        local result = text:match(escaped_pat)
+        return result
+    end
+end
+
+-- Match filename exactly, with no escaping or wildcards etc.
+function matching_files_nopat(text)
+    local escape = function(s) return s end
+    return do_matching_files(text, mkmatch_null, escape)
 end
 
 local function complete_files(pos, text)
@@ -844,7 +868,7 @@ M.completions = {
 M.completions_word = {
     b = matching_buffers,
     e = function(text) return matching_files(text) end,
-    w = function(text) return matching_files(text, false) end,
+    w = matching_files_nopat,
     split = matching_files,
     vsplit = matching_files,
     tag = vi_tags.match_tag,
