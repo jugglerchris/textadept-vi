@@ -171,11 +171,12 @@ local function close_siblings_of(v, ts)
     end
 end
 
--- Find files matching a Lua pattern (or a string match)
+-- Find files matching a Regex pattern (or a string match)
 local function find_matching_files(pattern)
     local results = {}
+    local pat = vi_regex.compile(pattern)
     local function f(filename)
-        if filename:match(pattern) or filename:find(pattern, 1, true) then
+        if (pat and pat:match(filename)) or filename:find(pattern, 1, true) then
             results[#results+1] = filename
         end
     end
@@ -312,8 +313,10 @@ M.ex_commands = {
     b = function(args)
         if #args > 1 then
             local bufname = args[2]
+            -- Try as a regular expression too.
+            local bufpat = vi_regex.compile(bufname)
             for i, buf in ipairs(_BUFFERS) do
-                if buf and buf.filename and (buf.filename:match(bufname) or buf.filename:find(bufname, 1, true)) then
+                if buf and buf.filename and ((bufpat and bufpat:match(buf.filename)) or buf.filename:find(bufname, 1, true)) then
                    -- TODO: handle more than one matching
                    view:goto_buffer(i)
                    return
@@ -349,9 +352,17 @@ M.ex_commands = {
     end,
     split = function(args)
         view.split(view, false)
+        if args[1] then
+            local filename = expand_filename(args[2])
+            io.open_file(filename)
+        end
     end,
     vsplit = function(args)
         view.split(view, true)
+        if args[1] then
+            local filename = expand_filename(args[2])
+            io.open_file(filename)
+        end
     end,
     ds = function(args)
         local st = ui.get_split_table()
@@ -535,7 +546,7 @@ M.ex_commands = {
 
         if #tags == 1 then
             -- Only one, just jump to it.
-            vi_tags.goto_tag(loc1)
+            vi_tags.goto_tag(tags[1])
         else
             local items = {}
             for i,t in ipairs(tags) do
@@ -618,9 +629,10 @@ local function matching_buffers(text)
         -- Match any filename if no pattern given.
         text = "."
     end
+    local pat = vi_regex.compile(text)
 
     for k,buf in ipairs(_BUFFERS) do
-        if buf.filename and buf.filename:match(text) then
+        if buf.filename and pat and pat:match(buf.filename) then
           buffers[#buffers+1] = buf.filename
         end
     end
@@ -649,19 +661,7 @@ local function luapat_escape(s)
 end
 
 local ignore_complete_files = { ['.'] = 1 }
-function matching_files(text, doescape)
-    -- Escape by default
-    local escape
-    if doescape == nil or doescape then
-        escape = luapat_escape
-    else
-        escape = function(s) return s end
-    end
-    -- Special case - a bare % becomes the current file's path.
-    if text == "%" then
-        return { escape(state.cur_buf.filename) }
-    end
-
+function do_matching_files(text, mk_matcher, escape)
     local patparts = {} -- the pieces of the pattern
     -- Split the pattern into parts separated by /
     if text then
@@ -698,17 +698,16 @@ function matching_files(text, doescape)
       -- If the last part, then allow trailing parts
       -- TODO: if we complete from a middle-part, then
       -- this test should be for where the cursor is.
-      if last then patpart = patpart .. ".*" end
-      -- should only match the start of each component
-      patpart = "^" .. patpart .. "$"
+      local allow_wild_end = last
 
       -- The set of paths for the following loop
       local newdirs = {}
+      local matcher = mk_matcher(patpart, allow_wild_end)
 
       -- For each possible directory at this level
       for _,dir in ipairs(dirs) do
         for fname in lfs.dir(dir) do
-          if not ignore_complete_files[fname] and fname:match(patpart) then
+          if not ignore_complete_files[fname] and matcher(fname) then
             local fullpath
             if dir == "./" then
                 fullpath = fname
@@ -785,6 +784,53 @@ function matching_files(text, doescape)
     return files
 end
 
+local function mkmatch_luapat(pat, allow_wild_end)
+    local fullpat = '^' .. pat
+    if allow_wild_end then
+        fullpat = fullpat .. '.*'
+    end
+    fullpat = fullpat .. '$'
+    return function(text) 
+        local result = text:match(fullpat)
+        return result
+    end
+end
+
+-- Find files with patterns
+function matching_files(text, doescape)
+    -- Escape by default
+    local escape
+    if doescape == nil or doescape then
+        escape = luapat_escape
+    else
+        escape = function(s) return s end
+    end
+    -- Special case - a bare % becomes the current file's path.
+    if text == "%" then
+        return { escape(state.cur_buf.filename) }
+    end
+
+    return do_matching_files(text, mkmatch_luapat, escape)
+end
+
+local function mkmatch_null(pat, allow_wild_end)
+    local escaped_pat = '^' .. luapat_escape(pat)
+    if allow_wild_end then
+        escaped_pat = escaped_pat .. '.*'
+    end
+    escaped_pat = escaped_pat .. '$'
+    return function(text)
+        local result = text:match(escaped_pat)
+        return result
+    end
+end
+
+-- Match filename exactly, with no escaping or wildcards etc.
+function matching_files_nopat(text)
+    local escape = function(s) return s end
+    return do_matching_files(text, mkmatch_null, escape)
+end
+
 local function complete_files(pos, text)
     local files = matching_files(text)
     if #files == 0 then
@@ -815,18 +861,20 @@ M.completions = {
     tag = complete_tags,
     tsel = complete_tags,
     find = complete_paths,
-    lgrep = complete_files,  -- for the search root
+    grep = complete_files,  -- for the search root
 }
 
 -- Completers for the new entry method
 M.completions_word = {
     b = matching_buffers,
     e = function(text) return matching_files(text) end,
-    w = function(text) return matching_files(text) end,
+    w = matching_files_nopat,
+    split = matching_files,
+    vsplit = matching_files,
     tag = vi_tags.match_tag,
     tsel = vi_tags.match_tag,
     find = find_matching_files,
-    lgrep = matching_files,  -- for the search root
+    grep = matching_files,  -- for the search root
 }
 
 -- Register our command_entry keybindings
