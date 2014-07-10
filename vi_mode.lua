@@ -675,6 +675,50 @@ local function with_motion_insert(actions, handler)
     return vi_motion.bind_motions(actions, wrapped_handler)
 end
 
+-- Ask the user for some text, and return the text or nil.
+function ask_string(prompt)
+    local idx, res
+    idx, res = ui.dialogs.inputbox{title=prompt}
+    if idx == 1 then return res end
+end
+
+-- Key binding which takes a motion, then prompts for two strings for
+-- before and after, and wraps the region with that text.
+surround_keys = vi_motion.bind_motions({
+    w = vi_motion.movf_to_self({ MOV_INC, vi_motion.r(vi_motions.word_end), 1}),
+    s = { MOV_LINE, vi_motions.sel_line, 1 },
+},
+  function(movdesc)
+      return function()
+         local cmdrpt = get_numarg()
+         local start, end_ = movdesc_get_range(movdesc, nil, cmdrpt)
+         
+         local pre = ask_string('Pre text')
+         local post = ask_string('Post text')
+         
+         if movdesc[1] == MOV_LINE then
+             pre = pre .. "\n"
+             post = post .. "\n"
+         end
+         
+         local function handler(start, end_, movtype)
+             buffer:insert_text(end_, post)
+             buffer:insert_text(start, pre)
+         end
+         
+         begin_undo()
+         handler(start, end_, movtype)
+         end_undo()
+         
+         state.last_action = function(rpt)
+             local start, end_ = movdesc_get_range(movdesc, rpt, 1)
+             begin_undo()
+             handler(start, end_, movtype)
+             end_undo()
+         end
+      end
+  end)
+
 -- Check that the cursor hasn't wandered off beyond the end of the line
 local function ensure_cursor()
   local docpos = buffer.current_pos
@@ -892,6 +936,7 @@ mode_command = {
             q = with_motion({
                 q = { MOV_LINE, vi_motions.sel_line, 1 },
             }, vi_ops.wrap),
+            s = surround_keys,
         },
 
         d = with_motion({
