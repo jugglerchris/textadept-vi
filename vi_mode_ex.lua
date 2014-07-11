@@ -8,7 +8,7 @@ M.use_vi_entry = true
 local vi_entry
 local lpeg = require 'lpeg'
 local P, R, S = lpeg.P, lpeg.R, lpeg.S
-local C, Cc, Cf, Cp, Ct = lpeg.C, lpeg.Cc, lpeg.Cf, lpeg.Cp, lpeg.Ct
+local C, Cc, Cf, Cp, Ct, Carg, Cg = lpeg.C, lpeg.Cc, lpeg.Cf, lpeg.Cp, lpeg.Ct, lpeg.Carg, lpeg.Cg
 
 -- Support for saving state over reset
 local state = {
@@ -214,6 +214,14 @@ local function expand_filename(s)
     return s
 end
 
+-- Parse the replacement string
+local repl_chars = C((P(1) - S'&\\')^1)
+-- Relies on the table of groups being the first extra parameter to lpeg.match.
+local repl_ref = P"\\" * (C(R"09") * Carg(1)) / function(ref, groups) return groups[ref] or "" end
+local amp_ref = P"&" * Carg(1) /function(groups) return groups["&"] end
+local repl_quoted = P"\\" * C(P(1))
+local repl_pat = Cf((repl_chars + repl_ref + amp_ref + repl_quoted) ^ 0, function(a,b) return a..b end)
+
 local function command_substitute(args, range)
     local searchpat = args[2]
     local replace = args[3]
@@ -245,14 +253,16 @@ local function command_substitute(args, range)
         while m do
             local groups = {}
             if m.groups then
-            for k,v in pairs(m.groups or {}) do
-                local grp = line:sub(v[1], v[2])
-                groups[tostring(k)] = grp
+               for k,v in pairs(m.groups or {}) do
+                   local grp = line:sub(v[1], v[2])
+                   groups[tostring(k)] = grp
+               end
             end
-            end
-            local repl = replace:gsub("\\(%d)", function(ref)
-                      return groups[ref] or "<<<"..ref..":"..tostring(groups[ref])..">>>"
-                   end)
+            groups["&"] = line:sub(m._start, m._end)
+            local repl = repl_pat:match(replace, 1, groups)
+--            local repl = replace:gsub("\\(%d)", function(ref)
+--                      return groups[ref] or "<<<"..ref..":"..tostring(groups[ref])..">>>"
+--                   end)
             line = line:sub(1,m._start-1) .. repl .. line:sub(m._end+1)
             -- Do the replace
             local linepos = buffer:position_from_line(lineno)

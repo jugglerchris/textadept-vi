@@ -63,3 +63,10 @@ assertEq(pat:match('abzde'), nil)
 assertEq(pat:match('abCde'), { _start=1, _end=5 })
 assertEq(pat:match('ab.de'), { _start=1, _end=5 })
 assertEq(pat:match('ab,de'), nil)
+
+-- Check that it's case sensitive.
+local pat = compile('abc')
+
+assertEq(pat:match('abcde'), { _start=1, _end=3})
+assertEq(pat:match('abade'), nil)
+assertEq(pat:match('abCde'), nil)
