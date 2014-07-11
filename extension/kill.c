@@ -9,7 +9,7 @@ int l_kill(lua_State *L)
 {
     /* Send ourselves the terminal stop signal, equivalent to normally
      * pressing ^Z. */
-    kill(getpid(), SIGTSTP);
+    kill(0, SIGTSTP);
 
     return 0;
 }
