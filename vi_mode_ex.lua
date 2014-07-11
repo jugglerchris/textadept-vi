@@ -362,14 +362,14 @@ M.ex_commands = {
     end,
     split = function(args)
         view.split(view, false)
-        if args[1] then
+        if args[2] then
             local filename = expand_filename(args[2])
             io.open_file(filename)
         end
     end,
     vsplit = function(args)
         view.split(view, true)
-        if args[1] then
+        if args[2] then
             local filename = expand_filename(args[2])
             io.open_file(filename)
         end
