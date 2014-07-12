@@ -143,6 +143,12 @@ local nonwordchar = 1 - wordchar
 local word_start = P"\\<" * Cc({[0] = "\\<"})
 local word_end = P"\\>" * Cc({[0] = "\\>"})
 
+-- {n} etc.  Returns two captures - (min, max); max can be nil (no max)
+local count_exact = (P"{" * C(R"09" ^ 1) * P"}") / function(c) return tonumber(c), tonumber(c) end
+local count_minmax = (P"{" * C(R"09" ^ 1) * P"," * C(R"09" ^ 1) * P"}") / function(min,max) return tonumber(min), tonumber(max) end
+local count_min = (P"{" * C(R"09" ^ 1) * P",}") / function(c) return tonumber(c), nil end
+local brace_count = count_exact + count_minmax + count_min
+
 -- Grouping
 local newgrp = (Cb("groups") * Cp()) /
                    function(groups, pos)
@@ -185,7 +191,7 @@ local pattern = P{
              
     piece = V"atom_multi",
     
-    atom_multi = V"atom_plus" + V"atom_star" + V"atom_query" + V"atom",
+    atom_multi = V"atom_plus" + V"atom_star" + V"atom_query" + V"atom_count" + V"atom",
     
     atom_plus = (V"atom" * P"+") /
              function(atom) return { [0] = "+", atom } end,
@@ -193,6 +199,8 @@ local pattern = P{
              function(atom) return { [0] = "*", atom } end,
     atom_query = (V"atom" * P"?") /
              function(atom) return { [0] = "?", atom } end,
+    atom_count = (V"atom" * brace_count) /
+             function(atom, min, max) return { [0] = "{}", min=min, max=max, atom } end,
     
     anongroup = (anonbra * V"subpat" * anonket),
     group = (bra * V"subpat" * ket) /
@@ -293,6 +301,27 @@ local function re_to_peg(retab, k)
     elseif t == "?" then
         assert(#retab == 1)
         return re_to_peg(retab[1], k) + k
+    elseif t == "{}" then
+        assert(#retab == 1)
+        -- Rewrite this in terms of ? and *.
+        -- X{3,} => XXXX*
+        -- X{3,5} => XXXX?X?
+        local subpat = retab[1]
+        local min = retab.min
+        local max = retab.max
+        local rewritten = { [0] = "concat" }
+        for i=1,min do
+            rewritten[#rewritten+1] = subpat
+        end
+        if max == nil then
+            rewritten[#rewritten+1] = { [0] = "*", subpat }
+        else
+            local optional = { [0] = "?", subpat }
+            for i=min+1,max do
+                rewritten[#rewritten+1] = optional
+            end
+        end
+        return re_to_peg(rewritten, k)
     elseif t == "\\<" then
         assert(#retab == 0)
         return -B(wordchar) * #wordchar * k
