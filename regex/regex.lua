@@ -154,7 +154,7 @@ local newgrp = (Cb("groups") * Cp()) /
                    function(groups, pos)
                       local grp = #groups+1
                       groups[grp] = {pos}
-                      groups.open[#groups.open] = grp
+                      groups.open[#groups.open+1] = grp
                    end
                    
 -- endgrp leaves the group number or name as a capture
