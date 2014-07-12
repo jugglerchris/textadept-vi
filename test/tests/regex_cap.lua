@@ -22,3 +22,8 @@ pat = compile('a([a-z]*)z X([0-9]*)Y')
 
 assertEq(pat:match('az XY'), {_start=1, _end=5, groups={{2,1}, {5,4}}})
 assertEq(pat:match('aasdfz X123Y'), {_start=1, _end=12, groups={{2,5},{9,11}}})
+
+-- Nested groups
+pat = compile('a((b)*c)')
+
+assertEq(pat:match('abc'), {_start=1, _end=3, groups={{2,3}, {2,2}}})
