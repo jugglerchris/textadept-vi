@@ -14,6 +14,7 @@ M.search_mode = require 'vi_mode_search'
 M.vi_tags = require 'vi_tags'
 M.lang = require 'vi_lang'
 M.vi_complete = require 'vi_complete'
+local lpeg = require 'lpeg'
 
 local vi_motion = require 'vi_motion'
 local vi_motions = require 'vi_motions'
@@ -185,6 +186,80 @@ function M.vi_cut(start, end_, linewise, register)
     return vi_ops.cut(start, end_, linewise and MOV_LINE or MOV_INC)
 end
 local vi_cut = M.vi_cut
+
+local R = lpeg.R
+local S = lpeg.S
+local P = lpeg.P
+local V = lpeg.V
+local Cmt = lpeg.Cmt
+local Cb = lpeg.Cb
+local Cc = lpeg.Cc
+local Cg = lpeg.Cg
+local Cp = lpeg.Cp
+local Carg = lpeg.Carg
+-- LPeg pattern to match a number in a line, at a certain
+-- minimum position.
+local _num_dec = Cp() * (P"-" ^ -1) * R"09" ^ 1 * Cc("dec")
+
+-- Assume lower case if no [a-f]
+local _hex_start = P"0x" * Cp() * Cg(Cc("hex"), 'hextype')
+-- The last letter will pass its
+local _hex_char_upper = R"AF" * Cg(Cc("HEX"), 'hextype')
+local _hex_char_lower = R"af" * Cg(Cc("hex"), 'hextype')
+
+local _num_hex = _hex_start * (R"09" + _hex_char_lower + _hex_char_upper)^1 * Cb("hextype")
+
+local _num_any = _num_hex + _num_dec
+
+-- predicate to check that the number ends after a certain position,
+-- which will be passed as the first extra argument.
+local _ends_after = Cmt(Carg(1), function(subj, pos, col)
+                                    return pos > col
+                                 end)
+                                 
+-- Find it anywhere (first match)
+-- Returns captures: startpos, base ("dec"/"hex"), endpos
+local _find_num = P{ (_num_any * _ends_after * Cp()) + 1*V(1) }
+
+-- Find a number under (or to the right of) the cursor
+local function _find_number()
+    local line = buffer:get_cur_line()
+    local col = buffer.column[buffer.current_pos]
+    local linepos = buffer:position_from_line(buffer:line_from_position(buffer.current_pos))
+    
+    local startpos, base, endpos = _find_num:match(line, 1, col)
+    
+    return base, linepos+startpos-1, linepos + endpos-1
+end
+
+local numtype_to_base = {
+    dec = 10,
+    hex = 16,
+    HEX = 16,
+}
+local numtype_to_fmt = {
+    dec = '%d',
+    hex = '%x',
+    HEX = '%X',
+}
+
+-- Increment the number under (or to the right of) the cursor by
+-- increment (which may be negative).
+function do_inc(increment)
+    local numtype, start_, end_ = _find_number()
+    
+    if numtype == nil then return end
+    
+    local numstr = buffer:text_range(start_, end_)
+    local val = tonumber(numstr, numtype_to_base[numtype])
+    
+    val = val + increment
+    
+    local newstr = string.format(numtype_to_fmt[numtype], val)
+    
+    buffer:set_selection(start_, end_)
+    buffer:replace_sel(newstr)
+end
 
 --- Paste from a register (by default the unnamed register "")
 --  If after is true, then will paste after the current character or line
@@ -1056,6 +1131,10 @@ mode_command = {
       M = function() buffer:fold_all(buffer.FOLDACTION_CONTRACT) end,
       R = function() buffer:fold_all(buffer.FOLDACTION_EXPAND) end,
     },
+    
+    -- Increment/decrement under cursor
+    ca = function() do_action(function(rpt) do_inc(rpt) end) end,
+    cx = function() do_action(function(rpt) do_inc(-1*rpt) end) end,
     
     -- Show help
     f1 = textadept.editing.show_documentation,
