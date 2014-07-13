@@ -65,6 +65,7 @@ test.queue(function()
     test.run('colonrange')
     test.run('subst')
     test.run('vicomp')
+    test.run('ca')
 end)
 
 
