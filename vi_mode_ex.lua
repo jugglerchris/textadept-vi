@@ -399,8 +399,6 @@ M.ex_commands = {
         for i=2,#args do
             command[#command+1] = args[i]
         end
-        textadept.run.cwd = './'  -- So that the run module can take care of finding errors.
-        local lexer = buffer:get_lexer()
         ui.print("Running: " .. table.concat(command, " "))
         local msgbuf = buffer
         local function getoutput(s)
@@ -427,7 +425,7 @@ M.ex_commands = {
                 end
             end
         end
-        os.spawn(nil, command, nil, nil, getoutput, getoutput)
+        spawn(table.concat(command, " "), "./", getoutput, getoutput)
     end,
 
     -- Search files
