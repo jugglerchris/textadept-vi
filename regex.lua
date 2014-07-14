@@ -72,6 +72,7 @@ local function make_b_w()
     return { [0]="charset",
              { [0]="range", "a", "z" },
              { [0]="range", "A", "Z" },
+             { [0]="range", "0", "9" },
              { [0]="char", "_" },
            }
 end
@@ -79,6 +80,7 @@ local function make_b_W()
     return { [0]="charset",
              { [0]="range", "a", "z" },
              { [0]="range", "A", "Z" },
+             { [0]="range", "0", "9" },
              { [0]="char", "_" },
              negate=true
            }
