@@ -227,6 +227,7 @@ local function command_substitute(args, range)
     local replace = args[3]
     local flagstring = args[4]
     local flags = {}
+    cme_log('subst: pat=[['..searchpat..']], repl=[['..replace..']], flags=[['..flagstring..']]')
     
     for i=1,#flagstring do
         flags[flagstring:sub(i,i)] = true
@@ -278,6 +279,18 @@ local function command_substitute(args, range)
         end
     end
     buffer:end_undo_action()
+end
+
+-- Take a buffer with error messages, and turn it into a quickfix list,
+-- which is activated.
+local function choose_errors_from_buf(buf)
+    local results = vi_quickfix.quickfix_from_buffer(buf)
+    if results then
+        -- Push the results list to the stack
+        state.clistidx = #state.clists+1
+        state.clists[state.clistidx] = { list=results, idx=1 }
+        choose_list('Errors', results, clist_go)
+    end
 end
 
 M.ex_commands = {
@@ -394,13 +407,25 @@ M.ex_commands = {
 
     -- Build things
     make = function(args)
-        -- modelled after run.lua:command
         local command = {"make"}
         for i=2,#args do
             command[#command+1] = args[i]
         end
         ui.print("Running: " .. table.concat(command, " "))
-        local msgbuf = buffer
+        local msgbuf = nil
+        for n,buf in ipairs(_BUFFERS) do
+            if buf._type == 'make' then
+                msgbuf = buf
+                break
+            end
+        end
+        if msgbuf == nil then
+            msgbuf = buffer.new()
+            msgbuf._type = '*** make output ***'
+        else
+            -- Clear the buffer
+            msgbuf.clear_all()
+        end
         local function getoutput(s)
             local cur_view = view
             local cur_buf
@@ -425,7 +450,10 @@ M.ex_commands = {
                 end
             end
         end
-        spawn(table.concat(command, " "), "./", getoutput, getoutput)
+        local function endmake()
+            choose_errors_from_buf(msgbuf)
+        end
+        spawn(table.concat(command, " "), "./", getoutput, getoutput, endmake)
     end,
 
     -- Search files
@@ -466,13 +494,7 @@ M.ex_commands = {
         end
     end,
     cb = function(args)
-        local results = vi_quickfix.quickfix_from_buffer(buffer)
-        if results then
-            -- Push the results list to the stack
-            state.clistidx = #state.clists+1
-            state.clists[state.clistidx] = { list=results, idx=1 }
-            choose_list('Errors', results, clist_go)
-        end
+        choose_errors_from_buf(buffer)
     end,
     cn = function(args)
         local clist = state.clists[state.clistidx]
