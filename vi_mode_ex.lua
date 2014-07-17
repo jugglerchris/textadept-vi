@@ -293,6 +293,52 @@ local function choose_errors_from_buf(buf)
     end
 end
 
+function run_command_to_buf(command, workdir, buftype, on_finish)
+    ui.print("Running: " .. table.concat(command, " "))
+    local msgbuf = nil
+    for n,buf in ipairs(_BUFFERS) do
+        if buf._type == buftype then
+            msgbuf = buf
+            break
+        end
+    end
+    if msgbuf == nil then
+        msgbuf = buffer.new()
+        msgbuf._type = buftype
+    else
+        -- Clear the buffer
+        msgbuf.clear_all()
+    end
+    local function getoutput(s)
+        local cur_view = view
+        local cur_buf
+        local my_view
+        -- Search for a view with this buffer
+        for i,v in ipairs(_VIEWS) do
+            if v.buffer == msgbuf then
+                my_view = v
+                break
+            end
+        end
+        if my_view then
+            if cur_view ~= my_view then
+                ui.goto_view(_VIEWS[my_view])
+            end
+
+            msgbuf:append_text(s)
+            msgbuf:goto_pos(msgbuf.length)
+
+            if my_view ~= cur_view then
+                ui.goto_view(_VIEWS[cur_view])
+            end
+        end
+    end
+    local function doend()
+        on_finish(msgbuf)
+    end
+    spawn(table.concat(command, " "), workdir, getoutput, getoutput, doend)
+end
+
 M.ex_commands = {
     e = function(args)
         dbg("In e handler")
@@ -411,49 +457,7 @@ M.ex_commands = {
         for i=2,#args do
             command[#command+1] = args[i]
         end
-        ui.print("Running: " .. table.concat(command, " "))
-        local msgbuf = nil
-        for n,buf in ipairs(_BUFFERS) do
-            if buf._type == 'make' then
-                msgbuf = buf
-                break
-            end
-        end
-        if msgbuf == nil then
-            msgbuf = buffer.new()
-            msgbuf._type = '*** make output ***'
-        else
-            -- Clear the buffer
-            msgbuf.clear_all()
-        end
-        local function getoutput(s)
-            local cur_view = view
-            local cur_buf
-            local my_view
-            -- Search for a view with this buffer
-            for i,v in ipairs(_VIEWS) do
-                if v.buffer == msgbuf then
-                    my_view = v
-                    break
-                end
-            end
-            if my_view then
-                if cur_view ~= my_view then
-                    ui.goto_view(_VIEWS[my_view])
-                end
-
-                msgbuf:append_text(s)
-                msgbuf:goto_pos(msgbuf.length)
-
-                if my_view ~= cur_view then
-                    ui.goto_view(_VIEWS[cur_view])
-                end
-            end
-        end
-        local function endmake()
-            choose_errors_from_buf(msgbuf)
-        end
-        spawn(table.concat(command, " "), "./", getoutput, getoutput, endmake)
+        run_command_to_buf(command, './', '*** make output ***', choose_errors_from_buf)
     end,
 
     -- Search files
