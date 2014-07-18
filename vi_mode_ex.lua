@@ -293,6 +293,62 @@ local function choose_errors_from_buf(buf)
     end
 end
 
+-- Spawn a command, which will write its output to a buffer in the
+-- background, and call a function when finished.
+--
+-- command: a table of the command line
+-- workdir: The working directory the command should run in.
+-- buftype: the buffer type (eg "*make*"), which will be created or cleared.
+-- when_finished: a function called with the buffer when the process
+--                exits.
+function command_to_buffer(command, workdir, buftype, when_finished)
+    ui.print("Running: " .. table.concat(command, " "))
+    local msgbuf = nil
+    for n,buf in ipairs(_BUFFERS) do
+        if buf._type == buftype then
+            msgbuf = buf
+            break
+        end
+    end
+    if msgbuf == nil then
+        msgbuf = buffer.new()
+        msgbuf._type = buftype
+    else
+        -- Clear the buffer
+        msgbuf.clear_all()
+    end
+    local function getoutput(s)
+        local cur_view = view
+        local cur_buf
+        local my_view
+        -- Search for a view with this buffer
+        for i,v in ipairs(_VIEWS) do
+            if v.buffer == msgbuf then
+                my_view = v
+                break
+            end
+        end
+        if my_view then
+            if cur_view ~= my_view then
+                ui.goto_view(_VIEWS[my_view])
+            end
+
+            msgbuf:append_text(s)
+            msgbuf:goto_pos(msgbuf.length)
+
+            if my_view ~= cur_view then
+                ui.goto_view(_VIEWS[cur_view])
+            end
+        end
+    end
+    local function endproc()
+        if when_finished ~= nil then
+            when_finished(msgbuf)
+        end
+    end
+    spawn(table.concat(command, " "), workdir, getoutput, getoutput, endproc)
+end
+
 M.ex_commands = {
     e = function(args)
         dbg("In e handler")
@@ -412,48 +468,7 @@ M.ex_commands = {
             command[#command+1] = args[i]
         end
         ui.print("Running: " .. table.concat(command, " "))
-        local msgbuf = nil
-        for n,buf in ipairs(_BUFFERS) do
-            if buf._type == 'make' then
-                msgbuf = buf
-                break
-            end
-        end
-        if msgbuf == nil then
-            msgbuf = buffer.new()
-            msgbuf._type = '*** make output ***'
-        else
-            -- Clear the buffer
-            msgbuf.clear_all()
-        end
-        local function getoutput(s)
-            local cur_view = view
-            local cur_buf
-            local my_view
-            -- Search for a view with this buffer
-            for i,v in ipairs(_VIEWS) do
-                if v.buffer == msgbuf then
-                    my_view = v
-                    break
-                end
-            end
-            if my_view then
-                if cur_view ~= my_view then
-                    ui.goto_view(_VIEWS[my_view])
-                end
-
-                msgbuf:append_text(s)
-                msgbuf:goto_pos(msgbuf.length)
-
-                if my_view ~= cur_view then
-                    ui.goto_view(_VIEWS[cur_view])
-                end
-            end
-        end
-        local function endmake()
-            choose_errors_from_buf(msgbuf)
-        end
-        spawn(table.concat(command, " "), "./", getoutput, getoutput, endmake)
+        command_to_buffer(command, "./", "*make*", vi_quickfix.quickfix_from_buffer)
     end,
 
     -- Search files
@@ -461,37 +476,9 @@ M.ex_commands = {
         local pat = args[2]
         if not pat then return end
         
-        local re = vi_regex.compile(pat)
-
         local root = args[3] or '.'
 
-        local results = {}
-
-        local function search(filename)
-            local f, err = io.open(filename)
-            if not f then
-                ex_error(err..":"..filename)
-            end
-            local lineno = 0
-            for line in f:lines() do
-                lineno = lineno + 1
-                if re:match(line) then
-                    local idx = #results+1
-                    local text = filename .. ":" .. lineno .. ":" .. line
-                    results[idx] = { text, path=filename, lineno=lineno, idx=idx }
-                end
-            end
-            f:close()
-        end
-        lfs.dir_foreach(root, search, _G.vifilter, false)
-        if #results == 0 then
-            ex_error("No matches found.")
-        else
-            -- Push the results list to the stack
-            state.clistidx = #state.clists+1
-            state.clists[state.clistidx] = { list=results, idx=1 }
-            choose_list('Matches found', results, clist_go)
-        end
+        command_to_buffer({"grep", "-rn", pat, root}, ".", "*grep*", vi_quickfix.quickfix_from_buffer)
     end,
     cb = function(args)
         choose_errors_from_buf(buffer)
