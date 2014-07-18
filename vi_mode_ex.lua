@@ -479,7 +479,7 @@ M.ex_commands = {
         
         local root = args[3] or '.'
 
-        command_to_buffer({"grep", "-rn", pat, root}, ".", "*grep*", vi_quickfix.quickfix_from_buffer)
+        command_to_buffer({vi_mode.state.variables.grepprg, pat, root}, ".", "*grep*", vi_quickfix.quickfix_from_buffer)
     end,
     cb = function(args)
         choose_errors_from_buf(buffer)
