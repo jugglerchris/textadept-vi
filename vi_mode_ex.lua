@@ -293,8 +293,15 @@ local function choose_errors_from_buf(buf)
     end
 end
 
-function run_command_to_buf(command, workdir, buftype, on_finish)
-    ui.print("Running: " .. table.concat(command, " "))
+-- Spawn a command, which will write its output to a buffer in the
+-- background, and call a function when finished.
+--
+-- command: a table of the command line
+-- workdir: The working directory the command should run in.
+-- buftype: the buffer type (eg "*make*"), which will be created or cleared.
+-- when_finished: a function called with the buffer when the process
+--                exits.
+function command_to_buffer(command, workdir, buftype, when_finished)
     local msgbuf = nil
     for n,buf in ipairs(_BUFFERS) do
         if buf._type == buftype then
@@ -309,6 +316,7 @@ function run_command_to_buf(command, workdir, buftype, on_finish)
         -- Clear the buffer
         msgbuf.clear_all()
     end
+    ui._print(buftype, "Running: " .. table.concat(command, " "))
     local function getoutput(s)
         local cur_view = view
         local cur_buf
@@ -333,10 +341,13 @@ function run_command_to_buf(command, workdir, buftype, on_finish)
             end
         end
     end
-    local function doend()
-        on_finish(msgbuf)
+    local function endproc()
+        msgbuf:append_text('Finished:' .. table.concat(command, " "))
+        if when_finished ~= nil then
+            when_finished(msgbuf)
+        end
     end
-    spawn(table.concat(command, " "), workdir, getoutput, getoutput, doend)
+    spawn(table.concat(command, " "), workdir, getoutput, getoutput, endproc)
 end
 
 M.ex_commands = {
@@ -457,7 +468,8 @@ M.ex_commands = {
         for i=2,#args do
             command[#command+1] = args[i]
         end
-        run_command_to_buf(command, './', '*** make output ***', choose_errors_from_buf)
+        ui.print("Running: " .. table.concat(command, " "))
+        command_to_buffer(command, "./", "*make*", vi_quickfix.quickfix_from_buffer)
     end,
 
     -- Search files
@@ -465,37 +477,9 @@ M.ex_commands = {
         local pat = args[2]
         if not pat then return end
         
-        local re = vi_regex.compile(pat)
-
         local root = args[3] or '.'
 
-        local results = {}
-
-        local function search(filename)
-            local f, err = io.open(filename)
-            if not f then
-                ex_error(err..":"..filename)
-            end
-            local lineno = 0
-            for line in f:lines() do
-                lineno = lineno + 1
-                if re:match(line) then
-                    local idx = #results+1
-                    local text = filename .. ":" .. lineno .. ":" .. line
-                    results[idx] = { text, path=filename, lineno=lineno, idx=idx }
-                end
-            end
-            f:close()
-        end
-        lfs.dir_foreach(root, search, _G.vifilter, false)
-        if #results == 0 then
-            ex_error("No matches found.")
-        else
-            -- Push the results list to the stack
-            state.clistidx = #state.clists+1
-            state.clists[state.clistidx] = { list=results, idx=1 }
-            choose_list('Matches found', results, clist_go)
-        end
+        command_to_buffer({vi_mode.state.variables.grepprg, pat, root}, ".", "*grep*", vi_quickfix.quickfix_from_buffer)
     end,
     cb = function(args)
         choose_errors_from_buf(buffer)

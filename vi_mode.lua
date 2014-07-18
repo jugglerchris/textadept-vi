@@ -128,7 +128,11 @@ state = {
     
     errmsg = '',              -- error from a command
     
-    registers = {}            -- cut/paste registers
+    registers = {},           -- cut/paste registers
+    
+    variables = {             -- Configurable variables
+        grepprg = "grep -rn",
+    }
 }
 
 -- Make state visible.
