@@ -302,7 +302,6 @@ end
 -- when_finished: a function called with the buffer when the process
 --                exits.
 function command_to_buffer(command, workdir, buftype, when_finished)
-    ui.print("Running: " .. table.concat(command, " "))
     local msgbuf = nil
     for n,buf in ipairs(_BUFFERS) do
         if buf._type == buftype then
@@ -317,6 +316,7 @@ function command_to_buffer(command, workdir, buftype, when_finished)
         -- Clear the buffer
         msgbuf.clear_all()
     end
+    ui._print(buftype, "Running: " .. table.concat(command, " "))
     local function getoutput(s)
         local cur_view = view
         local cur_buf
@@ -342,6 +342,7 @@ function command_to_buffer(command, workdir, buftype, when_finished)
         end
     end
     local function endproc()
+        msgbuf:append_text('Finished:' .. table.concat(command, " "))
         if when_finished ~= nil then
             when_finished(msgbuf)
         end
