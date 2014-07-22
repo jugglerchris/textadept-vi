@@ -491,7 +491,7 @@ M.ex_commands = {
             return
         end
         local idx = clist.idx
-        if idx > #clist.list then
+        if idx >= #clist.list then
             ex_error("End of list")
         else
             clist_go(clist.list[idx+1])
