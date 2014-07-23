@@ -314,7 +314,7 @@ function command_to_buffer(command, workdir, buftype, when_finished)
         msgbuf._type = buftype
     else
         -- Clear the buffer
-        msgbuf.clear_all()
+        msgbuf:clear_all()
     end
     ui._print(buftype, "Running: " .. table.concat(command, " "))
     local function getoutput(s)
