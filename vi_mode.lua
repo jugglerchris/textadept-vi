@@ -14,6 +14,7 @@ M.search_mode = require 'vi_mode_search'
 M.vi_tags = require 'vi_tags'
 M.lang = require 'vi_lang'
 M.vi_complete = require 'vi_complete'
+vi_find_files = require 'vi_find_files'
 local lpeg = require 'lpeg'
 
 local vi_motion = require 'vi_motion'
@@ -761,6 +762,42 @@ function ask_string(prompt)
     if idx == 1 then return res end
 end
 
+-- Filename characters
+FILENAME_CHARS = "abcdefghijklmnopqrstuvwxyz" ..
+                 "ABCDEFGHIJKLMNOPQRSTUVWXYZ" ..
+                 "0123456789" ..
+                 "_.-#,/"
+-- Find a filename under the cursor and try to open that file.
+function find_filename_at_pos()
+    local s, e, filename = vi_ta_util.find_word_at(buffer.current_pos, FILENAME_CHARS)
+    
+    ui.print("Filename under cursor: [["..filename.."]]")
+    
+    if filename:sub(1,1) == '/' then
+        -- Absolute path: keep as is
+        ui.print("Absolute, using as is")
+    else
+        -- Relative - find one
+        local paths = vi_find_files.find_matching_files(filename)
+        ui.print("Relative: searching, got "..#paths)
+        
+        if paths and #paths >= 1 then
+            ui.print("Paths:"..tostring(paths).."/"..#paths)
+            for k,v in pairs(paths) do
+              ui.print(tostring(k).."/"..tostring(v))
+            end
+            ui.print("Filename to open: "..tostring(paths[1]))
+            filename = paths[1]
+        else
+            filename = nil
+        end
+    end
+    if filename then
+        ui.print("Opening:" .. filename)
+        io.open_file(filename)
+    end
+end
+
 -- Key binding which takes a motion, then prompts for two strings for
 -- before and after, and wraps the region with that text.
 surround_keys = vi_motion.bind_motions({
@@ -1016,6 +1053,7 @@ mode_command = {
                 q = { MOV_LINE, vi_motions.sel_line, 1 },
             }, vi_ops.wrap),
             s = surround_keys,
+            f = find_filename_at_pos,
         },
 
         d = with_motion({
