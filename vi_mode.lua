@@ -768,33 +768,36 @@ FILENAME_CHARS = "abcdefghijklmnopqrstuvwxyz" ..
                  "0123456789" ..
                  "_.-#,/"
 -- Find a filename under the cursor and try to open that file.
+-- If the filename is followed by :number, then go to that line in the file.
 function find_filename_at_pos()
     local s, e, filename = vi_ta_util.find_word_at(buffer.current_pos, FILENAME_CHARS)
+    local lineno = nil
     
-    ui.print("Filename under cursor: [["..filename.."]]")
+    if buffer:text_range(e, e+1) == ":" then
+        local _
+        _, _, linenostr = vi_ta_util.find_word_at(e+1, "0123456789")
+        if linenostr ~= nil then
+            lineno = tonumber(linenostr)
+        end
+    end
     
     if filename:sub(1,1) == '/' then
         -- Absolute path: keep as is
-        ui.print("Absolute, using as is")
     else
         -- Relative - find one
         local paths = vi_find_files.find_matching_files(filename)
-        ui.print("Relative: searching, got "..#paths)
         
         if paths and #paths >= 1 then
-            ui.print("Paths:"..tostring(paths).."/"..#paths)
-            for k,v in pairs(paths) do
-              ui.print(tostring(k).."/"..tostring(v))
-            end
-            ui.print("Filename to open: "..tostring(paths[1]))
             filename = paths[1]
         else
             filename = nil
         end
     end
     if filename then
-        ui.print("Opening:" .. filename)
         io.open_file(filename)
+        if lineno ~= nil then
+            buffer:goto_line(lineno-1)
+        end
     end
 end
 
