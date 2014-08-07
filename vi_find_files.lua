@@ -172,10 +172,6 @@ function M.matching_files(text, doescape)
     else
         escape = function(s) return s end
     end
-    -- Special case - a bare % becomes the current file's path.
-    if text == "%" then
-        return { escape(state.cur_buf.filename) }
-    end
 
     return do_matching_files(text, mkmatch_luapat, escape)
 end

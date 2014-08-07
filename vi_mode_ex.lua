@@ -44,7 +44,19 @@ end)
 
 local ui_ce = ui.command_entry
 
-local matching_files = vi_find_files.matching_files
+-- Local wrapper which handles special expansions ("%" -> current filename)
+local function get_matching_files(text, doescape)
+    -- Special case - a bare % becomes the current file's path.
+    if text == "%" then
+        local result = state.cur_buf.filename
+        if doescape then
+            result = vi_find_files.luapat_escape(result)
+        end
+        return { result }
+    end
+    
+    return vi_find_files.matching_files(text, doescape) 
+end
 
 local do_debug = false
 local function dbg(...)
@@ -203,7 +215,7 @@ local function expand_filename(s)
     if s:sub(1,2) == "~/" then
         s = os.getenv("HOME") .. s:sub(2)
     end
-    local files = matching_files(s, false)
+    local files = get_matching_files(s, false)
     if #files >= 1 then return files[1] end
     return s
 end
@@ -671,7 +683,7 @@ local function complete_buffers(pos, text)
 end
 
 local function complete_files(pos, text)
-    local files = matching_files(text)
+    local files = get_matching_files(text)
     if #files == 0 then
         ex_error("No completions")
     elseif #files == 1 then
@@ -706,14 +718,14 @@ M.completions = {
 -- Completers for the new entry method
 M.completions_word = {
     b = matching_buffers,
-    e = function(text) return matching_files(text) end,
+    e = function(text) return get_matching_files(text) end,
     w = matching_files_nopat,
-    split = matching_files,
-    vsplit = matching_files,
+    split = get_matching_files,
+    vsplit = get_matching_files,
     tag = vi_tags.match_tag,
     tsel = vi_tags.match_tag,
     find = find_matching_files,
-    grep = matching_files,  -- for the search root
+    grep = get_matching_files,  -- for the search root
 }
 
 -- Register our command_entry keybindings
