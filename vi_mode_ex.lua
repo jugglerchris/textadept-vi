@@ -121,8 +121,12 @@ end
 -- The s command
 local ex_cmd_s = C(P("s")) * P("/") * (ex_pattern/unquote_slash) * P("/") * 
                                    ((ex_quoted_slash ^ 0)/unquote_slash) * P("/") * C(R("az")^0)
+                                  
+-- Shell command: !ls
+-- Very basic word splitting - add quoting later.
+local ex_cmd_shell = C(P("!")) * (C((1 - ex_ws) ^ 1) * (ex_ws ^ 0)) ^ 1
 
-local ex_cmd = Ct(ex_cmd_s + ex_cmd_simple)
+local ex_cmd = Ct(ex_cmd_s + ex_cmd_shell + ex_cmd_simple)
 
 local ex_cmdline = ex_range * (ex_ws ^ 0) * ex_cmd
 
@@ -471,6 +475,16 @@ M.ex_commands = {
 
         command_to_buffer({vi_mode.state.variables.grepprg, pat, root}, ".", "*grep*", vi_quickfix.quickfix_from_buffer)
     end,
+    
+    ['!'] = function(args)
+        local command = {}
+        for i=2,#args do
+            command[#command+1] = args[i]
+        end
+        ui.print("Running: " .. table.concat(command, " "))
+        command_to_buffer(command, "./", "*shell*")
+    end,
+    
     cb = function(args)
         choose_errors_from_buf(buffer)
     end,
