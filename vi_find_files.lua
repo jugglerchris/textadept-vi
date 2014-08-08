@@ -163,6 +163,12 @@ function do_matching_files(text, mk_matcher, escape)
     return files
 end
 
+-- Match filename exactly, with no escaping or wildcards etc.
+function M.matching_files_nopat(text)
+    local escape = function(s) return s end
+    return do_matching_files(text, mkmatch_null, escape)
+end
+        
 -- Find files with patterns
 function M.matching_files(text, doescape)
     -- Escape by default
