@@ -3,12 +3,19 @@ local M = {}
 local redux = require'textredux'
 
 local function ve_refresh(buf)
-  -- Disable fold margin
-  buffer.margin_width_n[2] = 0
+  -- Disable all margins, except one we'll use for the :
+  buf.margin_width_n[0] = 0
+  buf.margin_width_n[1] = 0
+  buf.margin_width_n[2] = 0
+  buf.margin_width_n[3] = 0
   
-  buf:add_text(buf.data.prompt, redux.core.style.error)
+  buf.margin_width_n[4] = #buf.data.prompt
+  buf.margin_type_n[4] = buf.MARGIN_TEXT
+  buf.margin_text[0] = buf.data.prompt
+  buf.margin_style[0] = 8 -- error (red)
+  
   buf:add_text(buf.data.text, redux.core.style.comment)
-  buf:goto_pos(buf.data.pos + #buf.data.prompt)
+  buf:goto_pos(buf.data.pos)
 
   local linesize = CURSES and 1 or 20
   local offset = CURSES and 4 or 100
@@ -171,7 +178,7 @@ end
 local function do_enter()
     local buf = buffer._textredux
     local saved = buf.data.saved
-    local cmd = buf:get_text():sub(#buf.data.prompt + 1)
+    local cmd = buf:get_text()
     local handler = buf.data.handler
     local hist = buf.data.context._history
     local histsaveidx = buf.data.histsaveidx
@@ -193,7 +200,7 @@ local ve_keys = {
     ['\b'] = function()
         local buf = buffer._textredux
         local t = buf.data.text
-        local pos = buffer.current_pos - #buf.data.prompt
+        local pos = buffer.current_pos
         if pos >= 1 then
             t = t:sub(1, pos-1) .. t:sub(pos+1, -1)
             buf.data.text = t
@@ -205,7 +212,7 @@ local ve_keys = {
         -- Clear to start of line
         local buf = buffer._textredux
         local t = buf.data.text
-        local pos = buffer.current_pos - #buf.data.prompt
+        local pos = buffer.current_pos
         if pos > 0 then
             t = t:sub(pos+1, -1)
             buf.data.text = t
@@ -258,7 +265,7 @@ local function set_key(k)
     ve_keys[k] = function() 
         local buf = buffer._textredux
         local t = buf.data.text
-        local pos = buffer.current_pos - #buf.data.prompt
+        local pos = buffer.current_pos
         t = t:sub(1, pos) .. k .. t:sub(pos+1, -1)
         buf.data.text = t
         buf.data.pos = pos + 1
@@ -287,7 +294,7 @@ local function do_start(context)
   buf.data = {
       prompt=context._prompt,
       text = '',
-      pos=#context._prompt,
+      pos=0,
       handler=context._handler,
       complete=context._complete,
       context=context,
