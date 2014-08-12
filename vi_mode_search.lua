@@ -5,7 +5,7 @@ local M = {}
 M.search_hl_indic = _SCINTILLA.next_indic_number()
 
 local function set_colours()
-    buffer.indic_fore[M.search_hl_indic] = 0x00FFFF
+    buffer.indic_fore[M.search_hl_indic] = 0xFF0000
     buffer.indic_style[M.search_hl_indic] = _SCINTILLA.constants.INDIC_ROUNDBOX
     buffer.indic_alpha[M.search_hl_indic] = 100
     -- Find all occurrences to highlight.
