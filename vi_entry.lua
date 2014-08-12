@@ -24,11 +24,15 @@ local function ve_refresh(buf)
   
   if buf.data.completions then
       local cs = buf.data.completions
-      local count = #buf.data.completions
+      local comp_offset = buf.data.completions_offset
+      local count = #buf.data.completions - comp_offset
       buf:append_text('\n')
       if count > 10 then count = 10 end
       for i=1,count do
-          buf:append_text(cs[i].."\n", redux.core.style.string)
+          local comp_idx = i+comp_offset
+          local style = (comp_idx == buf.data.completions_sel) and
+                                (redux.core.style.string .. { back="#FFFFFF" }) or redux.core.style.string
+          buf:append_text(cs[comp_idx].."\n", style)
       end
       local lines = buf.line_count
       if lines > M.MAX_COMPLETION_LINES+1 then lines = M.MAX_COMPLETION_LINES+1 end
@@ -131,6 +135,19 @@ local function common_prefix(s1, s2)
     return s1:sub(1, prefixlen)
 end
 
+-- Replace the current word
+local function replace_word(buf, repl)
+    local t = buf.data.text
+    local pos = buf.data.pos
+    local preceding = t:sub(1, pos)
+    local startpos, to_complete, endpos = preceding:match("^.-()(%S*)()$")
+    
+    t = t:sub(1, startpos-1) .. repl .. t:sub(endpos)
+    buf.data.text = t
+    buf.data.pos = startpos + #repl - 1
+    buf:refresh()
+end
+
 -- expand=nil/false means only show completions, don't update buffer.
 local function complete_now(expand)
     local buf = buffer._textredux
@@ -138,6 +155,7 @@ local function complete_now(expand)
         return
     end
     buf.data.completions = nil
+    buf.data.completions_sel = 0
     local t = buf.data.text
     local pos = buf.data.pos
     local preceding = t:sub(1, pos)
@@ -146,14 +164,10 @@ local function complete_now(expand)
     local first_word = t:match("^(%S*)")
     local completions = buf.data.complete(to_complete, first_word) or {}
     
-    local skip_prefix = completions.skip_prefix or 0
-    
     if #completions == 1 and expand then
         local repl = completions[1]
-        t = t:sub(1, startpos+skip_prefix-1) .. repl .. t:sub(endpos)
-        buf.data.text = t
-        buf.data.pos = startpos + skip_prefix + #repl - 1
-        buf:refresh()
+        
+        replace_word(buf, repl)
     elseif #completions >= 1 then
         -- See if there's a common prefix
         local prefix = ""
@@ -164,40 +178,69 @@ local function complete_now(expand)
                 if #prefix == 0 then break end
             end
         end
-        if #prefix > (#to_complete - skip_prefix) then
-            t = t:sub(1, startpos+skip_prefix-1) .. prefix .. t:sub(endpos)
-            buf.data.text = t
-            buf.data.pos = startpos + skip_prefix + #prefix - 1
-            buf:refresh()
+        if #prefix > #to_complete then
+            replace_word(buf, prefix)
         else
             -- No common prefix, so show completions.
             buf.data.completions = completions
+            buf.data.completions_offset = 0
             buf:refresh()
         end
     end
 end
 
+-- Show the next N completions
+local function complete_advance()
+    local buf = buffer._textredux
+    local offset = buf.data.completions_offset
+    local completions = buf.data.completions
+    offset = offset + M.MAX_COMPLETION_LINES
+    if offset >= #completions then
+        offset = 0
+    end
+    buf.data.completions_offset = offset
+    -- If the user has started selecting completions, move it along.
+    if buf.data.completions_sel and buf.data.completions_sel > 0 then
+        buf.data.completions_sel = buf.data.completions_offset + 1
+    end
+    buf:refresh()
+end
+
 local function do_enter()
     local buf = buffer._textredux
-    local saved = buf.data.saved
-    local cmd = buf:get_text()
-    local handler = buf.data.handler
-    local hist = buf.data.context._history
-    local histsaveidx = buf.data.histsaveidx
-    buf:close()
-    unsplit_all()
-    local newcur = restore_into(view,saved)
-    if newcur and _VIEWS[newcur] then
-      ui.goto_view(_VIEWS[newcur])
+    
+    if buf.data.completions_sel and buf.data.completions_sel ~= 0 then
+        -- We've selected a completion.
+        local chosen = buf.data.completions[buf.data.completions_sel]
+        buf.data.completions = nil
+        buf.data.completions_sel = 0
+        replace_word(buf, chosen)
+    else
+        local saved = buf.data.saved
+        local cmd = buf:get_text()
+        local handler = buf.data.handler
+        local hist = buf.data.context._history
+        local histsaveidx = buf.data.histsaveidx
+        buf:close()
+        unsplit_all()
+        local newcur = restore_into(view,saved)
+        if newcur and _VIEWS[newcur] then
+          ui.goto_view(_VIEWS[newcur])
+        end
+        -- Save the command in the history
+        hist[histsaveidx] = cmd
+        handler(cmd)
     end
-    -- Save the command in the history
-    hist[histsaveidx] = cmd
-    handler(cmd)
 end
 
 local ve_keys = {
     ['\t'] = function()
-        complete_now(true)
+        local buf = buffer._textredux
+        if buf.data.completions ~= nil and #buf.data.completions > 1 then
+            complete_advance()
+        else
+            complete_now(true)
+        end
     end,
     ['\b'] = function()
         local buf = buffer._textredux
@@ -236,31 +279,61 @@ local ve_keys = {
     ['\n'] = do_enter,
     up = function()
         local buf = buffer._textredux
-        local idx = buf.data.histidx
-        local hist = buf.data.context._history
-        -- Save this item
-        if idx == buf.data.histsaveidx then
-            buf.data.context._history[idx] = buf.data.text
+        if buf.data.completions then
+            local sel_line = buf.data.completions_sel
+            sel_line = sel_line - 1
+            if sel_line < 1 then
+                sel_line = #buf.data.completions
+            end
+            buf.data.completions_sel = sel_line
+            
+            local min_visible = buf.data.completions_offset + 1
+            local max_visible = buf.data.completions_offset + M.MAX_COMPLETION_LINES
+            if sel_line > max_visible or sel_line < min_visible then
+                buf.data.completions_offset = math.floor((sel_line - 1) / M.MAX_COMPLETION_LINES) * M.MAX_COMPLETION_LINES
+            end
+        else
+            local idx = buf.data.histidx
+            local hist = buf.data.context._history
+            -- Save this item
+            if idx == buf.data.histsaveidx then
+                buf.data.context._history[idx] = buf.data.text
+            end
+            if idx > 1 then
+                idx = idx - 1
+                buf.data.histidx = idx
+            end
+            buf.data.text = hist[idx]
+            buf.data.pos = #buf.data.text
         end
-        if idx > 1 then
-            idx = idx - 1
-            buf.data.histidx = idx
-        end
-        buf.data.text = hist[idx]
-        buf.data.pos = #buf.data.text
         buf:refresh()
     end,
     down = function()
         local buf = buffer._textredux
-        local idx = buf.data.histidx
-        local hist = buf.data.context._history
-        if idx < buf.data.histsaveidx then
-            idx = idx + 1
-            buf.data.histidx = idx
-            buf.data.text = hist[idx]
-            buf.data.pos = #buf.data.text
-            buf:refresh()
+        if buf.data.completions then
+            local sel_line = buf.data.completions_sel
+            sel_line = sel_line + 1
+            if sel_line > #buf.data.completions then
+                sel_line = 1
+            end
+            buf.data.completions_sel = sel_line
+            
+            local min_visible = buf.data.completions_offset + 1
+            local max_visible = buf.data.completions_offset + M.MAX_COMPLETION_LINES
+            if sel_line > max_visible or sel_line < min_visible then
+                buf.data.completions_offset = math.floor((sel_line - 1) / M.MAX_COMPLETION_LINES) * M.MAX_COMPLETION_LINES
+            end
+        else
+            local idx = buf.data.histidx
+            local hist = buf.data.context._history
+            if idx < buf.data.histsaveidx then
+                idx = idx + 1
+                buf.data.histidx = idx
+                buf.data.text = hist[idx]
+                buf.data.pos = #buf.data.text
+            end
         end
+        buf:refresh()
     end
 }
 local function set_key(k)
