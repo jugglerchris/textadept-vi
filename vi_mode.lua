@@ -781,7 +781,7 @@ function find_filename_at_pos()
         end
     end
     
-    if filename:sub(1,1) == '/' then
+    if filename:sub(1,1) == '/' or filename:sub(1,2) == "./" then
         -- Absolute path: keep as is
     else
         -- Relative - find one
