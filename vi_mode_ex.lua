@@ -474,7 +474,6 @@ M.ex_commands = {
         for i=2,#args do
             command[#command+1] = args[i]
         end
-        ui.print("Running: " .. table.concat(command, " "))
         command_to_buffer(command, "./", "*make*", vi_quickfix.quickfix_from_buffer)
     end,
 
