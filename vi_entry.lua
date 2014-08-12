@@ -1,4 +1,6 @@
-local M = {}
+local M = {
+    MAX_COMPLETION_LINES = 5
+}
 
 local redux = require'textredux'
 
@@ -29,7 +31,7 @@ local function ve_refresh(buf)
           buf:append_text(cs[i].."\n", redux.core.style.string)
       end
       local lines = buf.line_count
-      if lines > 6 then lines = 6 end
+      if lines > M.MAX_COMPLETION_LINES+1 then lines = M.MAX_COMPLETION_LINES+1 end
       view.size = ui.size[2] - offset - linesize * (lines-1)
   else
       -- go back to one line if necessary
