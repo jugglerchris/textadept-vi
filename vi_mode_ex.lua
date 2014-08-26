@@ -226,7 +226,7 @@ local repl_chars = C((P(1) - S'&\\')^1)
 local repl_ref = P"\\" * (C(R"09") * Carg(1)) / function(ref, groups) return groups[ref] or "" end
 local amp_ref = P"&" * Carg(1) /function(groups) return groups["&"] end
 local repl_quoted = P"\\" * C(P(1))
-local repl_pat = Cf((repl_chars + repl_ref + amp_ref + repl_quoted) ^ 0, function(a,b) return a..b end)
+local repl_pat = Cf(Cc("")*((repl_chars + repl_ref + amp_ref + repl_quoted) ^ 0), function(a,b) return a..b end)
 
 local function command_substitute(args, range)
     local searchpat = args[2]
