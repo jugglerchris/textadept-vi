@@ -295,6 +295,11 @@ function M.assertEq(a, b)
     return assertEqLevel(a, b, 2)
 end
 
+--- Assert that two filenames are equivalent (compared using lfs.abspath).
+function M.assertFileEq(a, b)
+    assertEqLevel(lfs.abspath(a), lfs.abspath(b), 2)
+end
+
 function M.assert(a)
     return assertEqLevel(not a, false, 2)
 end

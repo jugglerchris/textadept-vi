@@ -16,7 +16,7 @@ assertEq(pat:match("Z_ j"), {_start=2, _end=3})
 assertEq(pat:match("Z; j"), nil)
 
 pat = compile('\\W\\w')
-assertEq(pat:match(";2 177_x j"), {_start=6,_end=7})
+assertEq(pat:match(";2 177_x j"), {_start=1,_end=2})
 
 pat = compile('\\S\\s\\S')
 assertEq(pat:match(";2 177_x j"), {_start=2,_end=4})

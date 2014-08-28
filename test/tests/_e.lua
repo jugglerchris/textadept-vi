@@ -2,13 +2,13 @@
 test.keys(':e files/foo.xml')
 test.key('enter')
 
-test.assertEq(buffer.filename, 'files/foo.xml')
+test.assertFileEq(buffer.filename, 'files/foo.xml')
 
 -- test completion
 test.keys(':e files/1_1')
 test.key('tab')
 
-test.assertEq(buffer:get_text(), ':e files/1_10')
+test.assertEq(buffer:get_text(), 'e files/1_10')
 -- next tab shows completions
 test.key('tab')
 local t = buffer:get_text()
@@ -22,13 +22,13 @@ test.key('escape')
 test.keys(':e ../test/files/1_1')
 test.key('tab')
 
-test.assertEq(buffer:get_text(), ':e %.%./test/files/1_10')
+test.assertEq(buffer:get_text(), 'e %.%./test/files/1_10')
 test.key('escape')
 
 -- % should expand to the current filename
 test.keys(':e %')
 test.key('tab')
-test.assertEq(buffer:get_text(), ':e files/foo%.xml')
+test.assertEq(buffer:get_text(), 'e files/foo%.xml')
 
 -- Exit the entry to avoid confusion in later tests.
 test.key('escape')

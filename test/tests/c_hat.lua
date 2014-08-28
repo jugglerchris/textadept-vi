@@ -1,10 +1,10 @@
 test.open('words.txt')
-local assertEq = test.assertEq
+local assertFileEq = test.assertFileEq
 local key = test.key
-assertEq(buffer.filename, 'files/words.txt')
+assertFileEq(buffer.filename, 'files/words.txt')
 test.open('foo.xml')
-assertEq(buffer.filename, 'files/foo.xml')
+assertFileEq(buffer.filename, 'files/foo.xml')
 key('c-^')
-assertEq(buffer.filename, 'files/words.txt')
+assertFileEq(buffer.filename, 'files/words.txt')
 key('c-^')
-assertEq(buffer.filename, 'files/foo.xml')
+assertFileEq(buffer.filename, 'files/foo.xml')

@@ -44,11 +44,23 @@ end)
 
 local ui_ce = ui.command_entry
 
+local function relpath(path)
+    local curdir = lfs.abspath(lfs.currentdir())
+    
+    local curlen = #curdir
+    
+    if path:sub(1, curlen) == curdir then
+        return path:sub(curlen+2)
+    else
+        return path
+    end
+end
+
 -- Local wrapper which handles special expansions ("%" -> current filename)
 local function get_matching_files(text, doescape)
     -- Special case - a bare % becomes the current file's path.
     if text == "%" then
-        local result = state.cur_buf.filename
+        local result = relpath(state.cur_buf.filename)
         if doescape then
             result = vi_find_files.luapat_escape(result)
         end
@@ -717,7 +729,7 @@ M.completions = {
 -- Completers for the new entry method
 M.completions_word = {
     b = matching_buffers,
-    e = function(text) return get_matching_files(text) end,
+    e = function(text) return get_matching_files(text, true) end,
     w = vi_find_files.matching_files_nopat,
     split = get_matching_files,
     vsplit = get_matching_files,
