@@ -30,6 +30,7 @@ test: output
 	$(TMUX) -S $(TMUX_SOCKET) -C new-session -d $(TMUX_SIZE) "TESTS=\"$(TESTS)\" bash " \; send-keys "$(TA) --nosession --userhome ./userhome " \; send-keys enter $(TMUX_EXTRA)
 	@echo Waiting for test...
 	@head -1 output/sem.fifo >/dev/null & tail --pid=$$! --follow=name output/results.txt
+	@grep FAIL output/results.txt && exit 1 || exit 0
   
 # Convenience target to attach to any session still running.
 attach:
