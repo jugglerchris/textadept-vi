@@ -33,7 +33,6 @@ assertEq(pat:match('axbooo'), { _start=1,_end=3 })
 assertEq(pat:match('axxbooo'), nil)
 
 local pat = compile('a.*b')
-lpeg.print(pat._pat)
 
 assertEq(pat:match('axbcdef'), { _start=1,_end=3 })
 assertEq(pat:match('axxbcdef'), { _start=1,_end=4 })
