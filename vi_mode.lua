@@ -755,6 +755,23 @@ local function with_motion_insert(actions, handler)
     return vi_motion.bind_motions(actions, wrapped_handler)
 end
 
+-- Take a selection movdesc and turns it into one which trims whitespace
+-- from the end.
+local function self_trim_right_space(movdesc)
+    local movtype, sel_f, rep = table.unpack(movdesc)
+    return { movtype, function(rep)
+        local pos1, pos2 = sel_f(rep)
+        while pos2 > pos1 and buffer:text_range(pos2-1, pos2):match("%s") do
+            pos2 = pos2 - 1
+        end
+        if pos2 > pos1 then
+            -- And back one to step on to the last character of the word.
+            pos2 = pos2 - 1
+        end
+        return pos1, pos2
+     end, rep }
+end
+
 -- Ask the user for some text, and return the text or nil.
 function ask_string(prompt)
     local idx, res
@@ -1069,8 +1086,9 @@ mode_command = {
           c = { MOV_LINE, vi_motions.sel_line, 1 },
               
           -- cw is a special case, and doesn't include whitespace at the end
-          -- of the words.  It behaves more like ce.
-          w = vi_motion.movf_to_self({ MOV_INC, vi_motion.r(vi_motions.word_end), 1}),
+          -- of the words.  It behaves more like ce, but doesn't change
+          -- line at the end of a word.
+          w = self_trim_right_space(vi_motion.movf_to_self({ MOV_INC, vi_motion.r(vi_motions.word_right), 1})),
         }, vi_ops.change),
 
         D = function()

@@ -18,8 +18,11 @@ assertEq(buffer:get_cur_line(), "foo bee foo dee ee eff\n")
 -- undo and check it's been reverted
 test.key('u', 'u')
 assertEq(buffer:get_cur_line(), "hey bee cee dee ee eff\n")
--- Try at the end of a line.
+-- Try on the last word of the line
 test.key('^', '5', 'w')
 assertEq(colno(), 19)
 test.key('c', 'w', 'X', 'escape')
 assertEq(buffer:get_cur_line(), "hey bee cee dee ee X\n")
+-- Try at the end of a line.
+test.key('u', '$', 'c', 'w', 'Y', 'escape')
+assertEq(buffer:get_cur_line(), "hey bee cee dee ee efY\n")
