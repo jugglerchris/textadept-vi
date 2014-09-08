@@ -406,6 +406,7 @@ local function no_action() end
 -- and saves it to be recalled with '.'.
 function do_action(action)
     local saved_rpt = state.numarg
+    if saved_rpt < 1 then saved_rpt = 1 end
     state.last_action = function(rpt)
         if rpt < 1 then rpt = saved_rpt end
         action(rpt)
