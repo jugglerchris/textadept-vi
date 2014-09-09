@@ -11,6 +11,12 @@ assertEq(colno(), 4)
 assertEq(lineno(), 0)
 assertEq(buffer:get_cur_line(), 'one four five\n')
 
+-- Check that the redo gets the right count
+test.keys('^.')
+assertEq(colno(), 0)
+assertEq(lineno(), 0)
+assertEq(buffer:get_cur_line(), 'five\n')
+
 test.keys('j$bbd^')
 assertEq(colno(), 0)
 assertEq(lineno(), 1)

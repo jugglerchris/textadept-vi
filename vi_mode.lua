@@ -695,7 +695,8 @@ local function with_motion(actions, handler)
        handler(start, end_, movtype)
        end_undo()
        
-       state.last_action = function(rpt)
+       state.last_action = function(new_rpt)
+           local rpt = (new_rpt and new_rpt > 0) and new_rpt or cmdrpt
            local start, end_ = movdesc_get_range(mdesc, rpt, 1)
            begin_undo()
            handler(start, end_, movtype)
@@ -743,7 +744,8 @@ local function with_motion_insert(actions, handler)
            mode_command.restart = function()
                local text = state.last_insert_string
                end_undo()
-               state.last_action = function(rpt)
+               state.last_action = function(new_rpt)
+                   local rpt = (new_rpt and new_rpt > 0) and new_rpt or cmdrpt
                    local start, end_ = movdesc_get_range(movdesc, rpt, 1)
                    begin_undo()
                    handler(start, end_, movtype)

@@ -28,7 +28,10 @@ assertEq(buffer:get_cur_line(), "hey bee cee dee ee eff\n")
 -- Try existing count
 test.key('0', '2', 'c', 'w', 'r', 's', 't', 'escape')
 assertEq(buffer:get_cur_line(), "rst cee dee ee eff\n")
-test.key('u')
+-- Check that the repeat count is saved.
+test.key('w', '.')
+assertEq(buffer:get_cur_line(), "rst rst ee eff\n")
+test.key('u', 'u')
 assertEq(buffer:get_cur_line(), "hey bee cee dee ee eff\n")
 -- Try replacing the count, should change the number of words changed.
 test.key('0')
