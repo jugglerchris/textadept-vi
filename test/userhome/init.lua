@@ -66,6 +66,7 @@ test.queue(function()
     test.run('subst')
     test.run('vicomp')
     test.run('ca')
+    test.run('split')
 end)
 
 

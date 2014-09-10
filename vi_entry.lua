@@ -82,7 +82,7 @@ local function restore_into(v, saved)
     if saved[1] and saved[2] then
         local cur1, cur2
         -- restore the split
-        first, second = v:split(saved.vertical)
+        local first, second = v:split(saved.vertical)
         first.size = saved.size
         cur1 = restore_into(first, saved[1])
         cur2 = restore_into(second, saved[2])
@@ -223,6 +223,7 @@ local function do_enter()
         local histsaveidx = buf.data.histsaveidx
         buf:close()
         unsplit_all()
+             
         local newcur = restore_into(view,saved)
         if newcur and _VIEWS[newcur] then
           ui.goto_view(_VIEWS[newcur])
@@ -271,6 +272,7 @@ local ve_keys = {
         buf:close()
         unsplit_all()
         local newcur = restore_into(view,saved)
+        
         if newcur and _VIEWS[newcur] then
             ui.goto_view(_VIEWS[newcur])
         end

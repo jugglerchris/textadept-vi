@@ -290,14 +290,119 @@ local function assertEqLevel(a, b, level)
 end
 
 --- Assert that a and b are equal.  Tables are equal if their keys
---  and values are equal.  REturns true or calls error().  
+--  and values are equal.  Returns true or calls error().  
 function M.assertEq(a, b)
     return assertEqLevel(a, b, 2)
 end
 
+-- Placeholder value which matches anything
+M.STAR = {}
+
+-- Metatable for fuzzy match tables
+local fuzzy_mt = {}
+
+function M.T(tab)
+    return setmetatable(tab, fuzzy_mt)
+end
+
+local filename_mt = {}
+function M.F(filename)
+    return setmetatable({filename}, filename_mt)
+end
+
+-- Compare two tables, treating them as the same if they key pairs
+-- match
+function tableMatches(a, b)
+  -- First, check that every key in a matches one in b.
+  for k,v in pairs(a) do
+      local ok, err = matches(v, b[k])
+      if not ok then return false, k.."->"..err end
+  end
+  
+  -- Second, check that every key in b exists in a.
+  -- We don't need to compare - if the key is in a then we've already
+  -- checked.
+  for k,_ in pairs(b) do
+    if a[k] == nil then return false, k.."==nil" end
+  end
+  
+  -- They must be equal
+  return true
+end
+
+-- Do a fuzzy match of two tables.  Keys in a must appear and match in
+-- table b, but the reverse isn't true.
+function fuzzyMatches(a, b)
+    for k,va in pairs(a) do
+        local vb = b[k]
+        local ok, err = matches(va, vb)
+        if not ok then return false, err end
+    end
+    return true
+end
+
+local function matchesFilename(a, b)
+    local path1 = lfs.abspath(a)
+    local path2 = lfs.abspath(b)
+    
+    if path1 == path2 then
+        return true
+    else
+        return false, "Filename mismatch: "..a..", "..b
+    end
+end
+
+-- Return:
+--  true if two value match (including wildcards and fuzzy matches)
+--  false and a string describing the mismatch otherwise
+function matches(a, b)
+    -- Easy case: builtin equal works for most cases.
+    if a == b then return true end
+    
+    -- If one is a wildcard, then this matches.
+    if a == M.STAR or b == M.STAR then return true end
+    
+    -- Check for a filename match
+    if getmetatable(a) == filename_mt then
+        return matchesFilename(a[1], b)
+    elseif getmetatable(b) == filename_mt then
+        return matchesFilename(a, b[1])
+    end
+    
+    
+    if type(a) ~= 'table' or type(b) ~= 'table' then
+        -- If not both tables, then not equal.
+        return false, "Type mismatch"
+    end
+    
+    -- Check for fuzzy maches
+    if getmetatable(a) == fuzzy_mt then
+        return fuzzyMatches(a, b)
+    elseif getmetatable(b) == fuzzy_mt then
+        return fuzzyMatches(b, a)
+    end
+    return tableMatches(a, b)
+end
+
+--- Assert that a and b "match".  This means that they may be equal, but
+--  with some fuzziness:
+--  test.STAR matches anything
+--  test.T{...} matches a table with a superset of the keys, such that any
+--  keys present match.
+function M.assertMatches(a, b)
+    local ok, info = matches(a, b)
+    if not ok then
+        if info then
+            error("Failed assertion: [["..info.."]]\n", 2)
+        else
+            error("Failed assertion: [["..M.tostring(a).."]] doesn't match [["..M.tostring(b).."]]\n", 2)
+        end
+    end
+end
+
 --- Assert that two filenames are equivalent (compared using lfs.abspath).
 function M.assertFileEq(a, b)
-    assertEqLevel(lfs.abspath(a), lfs.abspath(b), 2)
+    assertEqLevel(lfs.abspath(a), lfs.abspath(b), 3)
 end
 
 function M.assert(a)
@@ -346,6 +451,12 @@ function M.physkeys(s)
     for i=1,s:len() do
        M.physkey(s:sub(i,i))
     end
+end
+
+-- convenience function to enter an ex command
+function M.colon(s)
+    test.keys(':' .. s)
+    test.key('enter')
 end
 
 -- Send an arbitrary tmux command
