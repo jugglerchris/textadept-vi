@@ -132,7 +132,7 @@ state = {
     registers = {},           -- cut/paste registers
     
     variables = {             -- Configurable variables
-        grepprg = "grep -rn",
+        grepprg = "grep -rn --devices=skip",
     }
 }
 
@@ -234,7 +234,11 @@ local function _find_number()
     
     local startpos, base, endpos = _find_num:match(line, 1, col)
     
-    return base, linepos+startpos-1, linepos + endpos-1
+    if startpos ~= nil then
+        return base, linepos+startpos-1, linepos + endpos-1
+    else
+        return nil
+    end
 end
 
 local numtype_to_base = {
