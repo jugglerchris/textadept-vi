@@ -70,7 +70,9 @@ local function restore_mark(reg)
 
     return { MOV_LINE, function()
         newpos = vi_mode.state.marks[reg]
-        newpos = buffer:position_from_line(buffer:line_from_position(newpos))
+        if newpos ~= nil then
+            newpos = buffer:position_from_line(buffer:line_from_position(newpos))
+        end
         if newpos ~= nil then
             buffer:goto_pos(newpos)
         end
