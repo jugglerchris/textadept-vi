@@ -8,7 +8,7 @@ to keep working, while (at least eventually) making good use of textadept's
 features.
 
 This is currently experimental, but the most common key bindings I use have
-been implemented to some extent.  It requires textadept 7.0 or later.
+been implemented to some extent.  It requires a recent textadept (7.6 works).
 
 I use this as my default editor.
 
@@ -55,12 +55,11 @@ under Linux (modified to support split views; see below).
 
 Dependencies
 ------------
-Besides textadept (currently tested on 7.0), some features depend on:
+Besides textadept (currently tested on 7.6):
 * The included "kill" extension to suspend with ^Z
-* For split views in textadept-curses, a modified textadept (from
-  [https://bitbucket.org/jugglerchris/textadept](https://bitbucket.org/jugglerchris/textadept))
 * For error/tag lists, and an experimental buffer-based command entry,
-  [textredux](http://rgieseke.github.io/textredux/)
+  [textredux](http://rgieseke.github.io/textredux/)  0.10 has been tested
+  to work.
 
 Testing
 -------
