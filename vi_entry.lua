@@ -339,7 +339,7 @@ local ve_keys = {
     end
 }
 local function set_key(k)
-    ve_keys[k] = function() 
+    ve_keys[k] = function()
         local buf = buffer._textredux
         local t = buf.data.text
         local pos = buffer.current_pos
@@ -367,7 +367,9 @@ set_key_range(' ', '\x7e')
 local function do_start(context)
   local buf = redux.core.buffer.new('entry')
   buf.on_refresh = ve_refresh
-  buf.keys = ve_keys
+  for k,v in pairs(ve_keys) do
+      buf.keys[k] = v
+  end
   buf.data = {
       prompt=context._prompt,
       text = '',
