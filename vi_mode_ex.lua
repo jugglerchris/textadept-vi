@@ -5,6 +5,7 @@ local vi_tags = require('vi_tags')
 local vi_quickfix = require('vi_quickfix')
 local vi_regex = require('regex.regex')
 M.use_vi_entry = true
+M.use_vi_entry_ce = true
 local vi_entry
 local lpeg = require 'lpeg'
 local vi_find_files = require 'vi_find_files'
@@ -788,7 +789,11 @@ local function do_complete(word, cmd)
 end
 
 if M.use_vi_entry then
-    vi_entry = require('vi_entry')
+    if M.use_vi_entry_ce then
+        vi_entry = require('vi_ce_entry')
+    else
+        vi_entry = require('vi_entry')
+    end
     state.entry_state = vi_entry.new(':', handle_ex_command, do_complete)
 end
 
