@@ -4,6 +4,33 @@ local M = {
 
 local redux = require'textredux'
 
+-- Save any margin state we might be changing, so that
+-- it can be restored later.
+local function save_margins(buffer)
+    local result = {
+        width = {},
+        type = {},
+        text = {},
+        style = {},
+    }
+    for i=0,4 do
+        result.width[i] = buffer.margin_width_n[i]
+        result.type[i] = buffer.margin_type_n[i]
+        result.text[i] = buffer.margin_text[i]
+        result.style[i] = buffer.margin_style[i]
+    end
+    return result
+end
+
+local function restore_margins(buffer, state)
+    for i=0,4 do
+        buffer.margin_width_n[i] = state.width[i]
+        buffer.margin_type_n[i] = state.type[i]
+        buffer.margin_text[i] = state.text[i]
+        buffer.margin_style[i] = state.style[i]
+    end
+end
+
 -- Define a style for highlighting completions
 redux.core.style.string_hl = redux.core.style.string .. { back="#FFFFFF" }
 local function ve_refresh(buf)
@@ -134,6 +161,15 @@ local function complete_advance()
     buf:refresh()
 end
 
+-- Close the entry
+local function close(reduxbuf)
+    local marginstate = reduxbuf.data.marginstate
+    local buffer = reduxbuf.target
+    restore_margins(buffer, marginstate)
+    buffer:clear_all()
+    reduxbuf:close()
+end
+
 local function do_enter()
     local buffer = ui.command_entry
     local buf = buffer._textredux
@@ -150,7 +186,7 @@ local function do_enter()
         local handler = buf.data.handler
         local hist = buf.data.context._history
         local histsaveidx = buf.data.histsaveidx
-        buf:close()
+        close(buf)
              
         -- Save the command in the history
         hist[histsaveidx] = cmd
@@ -197,7 +233,7 @@ local ve_keys = {
         local buffer = ui.command_entry
         local buf = buffer._textredux
         local saved = buf.data.saved
-        buf:close()
+        close(buf)
     end,
     ['\r'] = do_enter,
     ['\n'] = do_enter,
@@ -305,6 +341,8 @@ local function do_start(context)
       histidx=#context._history+1,
       histsaveidx=#context._history+1,
   }
+  buf.data.marginstate = save_margins(ui.command_entry)
+  
   buf:attach_to_command_entry()
   ui.command_entry.height = 1
 end
