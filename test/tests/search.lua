@@ -33,6 +33,14 @@ assertAt(1, 16)
 test.key('N')
 assertAt(1, 13)
 
+-- Insert random text in command entry
+test.keys(':foo') test.key('escape')
+test.key('/')
+test.key('enter')
+assertAt(1, 16)
+test.key('n')
+assertAt(0, 11)
+
 -- *, #
 -- Create some words to use with * and #.
 test.keys('1GOee bee')
