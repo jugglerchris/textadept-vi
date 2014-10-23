@@ -32,6 +32,6 @@ assertEq(lines_visible(), {true, true, true, true, true, true, true, true})
 test.keys('zM')
 assertEq(lines_visible(), {true, false, false, false, true, false, false, false})
 -- Check that lines become visible when searching
-test.physkeys('/retur') test.key('\n')
+test.keys('/retur') test.key('enter')
 assertAt(6, 3)
 assertEq(lines_visible(), {true, false, false, false, true, true, true, true})

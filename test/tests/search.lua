@@ -5,17 +5,18 @@ local assertEq = test.assertEq
 local assertAt = test.assertAt
 
 -- basic search
-test.physkeys('/cee')
-test.key('\n')
+test.keys('/cee')
+test.key('enter')
+--test.key('enter')
 assertAt(1, 8)
 
 -- Backwards search
-test.physkeys('?fi')
+test.keys('?fi')
 test.key('enter')
 assertAt(0, 19)
 
 -- Repeat forward search
-test.physkeys('/ee')
+test.keys('/ee')
 test.key('enter')
 assertAt(1, 5)
 test.keys('n')
@@ -45,6 +46,6 @@ assertAt(2, 4)
 
 -- And test with an action
 test.keys('1Gd')
-test.physkeys('/some')
+test.keys('/some')
 test.key('enter')
 assertEq(buffer:get_text(), 'some miscellaneous text')

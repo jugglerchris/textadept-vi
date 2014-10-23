@@ -8,6 +8,7 @@ test.assertFileEq(buffer.filename, 'files/foo.xml')
 test.keys(':e files/1_1')
 test.key('tab')
 
+local buffer = ui.command_entry
 test.assertEq(buffer:get_text(), 'e files/1_10')
 -- next tab shows completions
 test.key('tab')
