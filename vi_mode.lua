@@ -348,19 +348,30 @@ local function end_undo()
     bst.undo_level = bst.undo_level - 1
 end
 
+-- Break an insert action to be resumed (at another location/in another
+-- buffer)
+local function break_edit_start()
+    -- Cancel any autocomplete list if active
+    if buffer:auto_c_active() then
+        buffer:auto_c_cancel()
+    end
+    end_undo()
+    insert_end_edit()
+end
+
+-- Resume editing
+local function break_edit_end()
+    insert_start_edit()
+    begin_undo()
+end
+
 --- Return a function which does the same as its argument, but also
 --  restarts the undo action.
 local function break_edit(f)
     return function()
-        -- Cancel any autocomplete list if active
-        if buffer:auto_c_active() then
-            buffer:auto_c_cancel()
-        end
-        end_undo()
-        insert_end_edit()
+        break_edit_start()
         f()
-        insert_start_edit()
-        begin_undo()
+        break_edit_end()
     end
 end
 
@@ -1222,12 +1233,27 @@ mode_command = {
 }
 M.mode_command = mode_command
 
--- Save the previous buffer to be able to switch back
+events.connect(events.VIEW_BEFORE_SWITCH, function()
+       -- Add undo boundaries when switching buffers
+       if keys.MODE == mode_insert.name then
+           break_edit_start()
+       end
+end)
+
+events.connect(events.VIEW_AFTER_SWITCH, function () 
+       -- Add undo boundaries when switching buffers
+       if keys.MODE == mode_insert.name then
+           break_edit_end()
+       end
+    end)
+
 events.connect(events.BUFFER_BEFORE_SWITCH, function () 
+       -- Save the previous buffer to be able to switch back
        if not buffer._textredux  then
            view.vi_last_buf = buffer
        end
     end)
+    
 
 if M.vi_global then
   -- Rather than adding a command mode, copy all our bindings in and replace mode_command.bindings
