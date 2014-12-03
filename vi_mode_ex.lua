@@ -354,6 +354,7 @@ function command_to_buffer(command, workdir, buftype, when_finished)
 
             msgbuf:append_text(s)
             msgbuf:goto_pos(msgbuf.length)
+            msgbuf:set_save_point()
 
             if my_view ~= cur_view then
                 ui.goto_view(_VIEWS[cur_view])
@@ -362,6 +363,7 @@ function command_to_buffer(command, workdir, buftype, when_finished)
     end
     local function endproc()
         msgbuf:append_text('Finished:' .. table.concat(command, " "))
+        msgbuf:set_save_point()
         if when_finished ~= nil then
             when_finished(msgbuf)
         end
