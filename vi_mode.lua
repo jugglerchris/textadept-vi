@@ -27,17 +27,6 @@ local vi_ta_util = require 'vi_ta_util'
 local line_length = vi_ta_util.line_length
 local buf_state = vi_ta_util.buf_state
 
-res, M.kill = pcall(require,'kill')
-if res then
-    M.suspend = function()
-        events.emit("vi_pre_suspend")
-        M.kill.kill()
-        events.emit("vi_post_resume")
-    end
-else
-    -- The extension module may not be available.
-    M.suspend = function() end
-end
 --[[
 Make textadept behave a bit like vim.
 --]]
@@ -1225,10 +1214,6 @@ mode_command = {
     
     -- Show help
     f1 = textadept.editing.show_documentation,
-
-    -- Misc: suspend the editor
-    cz = M.suspend,
-
     },
 }
 M.mode_command = mode_command
