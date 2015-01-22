@@ -5,13 +5,13 @@ local regex = require('regex')
 local compile = regex.compile
 
 pat = compile('foo')
-assertEq(pat.patternProps.numGroups, 0)
+assertEq(pat.numgroups, 0)
 
 pat = compile('f(o)o')
-assertEq(pat.patternProps.numGroups, 1)
+assertEq(pat.numgroups, 1)
 
 pat = compile('f((o))o')
-assertEq(pat.patternProps.numGroups, 2)
+assertEq(pat.numgroups, 2)
 
 pat = compile('f(o)((a)o)')
-assertEq(pat.patternProps.numGroups, 3)
+assertEq(pat.numgroups, 3)

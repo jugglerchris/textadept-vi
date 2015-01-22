@@ -366,7 +366,7 @@ function M.compile(re)
     local _pat = re_to_peg(retab, P(0), patternProps)
     return setmetatable({
         _pat = Ct(_pat),
-        patternProps = patternProps
+        numgroups = patternProps.numGroups
     }, mt)
 end
 
