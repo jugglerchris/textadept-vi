@@ -188,8 +188,10 @@ local pattern = P{
     branch = V"concat",
     
     -- A set of concatenated pieces
-    concat = (V"piece" ^ 0) /
-             function(...) return { [0] = "concat", ... } end,
+    -- Pass a dummy capture to avoid the special case of no captures confusing
+    -- the function.
+    concat = Cc(nil) * (V"piece" ^ 0) /
+             function(_, ...) return { [0] = "concat", ... } end,
              
     piece = V"atom_multi",
     

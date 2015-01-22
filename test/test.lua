@@ -74,5 +74,8 @@ function M.assertEq(a, b)
     return assertEqLevel(a, b, 2)
 end
 
+function M.log(x)
+    print(M.tostring(x))
+end
 
 return M
