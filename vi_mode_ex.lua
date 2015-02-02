@@ -302,14 +302,35 @@ end
 
 -- Take a buffer with error messages, and turn it into a quickfix list,
 -- which is activated.
-local function choose_errors_from_buf(buf)
+local function choose_errors_from_buf(buf, cb)
     local results = vi_quickfix.quickfix_from_buffer(buf)
+    cb = cb or clist_go
     if results then
         -- Push the results list to the stack
         state.clistidx = #state.clists+1
         state.clists[state.clistidx] = { list=results, idx=1 }
-        choose_list('Errors', results, clist_go)
+        choose_list('Errors', results, cb)
     end
+end
+
+-- Wrapper around clist_go which also annotates the destination buffer.
+local function clist_go_annotate(item)
+    io.open_file(item.path)
+    buffer.goto_line(item.lineno-1)
+    buffer:annotation_clear_all()
+    for _,erritem in ipairs(state.clists[state.clistidx].list) do
+        if erritem.path == item.path then
+            buffer.annotation_text[erritem.lineno-1] = erritem[1]
+            buffer.annotation_style[erritem.lineno-1] = 8  -- error style
+        end
+    end
+    state.clists[state.clistidx].idx = item.idx
+end
+
+-- As choose_errors_from_buf, but with a callback which also annotates
+-- the destination buffer with errors.
+local function choose_errors_annotated_from_buf(buf)
+    return choose_errors_from_buf(buf, clist_go_annotate)
 end
 
 -- Spawn a command, which will write its output to a buffer in the
@@ -489,7 +510,7 @@ M.ex_commands = {
         for i=2,#args do
             command[#command+1] = args[i]
         end
-        command_to_buffer(command, "./", "*make*", choose_errors_from_buf)
+        command_to_buffer(command, "./", "*make*", choose_errors_annotated_from_buf)
     end,
 
     -- Search files

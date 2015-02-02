@@ -67,12 +67,12 @@ function M.quickfix_from_buffer(buffer)
           elseif match.path then
               local path = match.path
               local lineno = tonumber(match.lineno)
-              local message = match.mesage
+              local message = match.mesage or ""
               if #dirs > 0 then
                   path = dirs[#dirs] .. "/" .. path
               end
               local idx = #results + 1
-              results[idx] = { line, path=path, lineno=lineno, idx=idx }
+              results[idx] = { line, path=path, lineno=lineno, idx=idx, message=message }
           end
         end
         --cme_log("<"..buffer:get_line(i)..">")
