@@ -513,7 +513,7 @@ M.ex_commands = {
             cmd[#cmd+1] = args[i]
         end
 
-        command_to_buffer(cmd, ".", "*grep*", vi_quickfix.quickfix_from_buffer)
+        command_to_buffer(cmd, ".", "*grep*", choose_errors_from_buf)
     end,
     
     ['!'] = function(args)
