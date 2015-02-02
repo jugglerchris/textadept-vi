@@ -497,9 +497,23 @@ M.ex_commands = {
         local pat = args[2]
         if not pat then return end
         
-        local root = args[3] or '.'
+        local cmd = {}
+        local grepprg = vi_mode.state.variables.grepprg
+        
+        if type(grepprg) == 'string' then
+            cmd[#cmd+1] = grepprg
+        else
+            -- Assume a table
+            for _,arg in ipairs(grepprg) do
+                cmd[#cmd+1] = arg
+            end
+        end
+        -- Append arguments
+        for i = 2,#args do
+            cmd[#cmd+1] = args[i]
+        end
 
-        command_to_buffer({vi_mode.state.variables.grepprg, pat, root}, ".", "*grep*", vi_quickfix.quickfix_from_buffer)
+        command_to_buffer(cmd, ".", "*grep*", vi_quickfix.quickfix_from_buffer)
     end,
     
     ['!'] = function(args)
