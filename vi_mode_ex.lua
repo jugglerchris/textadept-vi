@@ -318,9 +318,15 @@ local function clist_go_annotate(item)
     io.open_file(item.path)
     buffer.goto_line(item.lineno-1)
     buffer:annotation_clear_all()
+    buffer.annotation_visible = buffer.ANNOTATION_STANDARD
     for _,erritem in ipairs(state.clists[state.clistidx].list) do
         if erritem.path == item.path then
-            buffer.annotation_text[erritem.lineno-1] = erritem[1]
+            local msg = erritem.message
+            local prevmsg = buffer.annotation_text[erritem.lineno-1]
+            if prevmsg and #prevmsg > 0 then
+                msg = prevmsg .. "\n" .. msg
+            end
+            buffer.annotation_text[erritem.lineno-1] = msg
             buffer.annotation_style[erritem.lineno-1] = 8  -- error style
         end
     end
