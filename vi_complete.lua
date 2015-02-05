@@ -1,36 +1,58 @@
 -- Implement word completion (with ctrl-p/ctrl-n) in insert mode.
 local M = {}
+local vi_tags = require('vi_tags')
 
 -- update the display from the current word after moving.
 local function update_word()
     -- Save and restore the selection
     local pos = M.state.pos
+    local listpos = M.state.listpos
     local sel_start = buffer.selection_start
-    local word = (pos == 0) and M.state.prefix or M.state.words[pos]
+    local word = (listpos == 0) and M.state.prefix or M.state.words[listpos][pos]
     buffer:replace_sel(word)
     buffer:set_selection(sel_start + #word, sel_start)
     return true
 end
 
 local function next_backwards()
-    local pos = M.state.pos
+    local state = M.state
+    local pos = state.pos
+    local listpos = state.listpos
     if pos < 1 then
-        pos = #M.state.words
+        listpos = listpos - 1
+        if listpos < 0 then
+            listpos = #M.search_types
+        end
+        if state.words[listpos] == nil then
+            state.words[listpos] = M.search_types[listpos].finder(state.forwards, state.here, state.prefix)
+        end
+        pos = #state.words[listpos]
+        state.listpos = listpos
     else
         pos = pos - 1
     end
-    M.state.pos = pos
+    state.pos = pos
     update_word()
 end
 
 local function next_forwards()
-    local pos = M.state.pos
-    if pos >= #M.state.words then
-        pos = 0
+    local state = M.state
+    local pos = state.pos
+    local listpos = state.listpos
+    if pos >= #state.words[listpos] then
+        listpos = listpos + 1
+        pos = 1
+        if listpos > #M.search_types then
+            listpos = 0
+        end
+        if state.words[listpos] == nil then
+            state.words[listpos] = M.search_types[listpos].finder(state.forwards, state.here, state.prefix)
+        end
+        state.listpos = listpos
     else
         pos = pos + 1
     end
-    M.state.pos = pos
+    state.pos = pos
     update_word()
 end
 
@@ -62,16 +84,16 @@ end
 
 M.wordchars = 'a-zA-Z0-9_'
 
-local function get_words(forwards, here, prefix)
+function get_words(forwards, here, prefix)
     local words = {}  -- ordered list of words
     
     local wordstart = here - #prefix
     
-    search = buffer.search_next
+    local search = buffer.search_next
     
     -- Avoid finding the current word
     buffer.current_pos = here+1
-    buffer.search_anchor()
+    buffer:search_anchor()
     
     local endpos = here
     
@@ -79,7 +101,7 @@ local function get_words(forwards, here, prefix)
     
     local wrapped = false
     while true do
-        nextpos = search(buffer, buffer.FIND_REGEXP + buffer.FIND_MATCHCASE, pat) 
+        local nextpos = search(buffer, buffer.FIND_REGEXP + buffer.FIND_MATCHCASE, pat) 
         if nextpos < 0 then
             if wrapped then break end
             
@@ -127,6 +149,25 @@ local function get_words(forwards, here, prefix)
     return result
 end
 
+-- Complete on tags
+function get_tags(forwards, here, prefix)
+    local matching_tags = vi_tags.match_tag("^"..prefix)
+    return matching_tags or {}
+end
+
+-- The word completion types, in order.
+local search_types = {
+    {
+        name='buffer',
+        finder = get_words,
+    },
+    {
+        name='tags',
+        finder = get_tags,
+    },
+}
+M.search_types = search_types
+
 -- Return position of first character, and the prefix string.
 local function find_prefix()
     local curpos = buffer.current_pos
@@ -144,14 +185,16 @@ local function enter_complete(forwards)
     
     -- Set up state
     M.state = {
-        words = get_words(forwards, here, prefix),
-        pos = 0,  -- current entry
+        forwards = forwards, -- initial direction
+        words = {[0]={} },  -- list of word lists (in the order of search_types, with a dummy zeroth list.)
+        listpos = 0, -- current word list (0 is empty)
+        pos = 0,  -- current entry in words[listpos]
         current_pos = here,
         wordstart = wordstart,
-        prefix = prefix
+        prefix = prefix,
+        here = here,
     }
-    -- And select the current word
-    buffer:set_selection(here, wordstart)
+    
 end
 
 -- Enter completion mode, backwards
