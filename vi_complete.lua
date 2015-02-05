@@ -19,7 +19,7 @@ local function next_backwards()
     local pos = state.pos
     local listpos = state.listpos
     if pos < 1 then
-        listpos = listpos - 1
+        listpos = listpos + 1
         if listpos < 0 then
             listpos = #M.search_types
         end
