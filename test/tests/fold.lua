@@ -8,12 +8,12 @@ local getscreen = test.getscreen
 test.key('c-l')
 
 local origScreen = [[
-- function f()
-     -- blah
-  end
+⊟ function f()
+│    -- blah
+└ end
 
 ]]
-local foldedScreen = "+ function f()\n\n\n\n"
+local foldedScreen = "⊞ function f()\n\n\n\n"
 
 assertEq(getscreen(1, 4), origScreen)
 -- Now try folding
