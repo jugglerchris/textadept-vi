@@ -69,6 +69,8 @@ test.queue(function()
     test.run('split')
     test.run('cmpl_cn')
     test.run('cmpl_cp')
+    test.run('cmpl_cn_tags')
+    test.run('cmpl_cp_tags')
 end)
 
 
