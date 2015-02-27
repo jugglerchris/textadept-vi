@@ -14,24 +14,74 @@ local function update_word()
     return true
 end
 
-local function next_backwards()
+-- Advance to the next word list
+local function next_list()
     local state = M.state
-    local pos = state.pos
     local listpos = state.listpos
-    if pos < 1 then
+    local pos = state.pos
+    while true do
         listpos = listpos + 1
-        if listpos < 0 then
-            listpos = #M.search_types
+        pos = 1
+        if listpos > #M.search_types then
+            -- list 0 always has the initial prefix.
+            listpos = 0
+            break
         end
         if state.words[listpos] == nil then
             state.words[listpos] = M.search_types[listpos].finder(state.forwards, state.here, state.prefix)
         end
-        pos = #state.words[listpos]
-        state.listpos = listpos
-    else
-        pos = pos - 1
+        if state.words[listpos] and #state.words[listpos] > 0 then
+            -- If no words available, try the next list.
+            break
+        end
     end
     state.pos = pos
+    state.listpos = listpos
+end
+
+-- Go to the previous word list
+local function prev_list()
+    local state = M.state
+    local pos = state.pos
+    local listpos = state.listpos
+    while true do
+        listpos = listpos - 1
+        if listpos < 0 then
+            listpos = #M.search_types
+        end
+        if listpos == 0 then
+            -- List 0 is just the original word prefix.
+            pos = 1
+            break
+        end
+        if state.words[listpos] == nil then
+            state.words[listpos] = M.search_types[listpos].finder(state.forwards, state.here, state.prefix)
+        end
+        if state.words and #state.words[listpos] > 0 then
+            -- Found some words
+            pos = #state.words[listpos]
+            break
+        end
+    end
+    state.listpos = listpos
+    state.pos = pos
+end
+
+local function next_backwards()
+    local state = M.state
+    local pos = state.pos
+    local listpos = state.listpos
+    if pos <= 1 then
+        if state.forwards then
+            prev_list()
+        else
+            next_list()
+        end
+        state.pos = #state.words[state.listpos]
+    else
+        pos = pos - 1
+        state.pos = pos
+    end
     update_word()
 end
 
@@ -40,19 +90,16 @@ local function next_forwards()
     local pos = state.pos
     local listpos = state.listpos
     if pos >= #state.words[listpos] then
-        listpos = listpos + 1
-        pos = 1
-        if listpos > #M.search_types then
-            listpos = 0
+        if state.forwards then
+            next_list()
+        else
+            prev_list()
         end
-        if state.words[listpos] == nil then
-            state.words[listpos] = M.search_types[listpos].finder(state.forwards, state.here, state.prefix)
-        end
-        state.listpos = listpos
+        state.pos = 1
     else
         pos = pos + 1
+        state.pos = pos
     end
-    state.pos = pos
     update_word()
 end
 
