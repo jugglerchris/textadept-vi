@@ -246,7 +246,7 @@ local function command_substitute(args, range)
     local replace = args[3]
     local flagstring = args[4]
     local flags = {}
-    cme_log('subst: pat=[['..searchpat..']], repl=[['..replace..']], flags=[['..flagstring..']]')
+--    cme_log('subst: pat=[['..searchpat..']], repl=[['..replace..']], flags=[['..flagstring..']]')
     
     for i=1,#flagstring do
         flags[flagstring:sub(i,i)] = true
