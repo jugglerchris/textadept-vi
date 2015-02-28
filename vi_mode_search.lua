@@ -150,7 +150,7 @@ keys.vi_search_command = {
 local function start_common(exitfunc)
     state.in_search_mode = true
     state.exitfunc = exitfunc
-    ui.command_entry.entry_text = ""
+    ui.command_entry:set_text("")
     ui.command_entry.enter_mode('vi_search_command')
 end
 

@@ -5,6 +5,7 @@ local vi_tags = require('vi_tags')
 local vi_quickfix = require('vi_quickfix')
 local vi_regex = require('regex.regex')
 M.use_vi_entry = true
+M.use_vi_entry_ce = true
 local vi_entry
 local lpeg = require 'lpeg'
 local vi_find_files = require 'vi_find_files'
@@ -245,7 +246,7 @@ local function command_substitute(args, range)
     local replace = args[3]
     local flagstring = args[4]
     local flags = {}
-    cme_log('subst: pat=[['..searchpat..']], repl=[['..replace..']], flags=[['..flagstring..']]')
+--    cme_log('subst: pat=[['..searchpat..']], repl=[['..replace..']], flags=[['..flagstring..']]')
     
     for i=1,#flagstring do
         flags[flagstring:sub(i,i)] = true
@@ -301,14 +302,41 @@ end
 
 -- Take a buffer with error messages, and turn it into a quickfix list,
 -- which is activated.
-local function choose_errors_from_buf(buf)
+local function choose_errors_from_buf(buf, cb)
     local results = vi_quickfix.quickfix_from_buffer(buf)
+    cb = cb or clist_go
     if results then
         -- Push the results list to the stack
         state.clistidx = #state.clists+1
         state.clists[state.clistidx] = { list=results, idx=1 }
-        choose_list('Errors', results, clist_go)
+        choose_list('Errors', results, cb)
     end
+end
+
+-- Wrapper around clist_go which also annotates the destination buffer.
+local function clist_go_annotate(item)
+    io.open_file(item.path)
+    buffer.goto_line(item.lineno-1)
+    buffer:annotation_clear_all()
+    buffer.annotation_visible = buffer.ANNOTATION_STANDARD
+    for _,erritem in ipairs(state.clists[state.clistidx].list) do
+        if erritem.path == item.path then
+            local msg = erritem.message
+            local prevmsg = buffer.annotation_text[erritem.lineno-1]
+            if prevmsg and #prevmsg > 0 then
+                msg = prevmsg .. "\n" .. msg
+            end
+            buffer.annotation_text[erritem.lineno-1] = msg
+            buffer.annotation_style[erritem.lineno-1] = 8  -- error style
+        end
+    end
+    state.clists[state.clistidx].idx = item.idx
+end
+
+-- As choose_errors_from_buf, but with a callback which also annotates
+-- the destination buffer with errors.
+local function choose_errors_annotated_from_buf(buf)
+    return choose_errors_from_buf(buf, clist_go_annotate)
 end
 
 -- Spawn a command, which will write its output to a buffer in the
@@ -353,6 +381,7 @@ function command_to_buffer(command, workdir, buftype, when_finished)
 
             msgbuf:append_text(s)
             msgbuf:goto_pos(msgbuf.length)
+            msgbuf:set_save_point()
 
             if my_view ~= cur_view then
                 ui.goto_view(_VIEWS[cur_view])
@@ -361,6 +390,7 @@ function command_to_buffer(command, workdir, buftype, when_finished)
     end
     local function endproc()
         msgbuf:append_text('Finished:' .. table.concat(command, " "))
+        msgbuf:set_save_point()
         if when_finished ~= nil then
             when_finished(msgbuf)
         end
@@ -486,7 +516,7 @@ M.ex_commands = {
         for i=2,#args do
             command[#command+1] = args[i]
         end
-        command_to_buffer(command, "./", "*make*", vi_quickfix.quickfix_from_buffer)
+        command_to_buffer(command, "./", "*make*", choose_errors_annotated_from_buf)
     end,
 
     -- Search files
@@ -494,9 +524,23 @@ M.ex_commands = {
         local pat = args[2]
         if not pat then return end
         
-        local root = args[3] or '.'
+        local cmd = {}
+        local grepprg = vi_mode.state.variables.grepprg
+        
+        if type(grepprg) == 'string' then
+            cmd[#cmd+1] = grepprg
+        else
+            -- Assume a table
+            for _,arg in ipairs(grepprg) do
+                cmd[#cmd+1] = arg
+            end
+        end
+        -- Append arguments
+        for i = 2,#args do
+            cmd[#cmd+1] = args[i]
+        end
 
-        command_to_buffer({vi_mode.state.variables.grepprg, pat, root}, ".", "*grep*", vi_quickfix.quickfix_from_buffer)
+        command_to_buffer(cmd, ".", "*grep*", choose_errors_from_buf)
     end,
     
     ['!'] = function(args)
@@ -788,7 +832,11 @@ local function do_complete(word, cmd)
 end
 
 if M.use_vi_entry then
-    vi_entry = require('vi_entry')
+    if M.use_vi_entry_ce then
+        vi_entry = require('vi_ce_entry')
+    else
+        vi_entry = require('vi_entry')
+    end
     state.entry_state = vi_entry.new(':', handle_ex_command, do_complete)
 end
 

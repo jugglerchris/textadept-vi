@@ -210,7 +210,7 @@ function M.queue(f)
         else
             logd("Continuing testrun\n")
             coroutine.resume(testrun)
-            return false
+            return true
         end
     end
     -- and start if off on initialisation

@@ -4,6 +4,33 @@ local M = {
 
 local redux = require'textredux'
 
+-- Save any margin state we might be changing, so that
+-- it can be restored later.
+local function save_margins(buffer)
+    local result = {
+        width = {},
+        type = {},
+        text = {},
+        style = {},
+    }
+    for i=0,4 do
+        result.width[i] = buffer.margin_width_n[i]
+        result.type[i] = buffer.margin_type_n[i]
+        result.text[i] = buffer.margin_text[i]
+        result.style[i] = buffer.margin_style[i]
+    end
+    return result
+end
+
+local function restore_margins(buffer, state)
+    for i=0,4 do
+        buffer.margin_width_n[i] = state.width[i]
+        buffer.margin_type_n[i] = state.type[i]
+        buffer.margin_text[i] = state.text[i]
+        buffer.margin_style[i] = state.style[i]
+    end
+end
+
 -- Define a style for highlighting completions
 redux.core.style.string_hl = redux.core.style.string .. { back="#FFFFFF" }
 local function ve_refresh(buf)
@@ -38,87 +65,11 @@ local function ve_refresh(buf)
       end
       local lines = buf.line_count
       if lines > M.MAX_COMPLETION_LINES+1 then lines = M.MAX_COMPLETION_LINES+1 end
-      view.size = ui.size[2] - offset - linesize * (lines-1)
+      ui.command_entry.height = lines
   else
       -- go back to one line if necessary
-      view.size = ui.size[2] - offset
+      ui.command_entry.height = 1
   end
-end
-
--- Return a saved version of splits so that we can regenerate them.
-local function save_splits(splits)
-    if splits[1] and splits[2] then
-       -- it's a split
-       splits[1] = save_splits(splits[1])
-       splits[2] = save_splits(splits[2])
-       return splits
-    else
-       local curview = view
-       ui.goto_view(_VIEWS[splits])
-       local result = {
-           buffer=splits.buffer,
-           current=(splits == curview),
-           pos=splits.buffer.current_pos,
-           anchor=splits.buffer.anchor,
-           firstline = splits.buffer.first_visible_line,
-       }
-       ui.goto_view(_VIEWS[curview])
-       return result
-    end
-end
-
-local function save_views()
-    local split_views = ui:get_split_table()
-    
-    return save_splits(split_views)
-end
-
-local function unsplit_all()
-    while #_VIEWS > 1 do
-        view:unsplit()
-    end
-end
-
--- Returns the view which should be current, or nil
-local function restore_into(v, saved)
-    if saved[1] and saved[2] then
-        local cur1, cur2
-        -- restore the split
-        local first, second = v:split(saved.vertical)
-        first.size = saved.size
-        cur1 = restore_into(first, saved[1])
-        cur2 = restore_into(second, saved[2])
-        -- return current if found in theis branch
-        return cur1 or cur2
-    else
-        local buf = saved.buffer
-        if _BUFFERS[buf] then
-            ui.goto_view(_VIEWS[v])
-            v:goto_buffer(_BUFFERS[buf])
-            buffer.first_visible_line = saved.firstline
-            buffer.current_pos = saved.pos
-            buffer.anchor = saved.anchor
-            if saved.current then return v end
-        else
-            ui.print("Buffer not found:", buf.filename, buf)
-            for k,v in pairs(_BUFFERS) do
-                if type(v) == 'table' then
-                  ui.print(k,v, v.filename)
-                else
-                  ui.print(k,v)
-                end
-            end
-        end
-    end
-end
-
--- Restore split state, but with the current buffer on the bottom line.
-local function restore_saved(saved)
-    local old, new = view:split()
-    old.size = ui.size[2] - 4
-    
-    local cur = restore_into(old,saved)
-    return new, cur
 end
 
 local function common_prefix(s1, s2)
@@ -152,6 +103,7 @@ end
 
 -- expand=nil/false means only show completions, don't update buffer.
 local function complete_now(expand)
+    local buffer = ui.command_entry
     local buf = buffer._textredux
     if not buf.data.complete then
         return
@@ -193,6 +145,7 @@ end
 
 -- Show the next N completions
 local function complete_advance()
+    local buffer = ui.command_entry
     local buf = buffer._textredux
     local offset = buf.data.completions_offset
     local completions = buf.data.completions
@@ -208,7 +161,17 @@ local function complete_advance()
     buf:refresh()
 end
 
+-- Close the entry
+local function close(reduxbuf)
+    local marginstate = reduxbuf.data.marginstate
+    local buffer = reduxbuf.target
+    restore_margins(buffer, marginstate)
+    buffer:clear_all()
+    reduxbuf:close()
+end
+
 local function do_enter()
+    local buffer = ui.command_entry
     local buf = buffer._textredux
     
     if buf.data.completions_sel and buf.data.completions_sel ~= 0 then
@@ -223,13 +186,8 @@ local function do_enter()
         local handler = buf.data.handler
         local hist = buf.data.context._history
         local histsaveidx = buf.data.histsaveidx
-        buf:close()
-        unsplit_all()
+        close(buf)
              
-        local newcur = restore_into(view,saved)
-        if newcur and _VIEWS[newcur] then
-          ui.goto_view(_VIEWS[newcur])
-        end
         -- Save the command in the history
         hist[histsaveidx] = cmd
         handler(cmd)
@@ -238,6 +196,7 @@ end
 
 local ve_keys = {
     ['\t'] = function()
+        local buffer = ui.command_entry
         local buf = buffer._textredux
         if buf.data.completions ~= nil and #buf.data.completions > 1 then
             complete_advance()
@@ -246,6 +205,7 @@ local ve_keys = {
         end
     end,
     ['\b'] = function()
+        local buffer = ui.command_entry
         local buf = buffer._textredux
         local t = buf.data.text
         local pos = buffer.current_pos
@@ -258,6 +218,7 @@ local ve_keys = {
     end,
     cu = function()
         -- Clear to start of line
+        local buffer = ui.command_entry
         local buf = buffer._textredux
         local t = buf.data.text
         local pos = buffer.current_pos
@@ -269,19 +230,15 @@ local ve_keys = {
         end
     end,
     esc = function()
+        local buffer = ui.command_entry
         local buf = buffer._textredux
         local saved = buf.data.saved
-        buf:close()
-        unsplit_all()
-        local newcur = restore_into(view,saved)
-        
-        if newcur and _VIEWS[newcur] then
-            ui.goto_view(_VIEWS[newcur])
-        end
+        close(buf)
     end,
     ['\r'] = do_enter,
     ['\n'] = do_enter,
     up = function()
+        local buffer = ui.command_entry
         local buf = buffer._textredux
         if buf.data.completions then
             local sel_line = buf.data.completions_sel
@@ -313,6 +270,7 @@ local ve_keys = {
         buf:refresh()
     end,
     down = function()
+        local buffer = ui.command_entry
         local buf = buffer._textredux
         if buf.data.completions then
             local sel_line = buf.data.completions_sel
@@ -342,6 +300,7 @@ local ve_keys = {
 }
 local function set_key(k)
     ve_keys[k] = function()
+        local buffer = ui.command_entry
         local buf = buffer._textredux
         local t = buf.data.text
         local pos = buffer.current_pos
@@ -382,15 +341,10 @@ local function do_start(context)
       histidx=#context._history+1,
       histsaveidx=#context._history+1,
   }
-  local saved = save_views()
-  unsplit_all()
-  local new, old
-  --first, second = view:split()
-  local newview, prevcur = restore_saved(saved)
-  newview.size = ui.size[2] - 4
-  ui.goto_view(_VIEWS[newview])
-  buf.data.saved = saved
-  buf:show()
+  buf.data.marginstate = save_margins(ui.command_entry)
+  
+  buf:attach_to_command_entry()
+  ui.command_entry.height = 1
 end
 
 -- Create a new entry context

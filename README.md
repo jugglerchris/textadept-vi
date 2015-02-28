@@ -7,10 +7,11 @@ scriptability, so this is the solution.  The aim is for my trained fingers
 to keep working, while (at least eventually) making good use of textadept's
 features.
 
-This is currently experimental, but the most common key bindings I use have
-been implemented to some extent.  It requires a recent textadept (7.6 works).
+It requires a recent textadept (7.8 at time of writing).
 
-I use this as my default editor.
+I use this as my default editor, and it implements the common features of
+vi/vim that I used to use; there are many less common features I haven't
+implemented.
 
 Usage
 -----
@@ -22,6 +23,14 @@ package.path = "/home/username/.textadept/textadept-vi/?.lua;" .. package.path
 package.cpath = "/home/username/.textadept/textadept-vi/?.so;" .. package.cpath
 _G.vi_mode = require 'vi_mode'
 ```
+
+Textadept-vi also uses a slightly modified textredux (with support for using
+the Scintilla-based command entry in recent Textadept versions):
+    https://github.com/jugglerchris/textredux.git
+
+I think it's likely that textredux will add this support (possibly a bit
+differently), at which point textadept-vi will switch back to upstream
+textredux.
 
 Support
 -------
@@ -55,11 +64,14 @@ under Linux (modified to support split views; see below).
 
 Dependencies
 ------------
-Besides textadept (currently tested on 7.6):
-* The included "kill" extension to suspend with ^Z
-* For error/tag lists, and an experimental buffer-based command entry,
-  [textredux](http://rgieseke.github.io/textredux/)  0.10 has been tested
-  to work.
+Besides Textadept (currently tested on 7.8):
+* textadept-vi uses [textredux](http://rgieseke.github.io/textredux/)
+  for some features (grep results) and the command entry.
+  
+  NOTE: Currently this needs a fork with added support for using
+  Textadept 7.8's buffer-based command entry:
+  
+  https://github.com/jugglerchris/textredux/
 
 Testing
 -------

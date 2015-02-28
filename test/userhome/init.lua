@@ -5,7 +5,7 @@ ok, msg = xpcall(function()
 package.path = _USERHOME .. "/../../?.lua;".._USERHOME .. "/../scripts/?.lua;" .. package.path
 package.cpath = _USERHOME .. "/../../extension/?.so;"..package.cpath
 
-function _G.cme_log(...) end
+function _G.cme_log(...) test.log(...) test.log('\n') end
 
 test = require 'test'
 
@@ -67,6 +67,10 @@ test.queue(function()
     test.run('vicomp')
     test.run('ca')
     test.run('split')
+    test.run('cmpl_cn')
+    test.run('cmpl_cp')
+    test.run('cmpl_cn_tags')
+    test.run('cmpl_cp_tags')
 end)
 
 
