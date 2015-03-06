@@ -260,9 +260,15 @@ local ve_keys = {
             if idx == buf.data.histsaveidx then
                 buf.data.context._history[idx] = buf.data.text
             end
-            if idx > 1 then
-                idx = idx - 1
-                buf.data.histidx = idx
+            local newidx = idx
+            local origtext = buf.data.text
+            while newidx > 1 do
+                newidx = newidx - 1
+                if hist[newidx]:sub(1, #origtext) == origtext then
+                    idx = newidx
+                    buf.data.histidx = idx
+                    break
+                end
             end
             buf.data.text = hist[idx]
             buf.data.pos = #buf.data.text
