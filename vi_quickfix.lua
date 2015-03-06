@@ -10,13 +10,17 @@ local Ct = lpeg.Ct
 local Cg = lpeg.Cg
 local Cc = lpeg.Cc
 
+local ws = S" \t"
+local to_nl = (P(1) - P"\n") ^ 0
 local errpat_newdir = Ct(P"make: Entering directory `" * Cg((P(1) - P"'")^0, 'newdir')* P"'")
 local errpat_leavedir = Ct(P"make: Leaving directory `" * Cg((P(1) - P"'")^0, 'leavedir')* P"'")
-local errpat_error = Ct((P"In file included from " ^-1) * Cg((P(1) - S":\n") ^ 0, 'path') * P":" * Cg(R"09" ^ 0, 'lineno') * P":" * (S(" \t") ^ 0) * Cg((1 - P"\n") ^ 0, "message"))
+local errpat_error = Ct((P"In file included from " ^-1) * Cg((P(1) - S":\n") ^ 0, 'path') * P":" * Cg(R"09" ^ 0, 'lineno') * P":" * (S(" \t") ^ 0) * Cg(to_nl, "message"))
+local errpat_error_nofile = Ct((P"error" + P"Error" + P"ERROR") * P":" * ws * Cg(to_nl, "message")) +
+                            Ct(Cg(P"make: ***" * to_nl, "message"))
 
 local errpat_ignore = (P(1) - "\n") ^ 0
 
-local errpat_line = (errpat_newdir + errpat_error)-- + errpat_ignore)
+local errpat_line = (errpat_newdir + errpat_error + errpat_error_nofile)-- + errpat_ignore)
 
 local function pretty(x)
     if type(x) == 'table' then
@@ -64,11 +68,11 @@ function M.quickfix_from_buffer(buffer)
               else
                   dirs[#dirs] = nil
               end
-          elseif match.path then
+          elseif match.path or match.message then
               local path = match.path
-              local lineno = tonumber(match.lineno)
+              local lineno = match.lineno and tonumber(match.lineno) or nil
               local message = match.message
-              if #dirs > 0 then
+              if path and #dirs > 0 then
                   path = dirs[#dirs] .. "/" .. path
               end
               local idx = #results + 1
