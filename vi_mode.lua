@@ -922,6 +922,18 @@ end
            
 })
 
+--- Open or close all folds recursively.
+--  From Carlos Pita <carlosjosepita@gmail.com> on the Textadept mailing
+--  list.
+local function do_fold_all(action)
+    for line = 0, buffer.line_count do
+        if bit32.band(line, buffer.FOLDLEVELHEADERFLAG) and
+           bit32.band(line, buffer.FOLDLEVELBASE) then
+            buffer:fold_children(line, action)
+        end
+    end
+end
+
 mode_command = {
     name = COMMAND,
 
@@ -1204,8 +1216,8 @@ mode_command = {
     z = {
       o = function() buffer:fold_line(buffer:line_from_position(buffer.current_pos), buffer.FOLDACTION_EXPAND) end,
       c = function() buffer:fold_line(buffer:line_from_position(buffer.current_pos), buffer.FOLDACTION_CONTRACT) end,
-      M = function() buffer:fold_all(buffer.FOLDACTION_CONTRACT) end,
-      R = function() buffer:fold_all(buffer.FOLDACTION_EXPAND) end,
+      M = function() do_fold_all(buffer.FOLDACTION_CONTRACT) end,
+      R = function() do_fold_all(buffer.FOLDACTION_EXPAND) end,
     },
     
     -- Increment/decrement under cursor
