@@ -951,7 +951,7 @@ mode_command = {
              buffer.anchor = pos
             end, MOV_LINE),
         M = mk_movement(function()
-             buffer.goto_line(buffer.first_visible_line + buffer.lines_on_screen/2)
+             buffer.goto_line(math.floor(buffer.first_visible_line + buffer.lines_on_screen/2))
             end, MOV_LINE),
         L = mk_movement(function()
              local bot_line = buffer.first_visible_line + buffer.lines_on_screen - 1
