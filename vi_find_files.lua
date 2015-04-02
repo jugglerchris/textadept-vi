@@ -1,7 +1,7 @@
 -- Search for file by name/pattern.
 local M = {}
 
-local lfs = require 'lfs'
+local lfs = _G.lfs
 local vi_regex = require('regex.regex')
 
 -- Escape a Lua pattern to make it an exact match.
