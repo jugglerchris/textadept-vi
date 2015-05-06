@@ -1137,7 +1137,7 @@ mode_command = {
                 local text, _ = buffer.get_cur_line()
                 local lineno = buffer.line_from_position(buffer.current_pos)
                 local lineend = buffer.line_end_position[lineno]
-                local endpos = here + rept
+                local endpos = buffer:position_relative(here, rept)
                 if endpos > lineend then endpos = lineend end
                 if endpos == pos and string.len(text) > 1 then
                     -- If at end of line, delete the previous char.
