@@ -4,6 +4,7 @@ ok, msg = xpcall(function()
 -- Make textadept-vi available
 package.path = _USERHOME .. "/../../?.lua;".._USERHOME .. "/../scripts/?.lua;" .. package.path
 package.cpath = _USERHOME .. "/../../extension/?.so;"..package.cpath
+local lfs = require'lfs'
 
 function _G.cme_log(...) test.log(...) test.log('\n') end
 
@@ -12,66 +13,16 @@ test = require 'test'
 vi_mode = require 'vi_mode'
 
 test.queue(function()
-    test.run('empty')
-    test.run('count')
-    test.run('jk')
-    test.run('hl')
-    test.run('cols')
-    test.run('eq')
-    test.run('eq2')
-    test.run('d')
-    test.run('cw')
-    test.run('cw_count')
-    test.run('wbe')
-    test.run('HML')
-    test.run('pct')
-    test.run('m_quot_bquot')
-    test.run('0^dollar')  -- 0, ^, $
-    test.run('dollar2')
-    test.run('G')
-    test.run('i')
-    test.run('a')
-    test.run('A')
-    test.run('o')
-    test.run('O')
-    test.run('r')
-    test.run('R')
-    test.run('tilde')
-    test.run('J')
-    test.run('gq')
-    test.run('dD')
-    test.run('cC')
-    test.run('x')
-    test.run('x_uni')
-    test.run('indent')
-    test.run('pP')
-    test.run('undo_redo')
-    test.run('colon')
-    test.run('search') -- /, ?, *, #, n, N
-    test.run('tags')   -- c], ct
-    test.run('c_hat')  -- c^, switch to last buffer
-    test.run('fold')
-    test.run('fold2')
-    test.run('fold3')
-    -- test.run('cz')     -- suspend; tricky to test in this framework.
-    test.run('swap')
-    test.run('ai')  -- aw, iw, etc.
-    test.run('_e')  -- :e
-    test.run('regex')
-    test.run('regex_cap')
-    test.run('regex_backref')
-    test.run('regex2')
-    test.run('range')
-    test.run('ex_parse')
-    test.run('colonrange')
-    test.run('subst')
-    test.run('vicomp')
-    test.run('ca')
-    test.run('split')
-    test.run('cmpl_cn')
-    test.run('cmpl_cp')
-    test.run('cmpl_cn_tags')
-    test.run('cmpl_cp_tags')
+    local iter, dir_obj=lfs.dir(_USERHOME.."/../tests/")
+    while true do
+        local name = iter(dir_obj)
+        if name == nil then break end
+        local basename= name:match("(.+)%.lua$") 
+--        test.log('name='..name..', base='..tostring(basename) .. "\n")
+        if basename ~= nil then
+            test.run(basename)
+        end
+    end
 end)
 
 
