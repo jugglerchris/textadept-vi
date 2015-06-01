@@ -899,11 +899,15 @@ end
                        begin_undo()
                        if rpt <= left then
                          while rpt > 0 do
-                           buffer.set_sel(here, here+1)
-                           buffer.replace_sel(sym)
-                           buffer.current_pos = here+1
+                           local nextpos = buffer:position_relative(here, 1)
+                           buffer:set_sel(here, nextpos)
+                           buffer:replace_sel(sym)
+                           -- Recalculate nextpos as the new character may
+                           -- not be the same length.
+                           nextpos = buffer:position_relative(here, 1)
+                           buffer.current_pos = nextpos
 
-                           here = here + 1
+                           here = nextpos
                            rpt = rpt - 1
                          end
                          ensure_cursor()
