@@ -1340,4 +1340,55 @@ events.connect(events.BUFFER_BEFORE_SWITCH, function()
     end
 end)
 
+--[[ The following are adaptations of functions from Textadept 8.0's core/file_io.lua
+    Copyright 2007-2015 Mitchell mitchell.att.foicica.com.
+  ]]
+-- Like io.reload_file, but can work with a different buffer
+function _reload_file(buffer)
+  if not buffer.filename then return end
+  local pos, first_visible_line = buffer.current_pos, buffer.first_visible_line
+  local f = assert(io.open(buffer.filename, 'rb'))
+  local text = f:read('*a')
+  f:close()
+  local encoding, encoding_bom = buffer.encoding, buffer.encoding_bom
+  if encoding_bom then text = text:sub(#encoding_bom + 1, -1) end
+  if encoding then text = text:iconv('UTF-8', encoding) end
+  buffer:clear_all()
+  buffer:add_text(text, #text)
+  buffer:line_scroll(0, first_visible_line)
+  buffer:goto_pos(pos)
+  buffer:set_save_point()
+  buffer.mod_time = lfs.attributes(buffer.filename, 'modification')
+end
+-- Adapted from the FILE_CHANGED event handler
+local function ask_reload_buffer(buf)
+  local msg = ('"%s"\n%s'):format(buf.filename:iconv('UTF-8', _CHARSET),
+                                  _L['has been modified. Reload it?'])
+  local button = ui.dialogs.msgbox{
+    title = _L['Reload?'], text = _L['Reload modified file?'],
+    informative_text = msg, icon = 'gtk-dialog-question',
+    button1 = _L['_Yes'], button2 = _L['_No']
+  }
+  if button == 1 then _reload_file(buf) end
+end
+-- Adapted from update_modified_file()
+local function check_buffer_for_modification(buf)
+  if not buf.filename then return end
+  local mod_time = lfs.attributes(buf.filename, 'modification')
+  if not mod_time or not buf.mod_time then return end
+  if buf.mod_time < mod_time then
+    buf.mod_time = mod_time
+    ask_reload_buffer(buf)
+  end
+end
+--[[ END functions modified from Textadept's file_io.lua ]]
+
+-- Check for changes to files when resuming
+events.connect(events.RESUME, function()
+    -- Go through all open files and check that they're up to date.
+    for i,b in ipairs(_BUFFERS) do
+        check_buffer_for_modification(b)
+    end
+end)
+
 return M
