@@ -94,6 +94,7 @@ local motions = {
   e = { MOV_INC, r(vi_motions.word_end), 1 },
   ['$'] = { MOV_INC, vi_motions.line_end, 1 },
   ['^'] = { MOV_EXC, vi_motions.line_beg, 1 },
+  ['_'] = { MOV_EXC, vi_motions.line_down_then_line_beg, 1 },
   G = { MOV_LINE, vi_motions.goto_line, -1},
   ["'"] = wrap_table(registers, restore_mark),
   ['%'] = { MOV_INC, vi_motions.match_brace, 1 },
