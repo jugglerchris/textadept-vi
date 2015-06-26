@@ -20,3 +20,13 @@ test.key('1', 'G')
 test.key('4', '_')
 assertEq(lineno(), 3)
 assertEq(colno(), 0)
+
+-- Check as a (linewise) motion
+test.key('2', 'G')
+test.key('c', '3', '_', 'a', 's', 'd', 'f', 'escape')
+assertEq(lineno(), 1)
+assertEq(colno(), 3)
+assertEq(buffer:get_line(0), 'blah blah\n')
+assertEq(buffer:get_line(1), 'asdf\n')
+assertEq(buffer:get_line(2), '\n')
+assertEq(buffer:get_line(3), 'This is a sentence.\n')
