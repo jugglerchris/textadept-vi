@@ -745,6 +745,7 @@ local function with_motion_insert(actions, handler)
     wrapped_handler = function(movdesc)
        return function()
            local cmdrpt = get_numarg()
+           local movtype = movdesc[1]
            local start, end_ = movdesc_get_range(movdesc, nil, cmdrpt)
            begin_undo()
            handler(start, end_, movtype)

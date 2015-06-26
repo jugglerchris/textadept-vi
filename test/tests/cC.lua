@@ -4,7 +4,7 @@ local colno = test.colno
 local assertEq = test.assertEq
 
 test.keys('cGfoo') test.key('escape')
-assertEq(buffer:get_text(), 'foo')
+assertEq(buffer:get_text(), 'foo\n')
 -- TODO: remove the 1G - undo places at the wrong place
 test.keys('u1Gw2cwbar') test.key('escape')
 assertEq(colno(), 6)

@@ -4,6 +4,18 @@ local M = {}
 -- Implements c{motion}
 function M.change(start, end_, mtype)
   M.cut(start, end_, mtype)
+  if mtype == 'linewise' then
+      -- If linewise, should be editing in a new empty line
+      if buffer.current_pos == 0 then
+         -- start of buffer
+         buffer.new_line()
+         buffer.char_left()  -- position cursor at start of the inserted
+                             -- line
+      else
+         buffer.char_left()
+         buffer.new_line()
+      end
+  end
 end
 
 --- Delete a range from this buffer, and save in a register.
@@ -31,8 +43,8 @@ function M.cut(start, end_, mtype, register)
         end
     end
     buffer:set_sel(start, end_)
-    local text = buffer.get_sel_text()
-    buffer.cut()
+    local text = buffer:get_sel_text()
+    buffer:cut()
     state.registers[register or '"'] = {text=text, line=linewise}
 end
 
