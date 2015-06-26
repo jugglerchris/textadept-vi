@@ -101,7 +101,6 @@ function key_handler_common(code, shift, ctrl, alt, meta)
 	return true
     end
 end
-events.connect(events.KEYPRESS, key_handler_common, 1)
 
 -- Various state we modify
 state = {
@@ -1310,6 +1309,9 @@ function M.install_keymap()
             return vi_motion.wrap_table(m, motion2key)
         end
     end })
+
+  -- Install the key filter
+  events.connect(events.KEYPRESS, key_handler_common, 1)
 end
 
 -- Undo the installation.  Assumes that it's properly paired with
@@ -1323,11 +1325,14 @@ function M.restore_keymap()
   for k,_ in pairs(keys) do
     keys[k] = nil
   end
-  setmetatable(keys, nil)
+  setmetatable(keys, nil)  -- Avoid any possible __newindex funnies
   for k,v in pairs(M._saved_keys) do
     keys[k] = v
   end
-  setmetatable(keys, M._saved_keys.__metatable)
+  setmetatable(keys, M._saved_keys.__metatable) -- Restore original mt
+
+  -- Remove our key handler
+  events.disconnect(events.KEYPRESS, key_handler_common)
 end
 
 M.install_keymap()
