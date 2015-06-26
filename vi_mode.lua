@@ -5,9 +5,6 @@ local M = {}
 -- that you can no longer use alt-key bindings, but means that you can quickly
 -- type ESC followed by vi commands without waiting for the ESC to time out.
 M.strip_alt = true
--- If true, then take over the main keymap rather than putting the command mode bindings
--- in a separate keymap.
-M.vi_global = true
 
 M.ex_mode = require 'vi_mode_ex'
 M.search_mode = require 'vi_mode_search'
@@ -1234,6 +1231,8 @@ mode_command = {
     f1 = textadept.editing.show_documentation,
     },
 }
+-- We point mode_command at the main keys table, so keep a copy for later.
+mode_command.clean_bindings = mode_command.bindings
 M.mode_command = mode_command
 
 events.connect(events.VIEW_BEFORE_SWITCH, function()
@@ -1258,14 +1257,21 @@ events.connect(events.BUFFER_BEFORE_SWITCH, function ()
     end)
     
 
-if M.vi_global then
+M._saved_keys = nil           -- A copy of the keys table before installing
+function M.install_keymap()
+  -- First save away everything in keys in case we want to uninstall again.
+  M._saved_keys = {}
+  for k,v in pairs(keys) do
+      M._saved_keys[k] = v
+  end
+  M._saved_keys.__metatable = getmetatable(keys)
+
   -- Rather than adding a command mode, copy all our bindings in and replace mode_command.bindings
   -- with a reference to the global keys table.
-  for k,v in pairs(mode_command.bindings) do
+  for k,v in pairs(mode_command.clean_bindings) do
     keys[k] = v
   end
-  
-  -- Make sure we've only got one table with the bindings.
+
   mode_command.bindings = keys
   -- And make sure that our mode is represented.
   keys[COMMAND] = keys
@@ -1304,20 +1310,27 @@ if M.vi_global then
             return vi_motion.wrap_table(m, motion2key)
         end
     end })
-    
-else
-  -- Fall back to main keymap for any unhandled keys
-  local keys_mt = {
-  	__index = keys
-  }
-
-  keys[COMMAND] = setmetatable(mode_command.bindings, keys_mt)
-  keys[INSERT] = setmetatable(mode_insert.bindings, keys_mt)
-
-  -- Since it's currently easy to escape from the vi modes to the default mode,
-  -- make sure we can get back to it from default mode.
-  keys.esc = function() enter_mode(mode_command) end
 end
+
+-- Undo the installation.  Assumes that it's properly paired with
+-- install_keymap().
+function M.restore_keymap()
+  -- Restore the original keys. 
+  if not M._saved_keys then
+      M.err('No saved keymap')
+      return
+  end
+  for k,_ in pairs(keys) do
+    keys[k] = nil
+  end
+  setmetatable(keys, nil)
+  for k,v in pairs(M._saved_keys) do
+    keys[k] = v
+  end
+  setmetatable(keys, M._saved_keys.__metatable)
+end
+
+M.install_keymap()
 
 -- Disable "normal" keys in command mode if I haven't bound them explicitly.
 local function set_default_key(k)
