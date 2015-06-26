@@ -124,6 +124,13 @@ function M.line_beg(rep)
     buffer.vc_home()  -- swaps between beginning/first visible
 end
 
+-- go (rep-1) visible lines down (ie. jump over folds), then go
+-- to the first non-blank character of the current line
+function M.line_down_then_line_beg(rep)
+    for _=2,rep do M.line_down() end -- go rep-1 lines down
+    M.line_beg()
+end
+
 -- Move to the end of the line
 function M.line_end(rep)
     if rep and rep > 1 then
