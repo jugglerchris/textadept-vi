@@ -48,6 +48,17 @@ function M.cut(start, end_, mtype, register)
     state.registers[register or '"'] = {text=text, line=linewise}
 end
 
+--- yank a range from this buffer, and save in a register.
+--  If the register is not specified, use the unnamed register ("").
+function M.yank(start, end_, mtype, register)
+    local linewise = mtype == 'linewise'
+    buffer:set_sel(start, end_)
+    local text = buffer:get_sel_text()
+    buffer:clear_selections()
+    buffer:goto_pos(start)
+    state.registers[register or '"'] = {text=text, line=linewise}
+end
+
 function M.indent(start, end_, mtype)
     buffer:set_sel(start, end_)
     buffer:tab()

@@ -1105,6 +1105,10 @@ mode_command = {
         d = with_motion({
            d = { MOV_LINE, vi_motions.sel_line, 1 },
         }, vi_ops.cut),
+
+        y = with_motion({
+           y = { MOV_LINE, vi_motions.sel_line, 1 },
+        }, vi_ops.yank),
         
         -- Temporary binding to test improved way of doing compound commands.
         c = with_motion_insert({
