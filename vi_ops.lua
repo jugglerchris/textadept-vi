@@ -52,10 +52,11 @@ end
 --  If the register is not specified, use the unnamed register ("").
 function M.yank(start, end_, mtype, register)
     local linewise = mtype == 'linewise'
+    local orig_pos = buffer.current_pos
     buffer:set_sel(start, end_)
     local text = buffer:get_sel_text()
     buffer:clear_selections()
-    buffer:goto_pos(start)
+    buffer:goto_pos(orig_pos)
     state.registers[register or '"'] = {text=text, line=linewise}
 end
 
