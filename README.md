@@ -39,12 +39,12 @@ tracker](https://github.com/jugglerchris/textadept-vi/issues).
 
 What works
 ----------
-* Movement commands: h,j,k,l,w,b,e,H,M,L,%,^,_,$,0,G
+* Movement commands: h,j,k,l,w,b,e,H,M,L,%,^,_,$,0,G,{,}
 * Selection motions: aw,iw
 * Simple mark/jump: m, ', `
 * Numeric prefix
 * Basic text entry commands: i,a,A,o,O,r,R,~
-* Editing: d,D,c,C,x,p,P
+* Editing: d,D,c,C,x,p,P,y
 * More complex editing commands: J,gq,>,<,=
 * Undo/redo/repeat: u,^r,.
 * Searching: /,?,n,N,*,#
