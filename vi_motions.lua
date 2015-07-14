@@ -131,6 +131,30 @@ function M.line_down_then_line_beg(rep)
     M.line_beg()
 end
 
+-- Move paragraphs at a time
+local function paragraph_move(forward, rep)
+    local step = forward and 1 or -1
+    local endAt = forward and buffer.line_count or 0
+
+    for i=1,rep do
+        -- Go until blank line on an open fold
+        for lineno=buffer:line_from_position(buffer.current_pos)+step,endAt,step do
+            if lineno == endAt or (buffer.line_visible[lineno] and 
+                                   line_length(lineno) == 0) then
+                buffer:goto_line(lineno)
+                break
+            end
+        end
+    end
+end
+
+function M.paragraph_backward(rep)
+    paragraph_move(false, rep)
+end
+function M.paragraph_forward(rep)
+    paragraph_move(true, rep)
+end
+
 -- Move to the end of the line
 function M.line_end(rep)
     if rep and rep > 1 then
