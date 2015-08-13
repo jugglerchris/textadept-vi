@@ -93,6 +93,10 @@ end
 -- Grow (or shrink, with a negative increment) a view's size.
 function M.grow_view(v, inc)
     local parent = find_view_parent(v)
+
+    -- Do nothing if no split
+    if perent == nil then return end
+
     local is_first = v == parent[1]
     local parent_size = find_view_parent_size(v)
 
