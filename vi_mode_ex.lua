@@ -7,6 +7,7 @@ local vi_regex = require('regex.regex')
 M.use_vi_entry = true
 M.use_vi_entry_ce = true
 local vi_entry
+local vi_views = require('vi_views')
 local lpeg = require 'lpeg'
 local vi_find_files = require 'vi_find_files'
 local P, R, S = lpeg.P, lpeg.R, lpeg.S
@@ -164,41 +165,6 @@ end
 
 local function ex_error(msg)
     vi_mode.err(msg)
-end
-
-local function unsplit_other(ts)
-    if ts.vertical == nil then
-        -- Ensure this view is focused (so we don't delete the focused view)
-        for k,v in ipairs(_G._VIEWS) do
-            if ts == v then
-                ui.goto_view(k)
-                break
-            end
-        end
-        view.unsplit(ts)
-    else
-        unsplit_other(ts[1])
-    end
-end
-
-local function close_siblings_of(v, ts)
-    local v = view
-    local ts = ts or ui.get_split_table()
-
-    if ts.vertical == nil then
-        -- This is just a view
-        return false
-    else
-        if ts[1] == v then
-            -- We can't quite just close the current view.  Pick the first
-            -- on the other side.
-            return unsplit_other(ts[2])
-        else if ts[2] == v then
-            return unsplit_other(ts[1])
-        else
-            return close_siblings_of(v, ts[1]) or close_siblings_of(v, ts[2])
-        end end
-    end
 end
 
 local find_matching_files = vi_find_files.find_matching_files
@@ -474,7 +440,7 @@ M.ex_commands = {
             -- there are split views.  view.unsplit closes the *other*
             -- splits to leave the current view; we want :q to do the
             -- opposite and close this one.
-            close_siblings_of(view)
+            vi_views.close_siblings_of(view)
         end
     end,
     only = function(args)

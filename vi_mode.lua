@@ -21,6 +21,7 @@ local vi_up= vi_motions.line_up
 local vi_tags = M.vi_tags
 local vi_ops = require'vi_ops'
 local vi_ta_util = require 'vi_ta_util'
+local vi_views = require 'vi_views'
 local line_length = vi_ta_util.line_length
 local buf_state = vi_ta_util.buf_state
 
@@ -414,7 +415,7 @@ function do_action(action)
     local saved_rpt = state.numarg
     if saved_rpt < 1 then saved_rpt = 1 end
     state.last_action = function(rpt)
-        if rpt < 1 then rpt = saved_rpt end
+        rpt = rpt or saved_rpt
         action(rpt)
     end
 
@@ -425,10 +426,14 @@ end
 -- Returns nil if not set.
 local function get_numarg()
     local numarg = state.numarg
-    
+
     state.numarg = 0
-    
-    return ((numarg == 0) and nil) or numarg
+
+    if numarg == 0 then
+        return nil
+    else
+        return numarg
+    end
 end
 
 -- Like do_action but doesn't save to last_action
@@ -607,8 +612,7 @@ local function enter_replace_with_undo(cb)
         end
         end_undo()
         state.last_action = function(rpt)
-            local rpt = rpt
-            if rpt < 1 then rpt = 1 end
+            local rpt = rpt or 1
             begin_undo()
             local pos = buffer.current_pos
             local s = state.last_insert_string
@@ -626,8 +630,7 @@ function M.post_insert(prep_f)
   return function()
           -- This function is run when exiting from undo
           state.last_action = function(rpt)
-            local rpt = rpt
-            if rpt < 1 then rpt = 1 end
+            local rpt = rpt or 1
             begin_undo()
             prep_f()
             for i=1,rpt do
@@ -650,7 +653,7 @@ local function movdesc_get_range(movdesc, rpt_motion, rpt_cmd)
     local movtype, movf, rep = table.unpack(movdesc)
 
     if rpt_motion == nil or rpt_motion < 1 then rpt_motion = rep end
-    local cmdrep = (rpt_cmd and rpt_cmd > 0) and rpt_cmd or 1
+    local cmdrep = rpt_cmd or 1
     local rpt = rpt_motion * cmdrep
     local start, end_ = movf(rpt)
     
@@ -882,8 +885,7 @@ end
     __index = function(t, sym)
                  if string.match(sym, "^.$") then
                    return function()
-                   local cmdrpt = get_numarg()
-                   if not (cmdrpt and cmdrpt > 0) then cmdrpt = 1 end
+                   local cmdrpt = get_numarg() or 1
                   -- Single character, so buffer.replace.
                    local function handler(rpt)
                        rpt = (rpt and rpt > 0) and rpt or cmdrpt
@@ -1208,6 +1210,8 @@ mode_command = {
     -- Views and buffers
     cw = {
         cw = { ui.goto_view, 1, true },  -- cycle between views
+        ['+'] = function() vi_views.grow_view(view, get_numarg() or 1) end,
+        ['-'] = function() vi_views.grow_view(view, -(get_numarg() or 1)) end,
     },
     ['c^'] = function()
         if view.vi_last_buf then 
