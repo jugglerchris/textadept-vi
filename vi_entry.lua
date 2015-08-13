@@ -69,7 +69,7 @@ end
 
 local function save_views()
     local split_views = ui:get_split_table()
-    
+
     return save_splits(split_views)
 end
 
