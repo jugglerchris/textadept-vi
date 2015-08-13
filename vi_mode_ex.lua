@@ -521,6 +521,10 @@ M.ex_commands = {
         for i=2,#args do
             command[#command+1] = args[i]
         end
+        -- Remove existing annotations.
+        for _,b in ipairs(_BUFFERS) do
+            b:annotation_clear_all()
+        end
         command_to_buffer(command, "./", "*make*", choose_errors_annotated_from_buf)
     end,
 
