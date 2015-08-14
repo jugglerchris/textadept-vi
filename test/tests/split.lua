@@ -10,7 +10,7 @@ local function dumpsplit(t, indent)
   if not t[1] then
     test.log(indent.."View: " ..tostring(t).." ".. test.tostring(t.buffer.filename).. '\n')
   else
-    test.log(indent.."Split: ver=".. tostring(t.vertical).. '\n')
+    test.log(indent.."Split: ver=".. tostring(t.vertical)..', size='..t.size.. '\n')
     dumpsplit(t[1], indent.."  ")
     dumpsplit(t[2], indent.."  ")
   end
@@ -92,7 +92,35 @@ assertSplitMatches(ui.get_split_table(),
                 vertical=true,
                 size=40,
               })
-              
+
+test.key('c-w', '+')
+assertSplitMatches(ui.get_split_table(),
+              {
+                {
+                   T{buffer=T{filename=F'files/a.txt'}},
+                   T{buffer=T{filename=F'files/c.txt'}},
+                   vertical=false,
+                   size=9,
+                },
+                T{buffer=T{filename=F'files/b.txt'}},
+                vertical=true,
+                size=40,
+              })
+
+test.key('5', 'c-w', '-')
+assertSplitMatches(ui.get_split_table(),
+              {
+                {
+                   T{buffer=T{filename=F'files/a.txt'}},
+                   T{buffer=T{filename=F'files/c.txt'}},
+                   vertical=false,
+                   size=14,
+                },
+                T{buffer=T{filename=F'files/b.txt'}},
+                vertical=true,
+                size=40,
+              })
+
 -- Tidy up.
 view:unsplit()
 view:unsplit()
