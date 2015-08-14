@@ -121,6 +121,34 @@ assertSplitMatches(ui.get_split_table(),
                 size=40,
               })
 
+test.key('3', 'c-w', '<')
+assertSplitMatches(ui.get_split_table(),
+              {
+                {
+                   T{buffer=T{filename=F'files/a.txt'}},
+                   T{buffer=T{filename=F'files/c.txt'}},
+                   vertical=false,
+                   size=14,
+                },
+                T{buffer=T{filename=F'files/b.txt'}},
+                vertical=true,
+                size=37,
+              })
+
+test.key('6', 'c-w', '>')
+assertSplitMatches(ui.get_split_table(),
+              {
+                {
+                   T{buffer=T{filename=F'files/a.txt'}},
+                   T{buffer=T{filename=F'files/c.txt'}},
+                   vertical=false,
+                   size=14,
+                },
+                T{buffer=T{filename=F'files/b.txt'}},
+                vertical=true,
+                size=43,
+              })
+
 -- Tidy up.
 view:unsplit()
 view:unsplit()
