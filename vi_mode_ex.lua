@@ -392,15 +392,21 @@ M.ex_commands = {
     w = function(args)
          --dbg("Fn:" .. tostring(_G.buffer.filename))
          if #args == 2 then
-	     io.save_file_as(args[2])
+             io.save_file_as(args[2])
          elseif #args == 1 then
-	     io.save_file()
+             io.save_file()
          else
-             ex_error("Too many arguments to :w")
+             ex_error("Too many arguments to :"..args[1])
          end
     end,
     wq = function(args)
-        io.save_file()
+        M.ex_commands.w(args)
+        M.ex_commands.q()
+    end,
+    x = function(args)
+        if buffer.modify then
+            M.ex_commands.w(args)
+        end
         M.ex_commands.q()
     end,
     n = function(args)
