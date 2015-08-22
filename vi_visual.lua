@@ -15,9 +15,10 @@ local function visual_update(pos)
     -- Adjust one end to make it inclusive
 --    if e < s then
 --        s = s+1
---    elseif s < e then
---        e = e+1
---    end
+--    else
+    if s < e then
+        e = e+1
+    end
 --    e = e + 1
     cme_log(('Adjusting selection to (%d, %d)'):format(s, e))
     buffer.set_selection(s, e)
@@ -28,6 +29,14 @@ M.VISUAL = 'visual'
 
 local function exit_visual()
     enter_mode(mode_command)
+end
+
+local function visual_range()
+    local s, e = state.visual.s, state.visual.pos
+    if s>e then
+        s, e = e, s
+    end
+    return s, e+1
 end
 
 local mode_visual = {
@@ -41,7 +50,8 @@ local mode_visual = {
             exit_visual()
         end,
         x = function()
-            vi_ops.cut(state.visual.s, state.visual.pos, state.visual.movtype)
+            local s, e = visual_range()
+            vi_ops.cut(s, e, state.visual.movtype)
             exit_visual()
         end,
     },
@@ -65,7 +75,8 @@ setmetatable(mode_visual.bindings, {
 --                buffer.clear_selections()
                 cme_log(('Pre anything, pos=%d, key=%q, sel=(%d, %d)'):format(state.visual.pos, k,
                     buffer.selection_start, buffer.selection_end))
-                buffer.current_pos = state.visual.pos
+--                buffer.current_pos = state.visual.pos
+                buffer.goto_pos(state.visual.pos)
                 cme_log(('Pre move, pos=%d (real %d)'):format(state.visual.pos, buffer.current_pos))
                 f()
                 cme_log(('After move, pos=%d'):format(buffer.current_pos))
