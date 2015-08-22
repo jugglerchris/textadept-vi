@@ -12,6 +12,7 @@ M.vi_tags = require 'vi_tags'
 M.lang = require 'vi_lang'
 M.vi_complete = require 'vi_complete'
 vi_find_files = require 'vi_find_files'
+vi_visual = require('vi_visual')
 local lpeg = require 'lpeg'
 
 local vi_motion = require 'vi_motion'
@@ -33,10 +34,12 @@ Make textadept behave a bit like vim.
 COMMAND = "vi_command"
 INSERT = "vi_insert"
 INSERT_CNP = "vi_complete"  -- Ctrl-P/Ctrl-N search mode
+VISUAL = vi_visual.VISUAL
 
 M.COMMAND = COMMAND
 M.INSERT = INSERT
 M.INSERT_CNP = INSERT_CNP
+M.VISUAL = VISUAL
 
 mode = nil  -- initialised below
 
@@ -59,6 +62,10 @@ function enter_mode(m)
         local restart = m.restart
         m.restart = nil
         restart()
+    end
+
+    if m.init then
+        m.init()
     end
 
     update_status()
@@ -125,7 +132,13 @@ state = {
     
     variables = {             -- Configurable variables
         grepprg = "grep -rn --devices=skip",
-    }
+    },
+
+    visual_pos = {
+        s=nil,
+        e=nil,
+        pos = nil,
+    },
 }
 
 -- Make state visible.
@@ -151,6 +164,8 @@ function update_status()
     
     if mode.name == COMMAND then
         msg = "(command) "
+    elseif mode.name == VISUAL then
+        msg = "-- VISUAL -- "
     else
         msg = "-- INSERT -- "
     end
@@ -435,6 +450,29 @@ local function get_numarg()
         return numarg
     end
 end
+
+-- Convert a motion table to a key function
+local function motion2key(movdesc)
+   local movtype, mov_f, rep = table.unpack(movdesc)
+
+   if movtype == MOV_LATER then
+     -- Call the movement function with the right count.
+     return function()
+       mov_f(function (md)
+         motion2key(md)()
+       end)
+     end
+   else
+     -- Call the movement function with the right count.
+     return function()
+                local rpt = get_numarg()
+                if not(rpt and rpt > 0) then rpt = rep end
+                mov_f(rpt)
+                if movtype ~= MOV_LINE then buf_state(buffer).col = nil end
+            end
+   end
+end
+M.motion2key = motion2key
 
 -- Like do_action but doesn't save to last_action
 function raw_do_action(action)
@@ -1067,6 +1105,11 @@ mode_command = {
            end)
         end,
 
+        -- Visual mode
+        v = function()
+            enter_mode(mode_visual)
+        end,
+
         J = function()
            do_action(function (rpt)
                if rpt < 2 then rpt = 2 end
@@ -1262,7 +1305,8 @@ events.connect(events.BUFFER_BEFORE_SWITCH, function ()
            view.vi_last_buf = buffer
        end
     end)
-    
+
+mode_visual = vi_visual.mode_visual
 
 M._saved_keys = nil           -- A copy of the keys table before installing
 function M.install_keymap()
@@ -1285,28 +1329,8 @@ function M.install_keymap()
   
   keys[INSERT] = mode_insert.bindings
   keys[INSERT_CNP] = M.vi_complete.get_keys(keys[INSERT])
+  keys[VISUAL] = mode_visual.bindings
   
-  -- Convert a motion table to a key function
-  local function motion2key(movdesc)
-     local movtype, mov_f, rep = table.unpack(movdesc)
-     
-     if movtype == MOV_LATER then
-       -- Call the movement function with the right count.
-       return function()
-         mov_f(function (md)
-           motion2key(md)()
-         end)
-       end
-     else
-       -- Call the movement function with the right count.
-       return function()
-                  local rpt = get_numarg()
-                  if not(rpt and rpt > 0) then rpt = rep end
-                  mov_f(rpt)
-                  if movtype ~= MOV_LINE then buf_state(buffer).col = nil end
-              end
-     end
-  end
   -- Delegate to the motion commands.
   setmetatable(keys, {
     __index = function(t,k)
