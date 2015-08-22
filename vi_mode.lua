@@ -134,11 +134,7 @@ state = {
         grepprg = "grep -rn --devices=skip",
     },
 
-    visual_pos = {
-        s=nil,
-        e=nil,
-        pos = nil,
-    },
+    visual = { },             -- State for visual mode
 }
 
 -- Make state visible.
