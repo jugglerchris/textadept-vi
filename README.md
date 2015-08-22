@@ -52,7 +52,7 @@ What works
 * Buffers: c-w c-w, c-^, :split, :vsplit, :only
 * Folds: zo, zc, zM, zR
 * Compiling/Quickfix: basic :make, :cb, :cn, :cp, :clist, :lgrep (grep with Lua patterns)
-* Other ex-mode commands with completion: :e, :w, :wq, :q, :b, :bdelete, :find, @:
+* Other ex-mode commands with completion: :e, :w, :wq, :x, :q, :b, :bdelete, :find, @:
 * Misc: ^Z to suspend (with the included "kill" Lua extension)
 * Esc to return to command mode
 * In insert mode: ^p to find matching completions in the current buffer.
