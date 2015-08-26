@@ -54,6 +54,11 @@ local mode_visual = {
             vi_ops.cut(s, e, state.visual.movtype)
             exit_visual()
         end,
+        --[[ Vim operators not yet implemented here:
+        ~, d, c, y, <, >, !, =, gq
+        other commands:
+        :, r, s, C, S, R, D, X, Y, p, J, U, u, ^], I, A
+        ]]
     },
 
     init = function()
