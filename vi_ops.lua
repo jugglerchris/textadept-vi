@@ -89,6 +89,19 @@ function M.revcase(start, end_, mtype)
     buffer:end_undo_action()
 end
 
+function M.lowercase(start, end_, mtype)
+    buffer:set_sel(start, end_)
+    buffer:lower_case()
+    buffer:clear_selections()
+    buffer:goto_pos(start)
+end
+function M.uppercase(start, end_, mtype)
+    buffer:set_sel(start, end_)
+    buffer:upper_case()
+    buffer:clear_selections()
+    buffer:goto_pos(start)
+end
+
 function M.replace_char(sym, start, end_, mtype)
     local here = start
     buffer:begin_undo_action()

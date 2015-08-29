@@ -65,12 +65,14 @@ local mode_visual = {
         x = wrap_op(vi_ops.cut),
         d = wrap_op(vi_ops.cut),
         ['~'] = wrap_op(vi_ops.revcase),
+        u = wrap_op(vi_ops.lowercase),
+        U = wrap_op(vi_ops.uppercase),
         y = wrap_op(vi_ops.yank),
         r = handle_v_r,
         --[[ Vim operators not yet implemented here:
         c, <, >, !, =, gq
         other commands:
-        :, r, s, C, S, R, D, X, Y, p, J, U, u, ^], I, A
+        :, s, C, S, R, D, X, Y, p, J, ^], I, A
         ]]
     },
 
@@ -83,21 +85,22 @@ local mode_visual = {
         visual_update()
     end,
 }
+local function motion2visualkey(m)
+    return function()
+        local f = vi_mode.motion2key(m)
+        buffer.goto_pos(state.visual.pos)
+        f()
+        visual_update(buffer.current_pos)
+    end
+end
 
 setmetatable(mode_visual.bindings, {
     __index = function(t,k)
         local m = vi_motion.motions[k]
         if type(m) == 'table' and m[1] then
-            local f = vi_mode.motion2key(m)
-            return function()
---                buffer.clear_selections()
---                buffer.current_pos = state.visual.pos
-                buffer.goto_pos(state.visual.pos)
-                f()
-                visual_update(buffer.current_pos)
-            end
+            return motion2visualkey(m)
         elseif type(m) == 'table' then
-            return vi_motion.wrap_table(m, vi_mode.motion2key)
+            return vi_motion.wrap_table(m, motion2visualkey)
         end
     end
     })
