@@ -496,4 +496,45 @@ function M.assertAt(line, col)
     assertEqLevel(col, M.colno(), 3)
 end
 
+-- Run some keys in a vim session and compare the results
+function M.run_in_vim(init_data, keylist)
+    local vimfilename = 'vimfile.txt'
+    local vimpath = './output/' .. vimfilename
+    local vimfile = io.open(vimpath,'wb')
+    vimfile:write(init_data)
+    vimfile:close()
+    do
+    local vimfile = io.open(vimpath .. '_','wb')
+    vimfile:write(init_data)
+    vimfile:close()
+    end
+
+    -- -c: directory to start in
+    -- -k: destroy target window if needed
+    -- -t: target widnow
+    tmux:write([[new-window -c ./output 'vim ]]..vimfilename.."'\n")
+    tmux:flush()
+
+    -- Assume it's switched to the new window
+    for _,key in ipairs(keylist) do
+        M.physkey(key)
+    end
+
+    M.physkey('escape')
+    M.physkey('escape')
+    M.physkey(':')
+    M.physkey('w')
+    M.physkey('q')
+    M.physkey('enter')
+    tmux:flush()
+
+    -- TODO: work out why this is necessary
+    os.execute('sleep 1')
+
+    vimfile, err = io.open(vimpath, 'r')
+    local result = vimfile:read("*a")
+    vimfile:close()
+    return result
+end
+
 return M

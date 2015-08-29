@@ -74,6 +74,51 @@ function M.undent(start, end_, mtype)
     buffer:goto_pos(buffer.line_indent_position[buffer:line_from_position(start)])
 end
 
+function M.revcase(start, end_, mtype)
+    local pos = start
+    buffer:begin_undo_action()
+    while pos < end_ do
+        buffer:set_sel(pos, pos+1)
+        local c = buffer:get_sel_text()
+        local newc = string.upper(c)
+        if newc == c then newc = string.lower(c) end
+        buffer:replace_sel(newc)
+        buffer.current_pos = pos+1
+        pos = pos + 1
+    end
+    buffer:end_undo_action()
+end
+
+function M.lowercase(start, end_, mtype)
+    buffer:set_sel(start, end_)
+    buffer:lower_case()
+    buffer:clear_selections()
+    buffer:goto_pos(start)
+end
+function M.uppercase(start, end_, mtype)
+    buffer:set_sel(start, end_)
+    buffer:upper_case()
+    buffer:clear_selections()
+    buffer:goto_pos(start)
+end
+
+function M.replace_char(sym, start, end_, mtype)
+    local here = start
+    buffer:begin_undo_action()
+    while here < end_ do
+       local nextpos = buffer:position_relative(here, 1)
+       buffer:set_sel(here, nextpos)
+       buffer:replace_sel(sym)
+       -- Recalculate nextpos as the new character may
+       -- not be the same length.
+       nextpos = buffer:position_relative(here, 1)
+       buffer.current_pos = nextpos
+
+       here = nextpos
+    end
+    buffer:end_undo_action()
+end
+
 -- Auto indent
 function M.reindent(start, end_, mtype)
     local line_start = buffer.line_from_position(start)

@@ -56,6 +56,7 @@ What works
 * Misc: ^Z to suspend (with the included "kill" Lua extension)
 * Esc to return to command mode
 * In insert mode: ^p to find matching completions in the current buffer.
+* Visual mode keys: movement as above, esc, v, x, d, ~, u, U, y, r, gq
 
 What doesn't
 ------------
