@@ -56,8 +56,9 @@ local mode_visual = {
         x = wrap_op(vi_ops.cut),
         d = wrap_op(vi_ops.cut),
         ['~'] = wrap_op(vi_ops.revcase),
+        y = wrap_op(vi_ops.yank),
         --[[ Vim operators not yet implemented here:
-        d, c, y, <, >, !, =, gq
+        c, <, >, !, =, gq
         other commands:
         :, r, s, C, S, R, D, X, Y, p, J, U, u, ^], I, A
         ]]
