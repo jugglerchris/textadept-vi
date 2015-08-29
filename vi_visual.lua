@@ -43,6 +43,15 @@ local function wrap_op(opfunc)
         end
 end
 
+local handle_v_r = setmetatable({}, {
+    __index = function(t, sym)
+                 if string.match(sym, "^.$") then
+                   return wrap_op(function(s, e, t) vi_ops.replace_char(sym, s, e, t) end)
+                 end
+             end,
+})
+
+
 local mode_visual = {
     name = M.VISUAL,
 
@@ -57,6 +66,7 @@ local mode_visual = {
         d = wrap_op(vi_ops.cut),
         ['~'] = wrap_op(vi_ops.revcase),
         y = wrap_op(vi_ops.yank),
+        r = handle_v_r,
         --[[ Vim operators not yet implemented here:
         c, <, >, !, =, gq
         other commands:

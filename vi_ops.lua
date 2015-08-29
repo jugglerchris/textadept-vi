@@ -89,6 +89,23 @@ function M.revcase(start, end_, mtype)
     buffer:end_undo_action()
 end
 
+function M.replace_char(sym, start, end_, mtype)
+    local here = start
+    buffer:begin_undo_action()
+    while here < end_ do
+       local nextpos = buffer:position_relative(here, 1)
+       buffer:set_sel(here, nextpos)
+       buffer:replace_sel(sym)
+       -- Recalculate nextpos as the new character may
+       -- not be the same length.
+       nextpos = buffer:position_relative(here, 1)
+       buffer.current_pos = nextpos
+
+       here = nextpos
+    end
+    buffer:end_undo_action()
+end
+
 -- Auto indent
 function M.reindent(start, end_, mtype)
     local line_start = buffer.line_from_position(start)
