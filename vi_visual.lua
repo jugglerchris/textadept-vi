@@ -13,15 +13,10 @@ local function visual_update(pos)
     state.visual.pos = e
 
     -- Adjust one end to make it inclusive
---    if e < s then
---        s = s+1
---    else
     if s < e then
         e = e+1
     end
---    e = e + 1
     buffer.set_selection(s, e)
---    buffer.set_sel(s, e)
 end
 
 M.VISUAL = 'visual'
@@ -51,6 +46,11 @@ local mode_visual = {
         x = function()
             local s, e = visual_range()
             vi_ops.cut(s, e, state.visual.movtype)
+            exit_visual()
+        end,
+        ['~'] = function()
+            local s, e = visual_range()
+            vi_ops.revcase(s, e, state.visual.movtype)
             exit_visual()
         end,
         --[[ Vim operators not yet implemented here:

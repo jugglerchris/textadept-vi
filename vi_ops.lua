@@ -74,6 +74,21 @@ function M.undent(start, end_, mtype)
     buffer:goto_pos(buffer.line_indent_position[buffer:line_from_position(start)])
 end
 
+function M.revcase(start, end_, mtype)
+    local pos = start
+    buffer:begin_undo_action()
+    while pos < end_ do
+        buffer:set_sel(pos, pos+1)
+        local c = buffer:get_sel_text()
+        local newc = string.upper(c)
+        if newc == c then newc = string.lower(c) end
+        buffer:replace_sel(newc)
+        buffer.current_pos = pos+1
+        pos = pos + 1
+    end
+    buffer:end_undo_action()
+end
+
 -- Auto indent
 function M.reindent(start, end_, mtype)
     local line_start = buffer.line_from_position(start)
