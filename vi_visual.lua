@@ -33,6 +33,16 @@ local function visual_range()
     return s, e+1
 end
 
+-- Take an operator function (which takes startpos, endpos, movtype)
+-- and return a key sym for visual mode.
+local function wrap_op(opfunc)
+    return function()
+            local s, e = visual_range()
+            opfunc(s, e, state.visual.movtype)
+            exit_visual()
+        end
+end
+
 local mode_visual = {
     name = M.VISUAL,
 
@@ -43,18 +53,11 @@ local mode_visual = {
         v = function()
             exit_visual()
         end,
-        x = function()
-            local s, e = visual_range()
-            vi_ops.cut(s, e, state.visual.movtype)
-            exit_visual()
-        end,
-        ['~'] = function()
-            local s, e = visual_range()
-            vi_ops.revcase(s, e, state.visual.movtype)
-            exit_visual()
-        end,
+        x = wrap_op(vi_ops.cut),
+        d = wrap_op(vi_ops.cut),
+        ['~'] = wrap_op(vi_ops.revcase),
         --[[ Vim operators not yet implemented here:
-        ~, d, c, y, <, >, !, =, gq
+        d, c, y, <, >, !, =, gq
         other commands:
         :, r, s, C, S, R, D, X, Y, p, J, U, u, ^], I, A
         ]]
