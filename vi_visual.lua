@@ -20,7 +20,6 @@ local function visual_update(pos)
         e = e+1
     end
 --    e = e + 1
-    cme_log(('Adjusting selection to (%d, %d)'):format(s, e))
     buffer.set_selection(s, e)
 --    buffer.set_sel(s, e)
 end
@@ -78,13 +77,9 @@ setmetatable(mode_visual.bindings, {
             local f = vi_mode.motion2key(m)
             return function()
 --                buffer.clear_selections()
-                cme_log(('Pre anything, pos=%d, key=%q, sel=(%d, %d)'):format(state.visual.pos, k,
-                    buffer.selection_start, buffer.selection_end))
 --                buffer.current_pos = state.visual.pos
                 buffer.goto_pos(state.visual.pos)
-                cme_log(('Pre move, pos=%d (real %d)'):format(state.visual.pos, buffer.current_pos))
                 f()
-                cme_log(('After move, pos=%d'):format(buffer.current_pos))
                 visual_update(buffer.current_pos)
             end
         elseif type(m) == 'table' then
