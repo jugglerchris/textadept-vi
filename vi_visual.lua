@@ -105,6 +105,20 @@ setmetatable(mode_visual.bindings, {
     end
     })
 
+local function set_default_visual_key(k)
+    if mode_visual.bindings[k] == nil then
+        mode_visual.bindings[k] = function()
+            vi_mode.err("Unbound visual key: <" .. tostring(k) .. ">")
+        end
+    end
+end
+
+for i = 0,25 do
+    k = string.char(i + string.byte("a"))
+    set_default_visual_key(k)
+    set_default_visual_key(string.upper(k))
+end
+
 M.mode_visual = mode_visual
 
 return M
