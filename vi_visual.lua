@@ -42,6 +42,13 @@ local function wrap_op(opfunc)
             exit_visual()
         end
 end
+local function wrap_op_linewise(opfunc)
+    return function()
+            local s, e = visual_range()
+            opfunc(s, e, 'linewise')
+            exit_visual()
+        end
+end
 
 local handle_v_r = setmetatable({}, {
     __index = function(t, sym)
@@ -69,6 +76,9 @@ local mode_visual = {
         U = wrap_op(vi_ops.uppercase),
         y = wrap_op(vi_ops.yank),
         r = handle_v_r,
+        g = {
+            q = wrap_op(vi_ops.wrap),
+        },
         --[[ Vim operators not yet implemented here:
         c, <, >, !, =, gq
         other commands:
