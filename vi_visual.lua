@@ -80,7 +80,7 @@ local mode_visual = {
             q = wrap_op(vi_ops.wrap),
         },
         --[[ Vim operators not yet implemented here:
-        c, <, >, !, =, gq
+        c, <, >, !, =
         other commands:
         :, s, C, S, R, D, X, Y, p, J, ^], I, A
         ]]
