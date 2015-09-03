@@ -171,7 +171,7 @@ end
 function M.sel_line(numlines)
   if not numlines or numlines < 1 then numlines = 1 end
   local lineno = buffer:line_from_position(buffer.current_pos)
-  return buffer:position_from_line(lineno), buffer.line_end_position[lineno + numlines - 1]
+  return buffer.current_pos, buffer.line_end_position[lineno + numlines - 1]
 end
 
 function M.goto_line(lineno)

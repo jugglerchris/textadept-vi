@@ -38,14 +38,26 @@ end
 local function wrap_op(opfunc)
     return function()
             local s, e = visual_range()
-            opfunc(s, e, state.visual.movtype)
+            local movement = {
+                s=s,
+                e=e,
+                movtype=state.visual.movtype,
+            }
+            opfunc(movement)
             exit_visual()
         end
 end
 local function wrap_op_linewise(opfunc)
     return function()
             local s, e = visual_range()
-            opfunc(s, e, 'linewise')
+            local movement = {
+                s=s,
+                e=e,
+                movtype='linewise',
+                raws=s,
+                rawe=e,
+            }
+            opfunc(movement)
             exit_visual()
         end
 end

@@ -2,8 +2,9 @@
 local M = {}
 
 -- Implements c{motion}
-function M.change(start, end_, mtype)
-  M.cut(start, end_, mtype)
+function M.change(movement)
+  local mtype = movement.movtype
+  M.cut(movement)
   if mtype == 'linewise' then
       -- If linewise, should be editing in a new empty line
       if buffer.current_pos == 0 then
@@ -20,8 +21,9 @@ end
 
 --- Delete a range from this buffer, and save in a register.
 --  If the register is not specified, use the unnamed register ("").
-function M.cut(start, end_, mtype, register)
-    local linewise = mtype == 'linewise'
+function M.cut(movement, register)
+    local linewise = movement.movtype == 'linewise'
+    local start, end_ = movement.s, movement.e
     if not linewise then
         -- If start/end_ are on different lines and there would only be
         -- whitespace left after the delete, then change to linewise.
@@ -50,31 +52,40 @@ end
 
 --- yank a range from this buffer, and save in a register.
 --  If the register is not specified, use the unnamed register ("").
-function M.yank(start, end_, mtype, register)
-    local linewise = mtype == 'linewise'
+function M.yank(movement, register)
+    local linewise = movement.movtype == 'linewise'
     local orig_pos = buffer.current_pos
+    local start, end_ = movement.s, movement.e
     buffer:set_sel(start, end_)
     local text = buffer:get_sel_text()
     buffer:clear_selections()
-    buffer:goto_pos(orig_pos)
+    if linewise then
+        local raws, rawe = movement.raws, movement.rawe
+        buffer:goto_pos(raws < rawe and raws or rawe)
+    else
+        buffer:goto_pos(start < end_ and start or end_)
+    end
     state.registers[register or '"'] = {text=text, line=linewise}
 end
 
-function M.indent(start, end_, mtype)
+function M.indent(movement)
+    local start, end_ = movement.s, movement.e
     buffer:set_sel(start, end_)
     buffer:tab()
     buffer:clear_selections()
     buffer:goto_pos(buffer.line_indent_position[buffer:line_from_position(start)])
 end
 
-function M.undent(start, end_, mtype)
+function M.undent(movement)
+    local start, end_ = movement.s, movement.e
     buffer:set_sel(start, end_)
     buffer:back_tab()
     buffer:clear_selections()
     buffer:goto_pos(buffer.line_indent_position[buffer:line_from_position(start)])
 end
 
-function M.revcase(start, end_, mtype)
+function M.revcase(movement)
+    local start, end_ = movement.s, movement.e
     local pos = start
     buffer:begin_undo_action()
     while pos < end_ do
@@ -89,20 +100,23 @@ function M.revcase(start, end_, mtype)
     buffer:end_undo_action()
 end
 
-function M.lowercase(start, end_, mtype)
+function M.lowercase(movement)
+    local start, end_ = movement.s, movement.e
     buffer:set_sel(start, end_)
     buffer:lower_case()
     buffer:clear_selections()
     buffer:goto_pos(start)
 end
-function M.uppercase(start, end_, mtype)
+function M.uppercase(movement)
+    local start, end_ = movement.s, movement.e
     buffer:set_sel(start, end_)
     buffer:upper_case()
     buffer:clear_selections()
     buffer:goto_pos(start)
 end
 
-function M.replace_char(sym, start, end_, mtype)
+function M.replace_char(sym, movement)
+    local start, end_ = movement.s, movement.e
     local here = start
     buffer:begin_undo_action()
     while here < end_ do
@@ -120,7 +134,8 @@ function M.replace_char(sym, start, end_, mtype)
 end
 
 -- Auto indent
-function M.reindent(start, end_, mtype)
+function M.reindent(movement)
+    local start, end_ = movement.s, movement.e
     local line_start = buffer.line_from_position(start)
     local line_end = buffer.line_from_position(end_-1)
     local pat = vi_mode.lang.indents.xml.indent
@@ -197,12 +212,12 @@ local function wrap_lines(lines, width)
   return result
 end
 
-function M.wrap(start, end_, mtype)
+function M.wrap(movement)
     local width = 78 -- FIXME: configurable
-    local line_start = buffer:line_from_position(start)
-    local line_end = buffer:line_from_position(end_)
+    local line_start = buffer:line_from_position(movement.s)
+    local line_end = buffer:line_from_position(movement.e)
     -- Linewise motions stop at the position at the start of the next line.
-    if mtype == 'linewise' and line_end >= 0 then
+    if movement.movtype == 'linewise' and line_end >= 0 then
         line_end = line_end - 1
     end
     local pos_start = buffer:position_from_line(line_start)

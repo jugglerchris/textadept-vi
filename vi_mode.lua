@@ -225,7 +225,7 @@ local function insert_start_edit()
 end
 
 function M.vi_cut(start, end_, linewise, register)
-    return vi_ops.cut(start, end_, linewise and MOV_LINE or MOV_INC)
+    return vi_ops.cut({s=start, e=end_, movtype=linewise and MOV_LINE or MOV_INC}, register)
 end
 local vi_cut = M.vi_cut
 
@@ -345,7 +345,9 @@ local function vi_paste(after, register)
         local reported_line = buffer:line_from_position(pos)
         assert(reported_line == lineno)
     else
-        if after and pos < buffer.length then pos = pos + 1 end
+        local lineno = buffer:line_from_position(pos)
+        local lineend = buffer.line_end_position[lineno]
+        if after and pos < buffer.length and pos < lineend then pos = pos + 1 end
     end
     buffer:insert_text(pos, buf.text)
     if not buf.line then
@@ -736,15 +738,23 @@ local post_insert = M.post_insert
 -- movdesc: { movtype, movf, rep }
 -- rpt: 0 or an override repeat
 --
--- returns start, end positions.
-local function movdesc_get_range(movdesc, rpt_motion, rpt_cmd)
+-- returns movement descriptor:
+-- {
+--    s = <start pos>,
+--    e = <end pos>,
+--    movtype = <movement type>,
+--    raws = <start pos not adjusted to line ends, for linewise>,
+--    rawe = <end pos not adjusted to line ends, for linewise>,
+-- }
+local function movdesc_get_range_ex(movdesc, rpt_motion, rpt_cmd)
     local movtype, movf, rep = table.unpack(movdesc)
 
     if rpt_motion == nil or rpt_motion < 1 then rpt_motion = rep end
     local cmdrep = rpt_cmd or 1
     local rpt = rpt_motion * cmdrep
     local start, end_ = movf(rpt)
-    
+    local raws, rawe = start, end_
+
     -- Now adjust the range depending on the movement class
     if movtype == MOV_LINE then
         start = buffer.position_from_line(buffer.line_from_position(start))
@@ -771,7 +781,20 @@ local function movdesc_get_range(movdesc, rpt_motion, rpt_cmd)
             end
         end
     end
-    return start, end_
+    return { s=start, e=end_, movtype=movtype,
+             raws=raws, rawe=rawe }
+end
+
+-- Do a movement (with optional repeat override) and return the range
+-- selected for an edit, taking into account inclusive/exclusive etc.
+--
+-- movdesc: { movtype, movf, rep }
+-- rpt: 0 or an override repeat
+--
+-- returns start, end positions.
+local function movdesc_get_range(movdesc, rpt_motion, rpt_cmd)
+    local movement = movdesc_get_range_ex(movdesc, rpt_motion, rpt_cmd)
+    return movement.s, movement.e
 end
 
 -- Return a table implementing an action which can take a motion, and
@@ -779,8 +802,12 @@ end
 -- Also handles taking care of being able to redo the action.
 --
 -- actions: a table -f non-motion bindings.
--- handler: a function called with (start, end, movtype, reg)
---       start/end are the selected range, and movtype is MOV_{INC,EXC,LINE}
+-- handler: a function called with (movement, start, end, movtype, reg)
+--       movement is { s=<start>, e=<end>, movtype=movtype,
+--                     raws=<...>, rawe=<...>
+--       s,e (start/end) are the selected range, and movtype is MOV_{INC,EXC,LINE}
+--       for linewise, raws and rawe are the start/end locations before
+--       adjusting to start/end of lines.
 --       The handler should do its action.  The system will take care of
 --       saving the action to repeat, and undo/redo.
 --       reg is a register parameter provided (eg with "ayw)
@@ -788,17 +815,16 @@ local function with_motion(actions, handler)
     local function apply_action(mdesc)
        local cmdrpt = get_numarg()
        local reg = get_regarg()
-       local movtype = mdesc[1]
-       local start, end_ = movdesc_get_range(mdesc, nil, cmdrpt)
+       local movement = movdesc_get_range_ex(mdesc, nil, cmdrpt)
        begin_undo()
-       handler(start, end_, movtype, reg)
+       handler(movement, reg)
        end_undo()
        
        state.last_action = function(new_rpt)
            local rpt = (new_rpt and new_rpt > 0) and new_rpt or cmdrpt
-           local start, end_ = movdesc_get_range(mdesc, rpt, 1)
+           local movement = movdesc_get_range_ex(mdesc, rpt, 1)
            begin_undo()
-           handler(start, end_, movtype, reg)
+           handler(movement, reg)
            end_undo()
        end
     end
@@ -835,10 +861,9 @@ local function with_motion_insert(actions, handler)
        return function()
            local cmdrpt = get_numarg()
            local regarg = get_regarg()
-           local movtype = movdesc[1]
-           local start, end_ = movdesc_get_range(movdesc, nil, cmdrpt)
+           local movement = movdesc_get_range_ex(movdesc, nil, cmdrpt)
            begin_undo()
-           handler(start, end_, movtype)
+           handler(movement)
            
            insert_start_edit()
            enter_mode(mode_insert)
@@ -847,9 +872,9 @@ local function with_motion_insert(actions, handler)
                end_undo()
                state.last_action = function(new_rpt)
                    local rpt = (new_rpt and new_rpt > 0) and new_rpt or cmdrpt
-                   local start, end_ = movdesc_get_range(movdesc, rpt, 1)
+                   local movement = movdesc_get_range_ex(movdesc, rpt, 1)
                    begin_undo()
-                   handler(start, end_, movtype)
+                   handler(movement)
                    buffer:add_text(text)
                    end_undo()
                end
@@ -926,7 +951,7 @@ end
 -- before and after, and wraps the region with that text.
 surround_keys = vi_motion.bind_motions({
     w = vi_motion.movf_to_self({ MOV_INC, vi_motion.r(vi_motions.word_end), 1}),
-    s = { MOV_LINE, vi_motions.sel_line, 1 },
+    s = { MOV_LINE, vi_motions.el_line, 1 },
 },
   function(movdesc)
       return function()
