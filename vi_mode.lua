@@ -1287,10 +1287,10 @@ mode_command = {
             end)
       end,
 
-         -- Re-indent the range
-         ['='] = with_motion({
-           ['='] = { MOV_LINE, vi_motions.sel_line, 1 },
-         }, vi_ops.reindent),
+        -- Re-indent the range
+        ['='] = with_motion({
+          ['='] = { MOV_LINE, vi_motions.sel_line, 1 },
+        }, vi_ops.reindent),
          
         p = function()
             -- Paste a new line.
