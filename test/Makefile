@@ -24,6 +24,9 @@ output:
 clean:
 	rm -r output
 
+interactive: output
+	$(TMUX) -S $(TMUX_SOCKET) new-session -d $(TMUX_SIZE) "TESTS=\"$(TESTS)\" bash " \; send-keys "$(TA) --nosession --userhome ./userhome " \; attach
+
 test: output
 	@if [ ! -f ./userhome/modules/textredux/buffer_list.lua ]; then echo "Textredux must exist at ./userhome/modules/textredux"; exit 1; fi
 	@# Remove previous output file to avoid confusion.

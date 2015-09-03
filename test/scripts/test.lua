@@ -537,4 +537,21 @@ function M.run_in_vim(init_data, keylist)
     return result
 end
 
+--
+-- Run the same key sequence (keys is a { 'a', 'b' } sequence of keypresses)
+-- in both the current textadept-vi and in a separately-spawned vim and
+-- check that both leave the buffer contents the same.
+-- filename is the name of one of the test files (as used with test.open())
+function M.cosim(filename, keys)
+    local unpack = unpack or table.unpack
+
+    M.open(filename)
+    local init_data = buffer:get_text()
+
+    test.key(unpack(keys))
+    local fini_data = buffer:get_text()
+
+    M.assertEq(test.run_in_vim(init_data, keys), fini_data)
+end
+
 return M
