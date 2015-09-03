@@ -159,14 +159,20 @@ setmetatable(state.registers, {
                   local origval
                   if kb >= A and kb <= Z then
                       local lk = string.lower(k)
-                      origval = rawget(t, k)
+                      origval = rawget(t, lk)
                       if origval then
                           origval.text = origval.text .. v.text
+                          v = origval
                       else
                           rawset(t, lk, v)
                       end
                   else
                       rawset(t, k, v)
+                  end
+                  -- The " register (unnamed) holds the last copied value,
+                  -- unless the '_' register was used.
+                  if k ~= '_' then
+                      rawset(t, '"', v)
                   end
               end,
 })
