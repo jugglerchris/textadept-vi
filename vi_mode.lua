@@ -114,6 +114,7 @@ end
 state = {
     numarg = 0,  -- The numeric prefix (eg for 10j to go down 10 times)
     last_numarg = 0,  -- The last numeric argument used (for repeating previous)
+    regarg = nil,     -- The pending register argument (eg "a)
 
     pending_action = nil,  -- An action waiting for a movement
     pending_command = nil, -- The name of the editing command pending
@@ -136,6 +137,39 @@ state = {
 
     visual = { },             -- State for visual mode
 }
+
+-- Implement special register behaviour (eg upper case means append)
+setmetatable(state.registers, {
+    __index = function(t, k)
+                  -- For upper case register names, return the lower case
+                  -- value.
+                  local A, Z = string.byte("AZ", 1, 2)
+                  local kb = string.byte(k)
+                  if kb >= A and kb <= Z then
+                      local lk = string.lower(k)
+                      return rawget(t, lk)
+                  end
+                  return rawget(t, k)
+              end,
+    __newindex = function(t, k, v)
+                  -- For upper case register names, append to the lower-case
+                  -- register
+                  local A, Z = string.byte("AZ", 1, 2)
+                  local kb = string.byte(k)
+                  local origval
+                  if kb >= A and kb <= Z then
+                      local lk = string.lower(k)
+                      origval = rawget(t, k)
+                      if origval then
+                          origval.text = origval.text .. v.text
+                      else
+                          rawset(t, lk, v)
+                      end
+                  else
+                      rawset(t, k, v)
+                  end
+              end,
+})
 
 -- Make state visible.
 M.state = state
@@ -271,6 +305,19 @@ function do_inc(increment)
     
     buffer:set_selection(start_, end_)
     buffer:replace_sel(newstr)
+end
+
+local function make_reg_key(reg)
+    return function() state.regarg = reg end
+end
+
+local register_keys = {
+}
+for i = 0,25 do
+    local k = string.char(i + string.byte("a"))
+    register_keys[k] = make_reg_key(k)
+    local uk = string.upper(k)
+    register_keys[uk] = make_reg_key(uk)
 end
 
 --- Paste from a register (by default the unnamed register "")
@@ -420,7 +467,7 @@ mode_insert = {
 local function no_action() end
 
 -- Run an action, as a single undoable action.
--- Passes the current repeat count (prefix count) to it,
+-- Passes the current repeat count (prefix count) and register arg to it,
 -- and saves it to be recalled with '.'.
 function do_action(action)
     local saved_rpt = state.numarg
@@ -445,6 +492,16 @@ local function get_numarg()
     else
         return numarg
     end
+end
+
+-- Return the current register prefix (and clear it)
+-- Returns nil if not set.
+local function get_regarg()
+    local regarg = state.regarg
+
+    state.regarg = nil
+
+    return regarg
 end
 
 -- Convert a motion table to a key function
@@ -472,16 +529,11 @@ M.motion2key = motion2key
 
 -- Like do_action but doesn't save to last_action
 function raw_do_action(action)
-    local rpt = 1
-
-    if state.numarg > 0 then
-        rpt = state.numarg
-        state.numarg = 0
-    end
-    state.last_numarg = rpt
+    local rpt = get_numarg() or 1
+    local regarg = get_regarg() or nil
 
     begin_undo()
-    action(rpt)
+    action(rpt, regarg)
     end_undo()
 end
 
@@ -560,9 +612,11 @@ local function do_movement(f, movtype)
     end
 end
 
+-- Wrap a function f(reg) into a repeatable one which takes a repeat count
+-- g(rpt, reg).  The reg parameter is optional.
 local function repeatable(f)
-    return function(rpt)
-        for i=1,rpt do f() end
+    return function(rpt, reg)
+        for i=1,rpt do f(reg) end
     end
 end
 
@@ -725,24 +779,26 @@ end
 -- Also handles taking care of being able to redo the action.
 --
 -- actions: a table -f non-motion bindings.
--- handler: a function called with (start, end, movtype)
+-- handler: a function called with (start, end, movtype, reg)
 --       start/end are the selected range, and movtype is MOV_{INC,EXC,LINE}
 --       The handler should do its action.  The system will take care of
 --       saving the action to repeat, and undo/redo.
+--       reg is a register parameter provided (eg with "ayw)
 local function with_motion(actions, handler)
     local function apply_action(mdesc)
        local cmdrpt = get_numarg()
+       local reg = get_regarg()
        local movtype = mdesc[1]
        local start, end_ = movdesc_get_range(mdesc, nil, cmdrpt)
        begin_undo()
-       handler(start, end_, movtype)
+       handler(start, end_, movtype, reg)
        end_undo()
        
        state.last_action = function(new_rpt)
            local rpt = (new_rpt and new_rpt > 0) and new_rpt or cmdrpt
            local start, end_ = movdesc_get_range(mdesc, rpt, 1)
            begin_undo()
-           handler(start, end_, movtype)
+           handler(start, end_, movtype, reg)
            end_undo()
        end
     end
@@ -778,6 +834,7 @@ local function with_motion_insert(actions, handler)
     wrapped_handler = function(movdesc)
        return function()
            local cmdrpt = get_numarg()
+           local regarg = get_regarg()
            local movtype = movdesc[1]
            local start, end_ = movdesc_get_range(movdesc, nil, cmdrpt)
            begin_undo()
@@ -1143,6 +1200,8 @@ mode_command = {
             f = find_filename_at_pos,
         },
 
+        ['"'] = register_keys,
+
         d = with_motion({
            d = { MOV_LINE, vi_motions.sel_line, 1 },
         }, vi_ops.cut),
@@ -1202,11 +1261,11 @@ mode_command = {
          
         p = function()
             -- Paste a new line.
-            do_action(repeatable(function() vi_paste(true) end))
+            do_action(repeatable(function(reg) vi_paste(true, reg) end))
         end,
 
         P = function()
-            do_action(repeatable(function() vi_paste(false) end))
+            do_action(repeatable(function(reg) vi_paste(false, reg) end))
         end,
         -- edit commands
 	u = buffer.undo,
