@@ -298,7 +298,7 @@ local function vi_paste(after, register)
         local reported_line = buffer:line_from_position(pos)
         assert(reported_line == lineno)
     else
-        if after then pos = pos + 1 end
+        if after and pos < buffer.length then pos = pos + 1 end
     end
     buffer:insert_text(pos, buf.text)
     if not buf.line then
