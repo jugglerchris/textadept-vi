@@ -129,7 +129,7 @@ local ex_addr_fwd = (P"/" * C(ex_pattern_nonempty ^ 1) * P"/") / _searchfwd
 local ex_addr_base = ex_addr_num + ex_addr_here + ex_addr_end + ex_addr_fwd
 local addr_adder = (P"+" * ex_addr_num)
 local addr_subber = (P"-" * ex_addr_num) / neg
-local ex_addr = Cf(ex_addr_base * (addr_adder + addr_subber)^0, add)
+local ex_addr = Cf(ex_addr_base * (addr_adder + addr_subber)^0, add) + Cf((P(0) / _curline) * (addr_adder + addr_subber)^1, add)
 
 -- And a range returns a pair of line numbers { start, end }
 local ex_range = ((((ex_addr + P(0)/_curline) * "," * ex_addr)/_mk_range) + (ex_addr / _mk_range_single) + (P(0) * Cc(nil)))
