@@ -108,6 +108,7 @@ function key_handler_common(code, shift, ctrl, alt, meta)
         state.pending_keyhandler = nil
 	return true
     end
+    buffer.virtual_space_options = buffer.VS_NONE
 end
 
 -- Various state we modify
@@ -1432,6 +1433,30 @@ function M.install_keymap()
 
   -- Install the key filter
   events.connect(events.KEYPRESS, key_handler_common, 1)
+
+  -- We use a modfied version
+  textadept.editing.AUTOINDENT = false
+
+  -- Adapted from textadept's modules/textadept/editing.lua
+  events.connect(events.CHAR_ADDED, function(char)
+    if char ~= 10 then
+        -- disable virtual space
+        buffer.virtual_space_options = buffer.VS_NONE
+        return
+     end
+    local line = buffer:line_from_position(buffer.current_pos)
+    local i = line - 1
+    while i >= 0 and buffer:get_line(i):find('^[\r\n]+$') do i = i - 1 end
+    if i >= 0 then
+      buffer.virtual_space_options = buffer.VS_USERACCESSIBLE
+      for j=1,buffer.line_indentation[i] do
+          buffer:char_right()
+      end
+
+--    buffer.line_indentation[line] = buffer.line_indentation[i]
+--    buffer:vc_home()
+    end
+  end)
 end
 
 -- Undo the installation.  Assumes that it's properly paired with
