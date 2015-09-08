@@ -106,9 +106,8 @@ function key_handler_common(code, shift, ctrl, alt, meta)
         -- Call this instead
         state.pending_keyhandler(sym)
         state.pending_keyhandler = nil
-	return true
+        return true
     end
-    buffer.virtual_space_options = buffer.VS_NONE
 end
 
 -- Various state we modify
@@ -1457,6 +1456,9 @@ function M.install_keymap()
 --    buffer:vc_home()
     end
   end)
+  events.connect(events.KEYPRESS, function()
+    buffer.virtual_space_options = buffer.VS_NONE
+  end, 1)
 end
 
 -- Undo the installation.  Assumes that it's properly paired with
