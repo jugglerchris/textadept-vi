@@ -5,8 +5,11 @@ source = {
    tag = "v0.1"
 }
 description = {
-   summary = "Regular expression search support for Textadept",
-   detailed = "Regular expression search support for Textadept",
+   summary = "Regular expression/regexp implementation using LPeg.",
+   detailed = [[An implementation of regular expressions using LPeg, based on the paper at:
+http://www.inf.puc-rio.br/~roberto/docs/ry10-01.pdf
+]] ,
+
    homepage = "http://github.com/jugglerchris/ta-regex",
    license = "MIT"
 }
