@@ -37,6 +37,15 @@ natively in Textadept (which eg don't include "|").
 Installation
 ------------
 To install Pegex standalone, use "luarocks install pegex".
+Example usage:
+
+```lua
+local pegex = require('pegex')
+pat = pegex.compile('(?:foo|bar)+')
+result = pat:match("asdfoo")  -- returns { _start=4, _end=6}
+result = pat:match("asdf")    -- returns nil (not found)
+```
+See the tests for examples using captures and backreferences.
 
 To use with Textadept to replace the default search method:
 

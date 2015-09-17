@@ -1,8 +1,8 @@
 local test = require'test'
 local assertEq = test.assertEq
 local function log(x) test.log(tostring(x) .. "\n") end
-local regex = require('regex')
-local compile = regex.compile
+local pegex = require('pegex')
+local compile = pegex.compile
 
 pat = compile('foo')
 assertEq(pat.numgroups, 0)

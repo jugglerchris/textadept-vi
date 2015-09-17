@@ -2,7 +2,7 @@
 -- See LICENSE for details (MIT license).
 local M = {}
 
-local ta_regex = require 'ta-regex.regex'
+local ta_regex = require 'ta-regex.pegex'
 
 -- Replace textadept's events.FIND handler with one implementing better regex.
 
