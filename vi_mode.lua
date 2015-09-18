@@ -865,27 +865,40 @@ end
 --       mode and return.  The system will handle entering insert mode and
 --       being able to repeat, as well as undo.
 local function with_motion_insert(actions, handler)
-    wrapped_handler = function(movdesc)
-       return function()
-           local cmdrpt = get_numarg()
-           local regarg = get_regarg()
-           local movement = movdesc_get_range_ex(movdesc, nil, cmdrpt)
-           begin_undo()
-           handler(movement)
-           
-           insert_start_edit()
-           enter_mode(mode_insert)
-           mode_command.restart = function()
-               local text = state.last_insert_string
+    local function apply_action(movdesc)
+       local cmdrpt = get_numarg()
+       local regarg = get_regarg()
+       local movement = movdesc_get_range_ex(movdesc, nil, cmdrpt)
+       begin_undo()
+       handler(movement)
+
+       insert_start_edit()
+       enter_mode(mode_insert)
+       mode_command.restart = function()
+           local text = state.last_insert_string
+           end_undo()
+           state.last_action = function(new_rpt)
+               local rpt = (new_rpt and new_rpt > 0) and new_rpt or cmdrpt
+               local movement = movdesc_get_range_ex(movdesc, rpt, 1)
+               begin_undo()
+               handler(movement)
+               buffer:add_text(text)
                end_undo()
-               state.last_action = function(new_rpt)
-                   local rpt = (new_rpt and new_rpt > 0) and new_rpt or cmdrpt
-                   local movement = movdesc_get_range_ex(movdesc, rpt, 1)
-                   begin_undo()
-                   handler(movement)
-                   buffer:add_text(text)
-                   end_undo()
-               end
+           end
+       end
+    end
+    wrapped_handler = function(movdesc)
+       if movdesc[1] == MOV_LATER then
+         -- Special case - we don't get the action until later.
+         return function()
+            local mov_f = movdesc[2]
+            mov_f(function (mdesc)
+              apply_action(vi_motion.movf_to_self(mdesc))
+            end)
+         end
+       else
+           return function()
+             apply_action(movdesc)
            end
        end
     end
