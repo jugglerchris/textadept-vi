@@ -12,7 +12,9 @@ test = require 'test'
 
 vi_mode = require 'vi_mode'
 
-test.queue(function()
+-- Get the list of tests to run
+local testfiles = {}
+do
     local iter, dir_obj=lfs.dir(_USERHOME.."/../tests/")
     while true do
         local name = iter(dir_obj)
@@ -20,8 +22,15 @@ test.queue(function()
         local basename= name:match("(.+)%.lua$") 
 --        test.log('name='..name..', base='..tostring(basename) .. "\n")
         if basename ~= nil then
-            test.run(basename)
+            testfiles[#testfiles+1] = basename
         end
+    end
+    table.sort(testfiles)
+end
+
+test.queue(function()
+    for _,basename in ipairs(testfiles) do
+        test.run(basename)
     end
 end)
 
