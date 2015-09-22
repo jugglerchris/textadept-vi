@@ -524,13 +524,19 @@ M.ex_commands = {
         command_to_buffer(cmd, ".", "*grep*", choose_errors_from_buf)
     end,
     
-    ['!'] = function(args)
+    ['!'] = function(args, range)
         local command = {}
         for i=2,#args do
             command[#command+1] = args[i]
         end
-        ui.print("Running: " .. table.concat(command, " "))
-        command_to_buffer(command, "./", "*shell*")
+        if range == nil then
+            ui.print("Running: " .. table.concat(command, " "))
+            command_to_buffer(command, "./", "*shell*")
+        else
+            buffer:set_selection(buffer:position_from_line(range[2]),
+                                 buffer:position_from_line(range[1]-1))
+            textadept.editing.filter_through(table.concat(command, " "))
+        end
     end,
     
     cb = function(args)
