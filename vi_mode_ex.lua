@@ -131,8 +131,11 @@ local addr_adder = (P"+" * ex_addr_num)
 local addr_subber = (P"-" * ex_addr_num) / neg
 local ex_addr = Cf(ex_addr_base * (addr_adder + addr_subber)^0, add) + Cf((P(0) / _curline) * (addr_adder + addr_subber)^1, add)
 
+-- A range of '%' means the whole file
+local ex_range_pct = P'%' / function() return _mk_range(1, _lastline()) end
+
 -- And a range returns a pair of line numbers { start, end }
-local ex_range = ((((ex_addr + P(0)/_curline) * "," * ex_addr)/_mk_range) + (ex_addr / _mk_range_single) + (P(0) * Cc(nil)))
+local ex_range = ((((ex_addr + P(0)/_curline) * "," * ex_addr)/_mk_range) + (ex_addr / _mk_range_single) + ex_range_pct + (P(0) * Cc(nil)))
 
 local ex_ws = S" \t"
 
