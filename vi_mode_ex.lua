@@ -210,8 +210,9 @@ local repl_chars = C((P(1) - S'&\\')^1)
 -- Relies on the table of groups being the first extra parameter to lpeg.match.
 local repl_ref = P"\\" * (C(R"09") * Carg(1)) / function(ref, groups) return groups[ref] or "" end
 local amp_ref = P"&" * Carg(1) /function(groups) return groups["&"] end
+local repl_special = P"\\n" * Cc('\n')
 local repl_quoted = P"\\" * C(P(1))
-local repl_pat = Cf(Cc("")*((repl_chars + repl_ref + amp_ref + repl_quoted) ^ 0), function(a,b) return a..b end)
+local repl_pat = Cf(Cc("")*((repl_chars + repl_ref + amp_ref + repl_special + repl_quoted) ^ 0), function(a,b) return a..b end)
 
 local function command_substitute(args, range)
     local searchpat = args[2]
@@ -239,8 +240,11 @@ local function command_substitute(args, range)
     end
     
     buffer:begin_undo_action()
-    for lineno = range[1], range[2] do
+    local lineno = range[1]  -- Start or current line
+    local lastline = range[2] -- Finish line (may change if newlines inserted)
+    while lineno <= lastline do
         local line = buffer:get_line(lineno)
+        line = line:gsub("\n", "") -- Remove any newline from the end.
         local m = pat:match(line)
         while m do
             local groups = {}
@@ -252,15 +256,8 @@ local function command_substitute(args, range)
             end
             groups["&"] = line:sub(m._start, m._end)
             local repl = repl_pat:match(replace, 1, groups)
---            local repl = replace:gsub("\\(%d)", function(ref)
---                      return groups[ref] or "<<<"..ref..":"..tostring(groups[ref])..">>>"
---                   end)
             line = line:sub(1,m._start-1) .. repl .. line:sub(m._end+1)
-            -- Do the replace
-            local linepos = buffer:position_from_line(lineno)
-            buffer:set_selection(linepos+buffer:line_length(lineno), linepos)
-            buffer:replace_sel(line)
-            
+
             -- Keep looking?
             if flags.g then
                 m = pat:match(line, m._start + #repl)
@@ -268,6 +265,15 @@ local function command_substitute(args, range)
                 break
             end
         end
+        -- Do the replace
+        local linepos = buffer:position_from_line(lineno)
+        local linelength = buffer.line_end_position[lineno] - buffer.position_from_line(lineno)
+        buffer:set_selection(linepos+linelength, linepos)
+        buffer:replace_sel(line)
+        local _, nlcount = line:gsub("\n", "")
+        -- Account for any inserted newlines.
+        lineno = lineno + 1 + nlcount
+        lastline = lastline + nlcount
     end
     buffer:end_undo_action()
 end
