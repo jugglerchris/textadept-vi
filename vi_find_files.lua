@@ -2,7 +2,7 @@
 local M = {}
 
 local lfs = _G.lfs
-local vi_regex = require('regex.regex')
+local vi_regex = require('regex.pegex')
 
 -- Escape a Lua pattern to make it an exact match.
 function M.luapat_escape(s)

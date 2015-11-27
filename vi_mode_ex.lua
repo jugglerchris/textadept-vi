@@ -3,7 +3,7 @@
 local M = {}
 local vi_tags = require('vi_tags')
 local vi_quickfix = require('vi_quickfix')
-local vi_regex = require('regex.regex')
+local vi_regex = require('regex.pegex')
 M.use_vi_entry = true
 M.use_vi_entry_ce = true
 local vi_entry
