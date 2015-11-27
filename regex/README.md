@@ -1,7 +1,10 @@
-ta-regex
-========
+ta-regex/Pegex
+==============
 
-Regular expression search support for Textadept
+Pegex is a regular expression (regexp) implementation built on top of LPeg.
+
+The original motivation was to add regular expression search support for
+the Textadept editor; however the underlying engine is generic.
 
 This module replaces the default text search with one which uses regular
 expressions.
@@ -33,6 +36,19 @@ natively in Textadept (which eg don't include "|").
 
 Installation
 ------------
+To install Pegex standalone, use "luarocks install pegex".
+Example usage:
+
+```lua
+local pegex = require('pegex')
+pat = pegex.compile('(?:foo|bar)+')
+result = pat:match("asdfoo")  -- returns { _start=4, _end=6}
+result = pat:match("asdf")    -- returns nil (not found)
+```
+See the tests for examples using captures and backreferences.
+
+To use with Textadept to replace the default search method:
+
 Add the ta-regex directory to ~/.textadept/modules/
 
 Add the following line to ~/.textadept/init.lua
