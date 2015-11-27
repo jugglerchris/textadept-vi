@@ -63,6 +63,11 @@ What doesn't
 Everything else, and some of the above.  I mainly use the curses version
 under Linux (modified to support split views; see below).
 
+Differences from vim (other than unimplemented features)
+--------------------------------------------------------
+* In replacement strings in :s/foo/bar/, \n stands for a newline instead of
+a NUL character.
+
 Dependencies
 ------------
 Besides Textadept (currently tested on 7.8):

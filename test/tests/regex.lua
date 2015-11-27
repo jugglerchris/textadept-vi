@@ -26,6 +26,15 @@ assertEq(pat:match('jjfoo'), nil)
 assertEq(pat:match('foo'), nil)
 assertEq(pat:match('foo then foo'), nil)
 
+local pat = compile('foo$')
+
+assertEq(pat:match('abcfoo'), { _start=4, _end=6 })
+assertEq(pat:match('jfoo'), { _start=2, _end=4 })
+assertEq(pat:match('jjfoo$'), nil)
+assertEq(pat:match('foo'), { _start=1, _end=3 })
+assertEq(pat:match('foo then foo'), { _start=10, _end=12 })
+assertEq(pat:match('ouch then foo then bar'), nil)
+
 local pat = compile('a.?b')
 
 assertEq(pat:match('abooo'), { _start=1,_end=2 })

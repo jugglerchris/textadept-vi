@@ -103,7 +103,7 @@ local function make_char(c)
     return function() return { [0]="char", c } end
 end
 
-local special = S"()\\?*+|."
+local special = S"()\\?*+|.^$"
 local any = P"." * Cc({[0] = "."})
 
 -- Perl-style character classes
@@ -259,15 +259,19 @@ local function re_to_peg(retab, k, patternProps)
     if t == "pattern" then
         assert(#retab == 1)
         local pat = re_to_peg(retab[1], k, patternProps)
+        -- If the pattern is anchored at the end, make it fail to match
+        -- if there's another byte.  This must be done *before* wrapping
+        -- with the start/end markers, as once they've matched it's too late
+        -- to match the next item.
+        if retab.anchorend then
+            -- Disallow matching anything afterwards.
+            pat = pat * (-P(1))
+        end
         -- Add match start/end markers
         pat = _start * pat * _end
         if not retab.anchorstart then
             -- Match the pattern, or a character and try again.
             pat = P{pat + 1*V(1)}
-        end
-        -- TODO: implement $
-        if retab.anchorend then
-            error("$ not implemented")
         end
         return pat
     elseif t == "group" then
