@@ -2,7 +2,7 @@
 -- See LICENSE for details (MIT license).
 local M = {}
 
-local ta_regex = require 'ta-regex.regex'
+local ta_regex = require 'ta-regex.pegex'
 
 -- Replace textadept's events.FIND handler with one implementing better regex.
 
@@ -51,7 +51,11 @@ function M.find(regex, forward)
     if forward then
         local startpos = buffer.current_pos + 1
         local endpos = buffer.length
-    
+
+        -- If we're at the end of the buffer, then start from
+        -- the beginning.
+        if startpos >= endpos then startpos = 0 end
+
         m = search(startpos, endpos) or search(0, endpos)
     else
         local startpos = 0

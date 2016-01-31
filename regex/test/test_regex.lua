@@ -1,7 +1,8 @@
+local test = require'test'
 local assertEq = test.assertEq
 local function log(x) test.log(tostring(x) .. "\n") end
-local vi_regex = require('regex.pegex')
-local compile = vi_regex.compile
+local pegex = require('pegex')
+local compile = pegex.compile
 
 local pat = compile('fo+[ab]ar')
 
@@ -25,15 +26,6 @@ assertEq(pat:match('jfoo'), { _start=1, _end=4 })
 assertEq(pat:match('jjfoo'), nil)
 assertEq(pat:match('foo'), nil)
 assertEq(pat:match('foo then foo'), nil)
-
-local pat = compile('foo$')
-
-assertEq(pat:match('abcfoo'), { _start=4, _end=6 })
-assertEq(pat:match('jfoo'), { _start=2, _end=4 })
-assertEq(pat:match('jjfoo$'), nil)
-assertEq(pat:match('foo'), { _start=1, _end=3 })
-assertEq(pat:match('foo then foo'), { _start=10, _end=12 })
-assertEq(pat:match('ouch then foo then bar'), nil)
 
 local pat = compile('a.?b')
 

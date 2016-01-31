@@ -3,7 +3,7 @@
 local M = {}
 local vi_tags = require('vi_tags')
 local vi_quickfix = require('vi_quickfix')
-local vi_regex = require('regex.regex')
+local vi_regex = require('regex.pegex')
 M.use_vi_entry = true
 M.use_vi_entry_ce = true
 local vi_entry
@@ -131,8 +131,11 @@ local addr_adder = (P"+" * ex_addr_num)
 local addr_subber = (P"-" * ex_addr_num) / neg
 local ex_addr = Cf(ex_addr_base * (addr_adder + addr_subber)^0, add) + Cf((P(0) / _curline) * (addr_adder + addr_subber)^1, add)
 
+-- A range of '%' means the whole file
+local ex_range_pct = P'%' / function() return _mk_range(1, _lastline()) end
+
 -- And a range returns a pair of line numbers { start, end }
-local ex_range = ((((ex_addr + P(0)/_curline) * "," * ex_addr)/_mk_range) + (ex_addr / _mk_range_single) + (P(0) * Cc(nil)))
+local ex_range = ((((ex_addr + P(0)/_curline) * "," * ex_addr)/_mk_range) + (ex_addr / _mk_range_single) + ex_range_pct + (P(0) * Cc(nil)))
 
 local ex_ws = S" \t"
 
@@ -207,8 +210,9 @@ local repl_chars = C((P(1) - S'&\\')^1)
 -- Relies on the table of groups being the first extra parameter to lpeg.match.
 local repl_ref = P"\\" * (C(R"09") * Carg(1)) / function(ref, groups) return groups[ref] or "" end
 local amp_ref = P"&" * Carg(1) /function(groups) return groups["&"] end
+local repl_special = P"\\n" * Cc('\n')
 local repl_quoted = P"\\" * C(P(1))
-local repl_pat = Cf(Cc("")*((repl_chars + repl_ref + amp_ref + repl_quoted) ^ 0), function(a,b) return a..b end)
+local repl_pat = Cf(Cc("")*((repl_chars + repl_ref + amp_ref + repl_special + repl_quoted) ^ 0), function(a,b) return a..b end)
 
 local function command_substitute(args, range)
     local searchpat = args[2]
@@ -236,8 +240,11 @@ local function command_substitute(args, range)
     end
     
     buffer:begin_undo_action()
-    for lineno = range[1], range[2] do
+    local lineno = range[1]  -- Start or current line
+    local lastline = range[2] -- Finish line (may change if newlines inserted)
+    while lineno <= lastline do
         local line = buffer:get_line(lineno)
+        line = line:gsub("\n", "") -- Remove any newline from the end.
         local m = pat:match(line)
         while m do
             local groups = {}
@@ -249,15 +256,8 @@ local function command_substitute(args, range)
             end
             groups["&"] = line:sub(m._start, m._end)
             local repl = repl_pat:match(replace, 1, groups)
---            local repl = replace:gsub("\\(%d)", function(ref)
---                      return groups[ref] or "<<<"..ref..":"..tostring(groups[ref])..">>>"
---                   end)
             line = line:sub(1,m._start-1) .. repl .. line:sub(m._end+1)
-            -- Do the replace
-            local linepos = buffer:position_from_line(lineno)
-            buffer:set_selection(linepos+buffer:line_length(lineno), linepos)
-            buffer:replace_sel(line)
-            
+
             -- Keep looking?
             if flags.g then
                 m = pat:match(line, m._start + #repl)
@@ -265,6 +265,15 @@ local function command_substitute(args, range)
                 break
             end
         end
+        -- Do the replace
+        local linepos = buffer:position_from_line(lineno)
+        local linelength = buffer.line_end_position[lineno] - buffer.position_from_line(lineno)
+        buffer:set_selection(linepos+linelength, linepos)
+        buffer:replace_sel(line)
+        local _, nlcount = line:gsub("\n", "")
+        -- Account for any inserted newlines.
+        lineno = lineno + 1 + nlcount
+        lastline = lastline + nlcount
     end
     buffer:end_undo_action()
 end
@@ -524,13 +533,19 @@ M.ex_commands = {
         command_to_buffer(cmd, ".", "*grep*", choose_errors_from_buf)
     end,
     
-    ['!'] = function(args)
+    ['!'] = function(args, range)
         local command = {}
         for i=2,#args do
             command[#command+1] = args[i]
         end
-        ui.print("Running: " .. table.concat(command, " "))
-        command_to_buffer(command, "./", "*shell*")
+        if range == nil then
+            ui.print("Running: " .. table.concat(command, " "))
+            command_to_buffer(command, "./", "*shell*")
+        else
+            buffer:set_selection(buffer:position_from_line(range[2]),
+                                 buffer:position_from_line(range[1]-1))
+            textadept.editing.filter_through(table.concat(command, " "))
+        end
     end,
     
     cb = function(args)

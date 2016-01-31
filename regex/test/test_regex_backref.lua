@@ -1,7 +1,8 @@
+local test = require'test'
 local assertEq = test.assertEq
 local function log(x) test.log(tostring(x) .. "\n") end
-local vi_regex = require('regex.pegex')
-local compile = vi_regex.compile
+local pegex = require('pegex')
+local compile = pegex.compile
 
 local pat
 

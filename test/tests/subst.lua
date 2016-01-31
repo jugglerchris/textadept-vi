@@ -54,3 +54,28 @@ assertEq(buffer:get_text(), [[
 one{ two three four }five
 hey{ bee cee dee ee }eff
 some{ miscellaneous }text]])
+
+ex('1,$s/[^ ]*$/___/')
+assertEq(buffer:get_text(), [[
+one{ two three four ___
+hey{ bee cee dee ee ___
+some{ miscellaneous ___]])
+key('u')
+
+-- Note the \\ is escaped in the string.
+ex('1,$s/ /\\n/g')
+assertEq(buffer:get_text(), [[
+one{
+two
+three
+four
+}five
+hey{
+bee
+cee
+dee
+ee
+}eff
+some{
+miscellaneous
+}text]])

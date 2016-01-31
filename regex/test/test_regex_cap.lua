@@ -1,7 +1,8 @@
+local test = require'test'
 local assertEq = test.assertEq
 local function log(x) test.log(tostring(x) .. "\n") end
-local vi_regex = require('regex.pegex')
-local compile = vi_regex.compile
+local pegex = require('pegex')
+local compile = pegex.compile
 
 local pat
 
@@ -12,7 +13,7 @@ assertEq(pat:match("axyzbb"), {_start=1,_end=6, groups={{2,5}},})
 
 pat = compile('a(foo|bar)*b')
 
---log(test.tostring(vi_regex.parse('a(foo|bar)*b'), ''))
+--log(test.tostring(pegex.parse('a(foo|bar)*b'), ''))
 
 assertEq(pat:match("ab"), {_start=1,_end=2,})
 assertEq(pat:match("afoob"), {_start=1,_end=5, groups={{2,4}},})

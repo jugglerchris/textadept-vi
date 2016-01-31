@@ -106,7 +106,7 @@ function key_handler_common(code, shift, ctrl, alt, meta)
         -- Call this instead
         state.pending_keyhandler(sym)
         state.pending_keyhandler = nil
-	return true
+        return true
     end
 end
 
@@ -1445,6 +1445,7 @@ function M.install_keymap()
 
   -- Install the key filter
   events.connect(events.KEYPRESS, key_handler_common, 1)
+
 end
 
 -- Undo the installation.  Assumes that it's properly paired with
