@@ -914,7 +914,7 @@ local function self_trim_right_space(movdesc)
         while pos2 > pos1 and buffer:text_range(pos2-1, pos2):match("%s") do
             pos2 = pos2 - 1
         end
-        if pos2 > pos1 then
+        if pos2 > pos1 and buffer:text_range(pos2, pos2+1):match("%s") then
             -- And back one to step on to the last character of the word.
             pos2 = pos2 - 1
         end
