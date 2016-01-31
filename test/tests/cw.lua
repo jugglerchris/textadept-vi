@@ -26,3 +26,6 @@ assertEq(buffer:get_cur_line(), "hey bee cee dee ee X\n")
 -- Try at the end of a line.
 test.key('u', '$', 'c', 'w', 'Y', 'escape')
 assertEq(buffer:get_cur_line(), "hey bee cee dee ee efY\n")
+-- The last word of the last line (with no newline, as in words.txt)
+test.key('u', 'G', '$', 'b', 'c', 'w', 'a', 'b', 'escape')
+assertEq(buffer:get_cur_line(), "some miscellaneous ab")
