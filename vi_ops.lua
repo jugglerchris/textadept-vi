@@ -44,7 +44,7 @@ function M.cut(movement, register)
             end
         end
     end
-    buffer:set_sel(start, end_)
+    buffer:set_selection(start, end_)
     local text = buffer:get_sel_text()
     buffer:cut()
     state.registers[register or '"'] = {text=text, line=linewise}
