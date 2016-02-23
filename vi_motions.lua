@@ -174,6 +174,68 @@ function M.sel_line(numlines)
   return buffer.current_pos, buffer.line_end_position[lineno + numlines - 1]
 end
 
+-- Helpers for classifying characters for words:
+-- A word is a sequence of (_,digits,letters) or (other non-blanks).
+local function w_isblank(c)
+  return c:match("%s")
+end
+local function w_isword(c)
+  return c:match("[%a%d_]")
+end
+local function w_isother(c)
+  return c:match("[^%s%a%d_]")
+end
+
+function M.sel_word(numwords)
+  if not numwords or numwords < 1 then numwords = 1 end
+
+  local buflen = buffer.length
+  local pos = buffer.current_pos
+
+  -- Simple case: off the end of the buffer.
+  if pos >= buflen then
+      return buflen, buflen
+  end
+
+  -- Now find the current character.
+  local nextpos = buffer:position_after(pos)
+  local c = buffer:text_range(pos, nextpos)
+
+  if c:match("%s") then
+    -- If on whitespace, behave just like 'w'.
+    for i=1,numwords do
+      M.word_right()
+      return pos, buffer.current_pos
+    end
+  else
+    -- Otherwise, behave as "change word".
+    local p = pos
+    for i=1,numwords do
+        -- Skip over whitespace
+        while p < buflen and w_isblank(c) do
+          p = nextpos
+          nextpos = buffer:position_after(nextpos)
+          c = buffer:text_range(p, nextpos)
+        end
+        -- And now find the end of the word or nonblank-sequence
+        if p < buflen and w_isword(c) then
+          while p < buflen and w_isword(c) do
+            p = nextpos
+            nextpos = buffer:position_after(nextpos)
+            c = buffer:text_range(p, nextpos)
+          end
+        else
+          while p < buflen and w_isother(c) do
+            p = nextpos
+            nextpos = buffer:position_after(nextpos)
+            c = buffer:text_range(p, nextpos)
+          end
+        end
+    end
+    return pos, p
+  end
+end
+
 function M.goto_line(lineno)
     if lineno > 0 then
         -- Textadept does zero-based line numbers.
