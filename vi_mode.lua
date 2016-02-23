@@ -1297,8 +1297,8 @@ mode_command = {
             do_action(repeatable(function(reg) vi_paste(false, reg) end))
         end,
         -- edit commands
-	u = buffer.undo,
-	cr = buffer.redo,
+        u = buffer.undo,
+        cr = buffer.redo,
         ['.'] = function()
               -- Redo the last action, taking into account possible prefix arg.
               local rpt = get_numarg()
