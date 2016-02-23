@@ -29,3 +29,12 @@ assertEq(buffer:get_cur_line(), "hey bee cee dee ee efY\n")
 -- The last word of the last line (with no newline, as in words.txt)
 test.key('u', 'G', '$', 'b', 'c', 'w', 'a', 'b', 'escape')
 assertEq(buffer:get_cur_line(), "some miscellaneous ab")
+
+-- Some other cases
+test.open('punc1.txt')
+test.key('c', 'w', '_', 'escape')
+assertEq(buffer:get_cur_line(), "_.bar.baz")
+test.key('u', '2', 'c', 'w', '_', 'escape')
+assertEq(buffer:get_cur_line(), "_bar.baz")
+test.key('u', ',', '2', 'w', '=', 'escape')
+assertEq(buffer:get_cur_line(), "=bar.baz")
