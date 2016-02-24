@@ -21,6 +21,7 @@ M.state = {
 local state = M.state
 
 local function do_search(backwards)
+    if state.pattern == "" then return end
     ui.statusbar_text = "Search: "..state.pattern
     local saved_pos = buffer.current_pos
     buffer:search_anchor()
@@ -135,16 +136,26 @@ keys.vi_search_command = {
             end,
     cv = {
         ['\t'] = function()
-            local text = ui_ce.entry_text
-            ui_ce.enter_mode(nil)
-            ui_ce.entry_text = text .. "\t"
-            ui_ce.enter_mode("vi_search_command")
+            return keys.vi_search_command['\t']()
         end,
     },
+    ['\t'] = function() -- insert the string '\t' instead of tab
+        -- FIXME: insert at correct position ???
+        local text = ui.command_entry:get_text()
+        --ui_ce.enter_mode(nil)
+        ui.command_entry:set_text(text .. "\\t")
+        --ui_ce.enter_mode("vi_search_command")
+    end,
     ['esc'] = function()
               ui_ce.enter_mode(nil)  -- Exit command_entry mode
               keys.MODE = "vi_command"
           end,
+    ['\b'] = function()
+        if ui.command_entry:get_text() == "" then
+            return keys.vi_search_command['esc']() -- exit
+        end
+        return false -- propagate the key
+     end,
 }
 
 local function start_common(exitfunc)
@@ -179,6 +190,7 @@ local function search_word_common(backwards)
     local pos = buffer.current_pos
     local s, e = buffer:word_start_position(pos, true), buffer:word_end_position(pos)
     local word = buffer:text_range(s, e)
+    if word == "" then return end
     state.pattern = '\\<' .. word .. '\\>'
     state.backwards = backwards
     if backwards then

@@ -327,7 +327,7 @@ end
 -- buftype: the buffer type (eg "*make*"), which will be created or cleared.
 -- when_finished: a function called with the buffer when the process
 --                exits.
-function command_to_buffer(command, workdir, buftype, when_finished)
+function command_to_buffer(command, workdir, buftype, when_finished, read_only)
     local msgbuf = nil
     for n,buf in ipairs(_BUFFERS) do
         if buf._type == buftype then
@@ -371,6 +371,9 @@ function command_to_buffer(command, workdir, buftype, when_finished)
     local function endproc()
         msgbuf:append_text('Finished:' .. table.concat(command, " "))
         msgbuf:set_save_point()
+        if read_only then
+            msgbuf.read_only = true
+        end
         if when_finished ~= nil then
             when_finished(msgbuf)
         end
@@ -408,22 +411,44 @@ M.ex_commands = {
              ex_error("Too many arguments to :"..args[1])
          end
     end,
-    wq = function(args)
+    wn = function(args)
+        if #args ~= 1 then ex_error("Too many arguments to :"..args[1]); return end
         M.ex_commands.w(args)
-        M.ex_commands.q()
+        M.ex_commands.n(args)
+    end,
+    wN = function(args)
+        if #args ~= 1 then ex_error("Too many arguments to :"..args[1]); return end
+        M.ex_commands.w(args)
+        M.ex_commands.N(args)
+    end,
+    wq = function(args)
+        if #args ~= 1 then ex_error("Too many arguments to :"..args[1]); return end
+        M.ex_commands.w(args)
+        M.ex_commands.q(args)
     end,
     x = function(args)
+        if #args ~= 1 then ex_error("Too many arguments to :"..args[1]); return end
         if buffer.modify then
             M.ex_commands.w(args)
         end
-        M.ex_commands.q()
+        M.ex_commands.q(args)
     end,
     n = function(args)
-         view:goto_buffer(1, true)
+        if #args ~= 1 then ex_error("Too many arguments to :"..args[1]); return end
+        view:goto_buffer(1, true)
     end,
-    p = function(args)
-         view:goto_buffer(-1, true)
+    ['ne']    = function(args) M.ex_commands.n(args) end,
+    ['nex']   = function(args) M.ex_commands.n(args) end,
+    ['next']  = function(args) M.ex_commands.n(args) end,
+    ['n!']    = function(args) M.ex_commands.n(args) end,
+    ['ne!']   = function(args) M.ex_commands.n(args) end,
+    ['nex!']  = function(args) M.ex_commands.n(args) end,
+    ['next!'] = function(args) M.ex_commands.n(args) end,
+    N = function(args)
+        if #args ~= 1 then ex_error("Too many arguments to :"..args[1]); return end
+        view:goto_buffer(-1, true)
     end,
+    ['N!'] = function(args) M.ex_commands.N(args) end,
     b = function(args)
         if #args > 1 then
             local bufname = args[2]
@@ -457,6 +482,11 @@ M.ex_commands = {
             -- opposite and close this one.
             vi_views.close_siblings_of(view)
         end
+    end,
+    ['q!'] = function(args)
+        -- force quit
+        events.connect(events.QUIT, function() return false end, 1)
+        quit()
     end,
     only = function(args)
         -- Quit
@@ -506,7 +536,7 @@ M.ex_commands = {
         for _,b in ipairs(_BUFFERS) do
             b:annotation_clear_all()
         end
-        command_to_buffer(command, "./", "*make*", choose_errors_annotated_from_buf)
+        command_to_buffer(command, "./", "*make*", choose_errors_annotated_from_buf, true)
     end,
 
     -- Search files

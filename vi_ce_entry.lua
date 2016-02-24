@@ -208,6 +208,10 @@ local ve_keys = {
         local buffer = ui.command_entry
         local buf = buffer._textredux
         local t = buf.data.text
+        if t == "" then -- exit
+            do_enter()
+            return
+        end
         local pos = buffer.current_pos
         if pos >= 1 then
             t = t:sub(1, pos-1) .. t:sub(pos+1, -1)
