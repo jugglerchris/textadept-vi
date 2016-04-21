@@ -733,6 +733,27 @@ local function complete_buffers(pos, text)
     end
 end
 
+local function matching_commands(text)
+    local commands = {}
+    local tlen = #text
+
+    for k,_ in pairs(M.ex_commands) do
+        if k:sub(1, tlen) == text then
+          commands[#commands+1] = k
+        end
+    end
+    return commands
+end
+
+local function complete_commands(pos, text)
+    local commands = matching_commands(text)
+    if #buffers == 1 then
+        ui_ce.entry_text = string.sub(ui_ce.entry_text, 1, pos-1) .. buffers[1]
+    else
+        ui_ce.show_completions(commands)
+    end
+end
+
 local function complete_files(pos, text)
     local files = get_matching_files(text)
     if #files == 0 then
@@ -800,7 +821,7 @@ keys.vi_ex_command = {
         if cmd and M.completions[cmd] then
             debugwrap(M.completions[cmd])(lastpos, lastword)
         else
-            -- complete commands here
+            debugwrap(complete_commands(1, lastword))
         end
     end,
     up = function ()
@@ -826,6 +847,8 @@ keys.vi_ex_command = {
 local function do_complete(word, cmd)
     if cmd and M.completions_word[cmd] then
         return M.completions_word[cmd](word)
+    elseif cmd == word then
+        return matching_commands(cmd)
     else
         return {}
     end
