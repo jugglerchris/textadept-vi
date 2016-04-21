@@ -643,6 +643,11 @@ M.ex_commands = {
         end
     end,
     s = command_substitute,
+
+    -- Some commands for textadept functionality.
+    compile = textadept.run.compile,
+    build = textadept.run.build,
+    run = textadept.run.run,
 }
 
 local function errhandler(msg)
