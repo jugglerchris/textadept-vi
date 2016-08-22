@@ -1227,6 +1227,7 @@ mode_command = {
             }, vi_ops.wrap),
             s = surround_keys,
             f = find_filename_at_pos,
+            g = { function() buffer.goto_line(0) end }
         },
 
         ['"'] = register_keys,
