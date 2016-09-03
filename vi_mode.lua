@@ -1338,7 +1338,7 @@ mode_command = {
 
     -- Views and buffers
     cw = {
-        cw = { ui.goto_view, 1 },  -- cycle between views
+        cw = function() ui.goto_view(1) end,  -- cycle between views
         ['+'] = function() vi_views.grow_view(view, get_numarg() or 1) end,
         ['-'] = function() vi_views.grow_view(view, -(get_numarg() or 1)) end,
     },
