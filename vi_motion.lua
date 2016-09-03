@@ -100,6 +100,19 @@ local motions = {
   G = { MOV_LINE, vi_motions.goto_line, -1},
   ["'"] = wrap_table(registers, restore_mark),
   ['%'] = { MOV_INC, vi_motions.match_brace, 1 },
+  -- these are included here so that they work with a repeat count:
+  ['left']    = { MOV_EXC,  r(vi_motions.char_left), 1 },
+  ['kpleft']  = { MOV_EXC,  r(vi_motions.char_left), 1 },
+  ['right']   = { MOV_EXC,  r(vi_motions.char_right), 1 },
+  ['kpright'] = { MOV_EXC,  r(vi_motions.char_right), 1 },
+  ['up']      = { MOV_LINE, r(vi_motions.line_up), 1 },
+  ['kpup']    = { MOV_LINE, r(vi_motions.line_up), 1 },
+  ['down']    = { MOV_LINE, r(vi_motions.line_down), 1 },
+  ['kpdown']  = { MOV_LINE, r(vi_motions.line_down), 1 },
+  ['\b']      = { MOV_EXC,  r(vi_motions.char_left), 1 },  -- TODO COMPAT: vim moves to prev line at BOL
+  [' ']       = { MOV_EXC,  r(vi_motions.char_right), 1 }, -- TODO COMPAT: vim moves to next line at EOL
+  -- TODO: pgdown, kppgdown, pgup, kppgup
+  -- TODO: del
   
   -- Search motions
   n = { MOV_EXC, r(vi_motions.search_next), 1 },

@@ -197,6 +197,7 @@ function update_status()
     local msg
 
     if mode == nil then return end
+    if M._saved_keys == nil then return end -- mfx
     
     if mode.name == COMMAND then
         msg = "(command) "
@@ -1451,6 +1452,9 @@ function M.restore_keymap()
 
   -- Remove our key handler
   events.disconnect(events.KEYPRESS, key_handler_common)
+  -- mfx TODO: disconnect other handlers like:
+  ---- events.connect(events.UPDATE_UI, update_status)
+  M._saved_keys = nil -- mfx
 end
 
 M.install_keymap()
