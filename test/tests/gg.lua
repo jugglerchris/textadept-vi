@@ -6,5 +6,5 @@ local assertEq = test.assertEq
 
 test.key('G')
 assertEq(lineno(), 100)
-test.key('gg')
+test.key('g', 'g')
 assertEq(lineno(), 0)
