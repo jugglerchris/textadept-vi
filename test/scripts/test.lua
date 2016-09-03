@@ -150,7 +150,7 @@ function M.run(testname)
     -- now actually close.
     for k, buf in ipairs(toclose) do
         -- convert back from buffer to index using _G._BUFFERS.
-        view:goto_buffer(_G._BUFFERS[buf])
+        view:goto_buffer(buf)
         buffer:set_save_point()  -- assert not dirty
         if not io.close_buffer(buf) then
             log('Error closing buffer ' .. tostring(buffer.filename))
