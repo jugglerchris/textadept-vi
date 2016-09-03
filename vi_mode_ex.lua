@@ -646,7 +646,15 @@ M.ex_commands = {
 
     -- Some commands for textadept functionality.
     compile = textadept.run.compile,
-    build = textadept.run.build,
+    build = function()
+        for _,buf in ipairs(_BUFFERS) do
+            if buf._type == _L['[Message Buffer]'] then
+                buf:clear_all()
+                break
+            end
+        end
+        textadept.run.build()
+    end,
     run = textadept.run.run,
 }
 
