@@ -247,6 +247,18 @@ function M.goto_line(lineno)
     end
 end
 
+-- Same a goto_line but with a different default.
+function M.goto_line_0(lineno)
+    if lineno > 0 then
+        -- Textadept does zero-based line numbers.
+        buffer.goto_line(lineno-1)
+    else
+        -- With no arg, or 0, go to last line.
+        buffer.goto_line(0)
+        buffer.home()
+    end
+end
+
 function M.match_brace()
    local orig_pos = buffer.current_pos
    -- Simple case: match on current character

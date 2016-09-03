@@ -1227,7 +1227,7 @@ mode_command = {
             }, vi_ops.wrap),
             s = surround_keys,
             f = find_filename_at_pos,
-            g = { function() buffer.goto_line(0) end }
+            g = motion2key(vi_motion.motions_g.g),
         },
 
         ['"'] = register_keys,

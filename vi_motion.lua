@@ -109,6 +109,10 @@ local motions = {
   ['/'] = { MOV_LATER, vi_motions.search_fwd, 1 },
   ['?'] = { MOV_LATER, vi_motions.search_back, 1 },
 }
+-- Some non-root motions (gg)
+M.motions_g = {
+    g = { MOV_LINE, vi_motions.goto_line_0, -1 },
+}
 local MOTION_ZERO = { MOV_EXC, vi_motions.line_start, 1 }
 local digits = {}
 for i=0,9 do
