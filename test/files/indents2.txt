@@ -1,6 +1,6 @@
 blah blah
   woo woo
-erg  -- trailing spaces
+erg  -- trailing spaces    
 sponge
 
 This is a sentence.
