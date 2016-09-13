@@ -5,7 +5,7 @@ local assertEq = test.assertEq
 local log = test.log
 
 -- Tests inspired by:
--- http://vim.wikia.com/wiki/Swapping_characters,_words_and_lines 
+-- http://vim.wikia.com/wiki/Swapping_characters,_words_and_lines
 test.key('w') -- go to second word
 
 test.keys('hdeep')

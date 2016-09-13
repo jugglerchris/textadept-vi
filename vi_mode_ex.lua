@@ -48,9 +48,9 @@ local ui_ce = ui.command_entry
 
 local function relpath(path)
     local curdir = lfs.abspath(lfs.currentdir())
-    
+
     local curlen = #curdir
-    
+
     if path:sub(1, curlen) == curdir then
         return path:sub(curlen+2)
     else
@@ -68,8 +68,8 @@ local function get_matching_files(text, doescape)
         end
         return { result }
     end
-    
-    return vi_find_files.matching_files(text, doescape) 
+
+    return vi_find_files.matching_files(text, doescape)
 end
 
 local do_debug = false
@@ -148,9 +148,9 @@ local function unquote_slash(s)
 end
 
 -- The s command
-local ex_cmd_s = C(P("s")) * P("/") * (ex_pattern/unquote_slash) * P("/") * 
+local ex_cmd_s = C(P("s")) * P("/") * (ex_pattern/unquote_slash) * P("/") *
                                    ((ex_quoted_slash ^ 0)/unquote_slash) * P("/") * C(R("az")^0)
-                                  
+
 -- Shell command: !ls
 -- Very basic word splitting - add quoting later.
 local ex_cmd_shell = C(P("!")) * (C((1 - ex_ws) ^ 1) * (ex_ws ^ 0)) ^ 1
@@ -220,11 +220,11 @@ local function command_substitute(args, range)
     local flagstring = args[4]
     local flags = {}
 --    cme_log('subst: pat=[['..searchpat..']], repl=[['..replace..']], flags=[['..flagstring..']]')
-    
+
     for i=1,#flagstring do
         flags[flagstring:sub(i,i)] = true
     end
-    
+
     if range == nil then
         local lineno = buffer:line_from_position(buffer.current_pos)
         range = { lineno, lineno }
@@ -232,13 +232,13 @@ local function command_substitute(args, range)
         -- convert from 1-based to 0-based line numbers
         range = { range[1]-1, range[2]-1 }
     end
-    
+
     local pat = vi_regex.compile(searchpat)
     if pat == nil then
         ex_error("Bad pattern.")
         return
     end
-    
+
     buffer:begin_undo_action()
     local lineno = range[1]  -- Start or current line
     local lastline = range[2] -- Finish line (may change if newlines inserted)
@@ -543,10 +543,10 @@ M.ex_commands = {
     grep = function(args)
         local pat = args[2]
         if not pat then return end
-        
+
         local cmd = {}
         local grepprg = vi_mode.state.variables.grepprg
-        
+
         if type(grepprg) == 'string' then
             cmd[#cmd+1] = grepprg
         else
@@ -562,7 +562,7 @@ M.ex_commands = {
 
         command_to_buffer(cmd, ".", "*grep*", choose_errors_from_buf)
     end,
-    
+
     ['!'] = function(args, range)
         local command = {}
         for i=2,#args do
@@ -577,7 +577,7 @@ M.ex_commands = {
             textadept.editing.filter_through(table.concat(command, " "))
         end
     end,
-    
+
     cb = function(args)
         choose_errors_from_buf(buffer)
     end,
@@ -850,13 +850,13 @@ M.completions_word = {
 -- Register our command_entry keybindings
 keys.vi_ex_command = {
     ['\n'] = function ()
-    	       local exit = state.exitfunc
-     	       state.exitfunc = nil
-	       return ui_ce.finish_mode(function(text)
+               local exit = state.exitfunc
+               state.exitfunc = nil
+               return ui_ce.finish_mode(function(text)
                                               handle_ex_command(text)
                                               exit()
                                       end)
-	     end,
+             end,
     ['\t'] = function ()
         local cmd = ui_ce.entry_text:match("^(%S+)%s")
         local lastpos, lastword = ui_ce.entry_text:match("%s()(%S+)$")

@@ -19,5 +19,5 @@ assertEq(buffer:get_text(),
     [[one two three four five
 hey bee cee dee ee eff
 some miscellaneous text
-one 
+one
 one ]])

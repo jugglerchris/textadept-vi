@@ -21,8 +21,8 @@ local nameChar = nameStartChar + "-" + "." + R("09")
 local name = sp * nameStartChar * (nameChar^0)
 
 -- TODO: implement escaping
-local squot = sp * P"'" * (P(1) - "'")^0 * P("'") 
-local dquot = sp * P'"' * (P(1) - '"')^0 * P('"') 
+local squot = sp * P"'" * (P(1) - "'")^0 * P("'")
+local dquot = sp * P'"' * (P(1) - '"')^0 * P('"')
 local attr_val = squot + dquot
 local attr = name * sp * P"=" * attr_val
 local attrs = attr ^ 0
@@ -43,7 +43,7 @@ local function kill() end -- used to kill subcaptures
 M.dedent_pat = (sp * (tag_end / kill) * Cc(-1)) + Cc(0)
 
 function M.test()
-   assert(sp:match("  \n")) 
+   assert(sp:match("  \n"))
    assert(bra:match("  <") == 1)
    assert(ket:match("  >") == -1)
    assert(name:match("asdf") == 5)

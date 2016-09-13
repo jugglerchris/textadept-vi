@@ -10,7 +10,7 @@ int l_kill(lua_State *L)
     /* Send ourselves the terminal stop signal, equivalent to normally
      * pressing ^Z. */
     kill(0, SIGTSTP);
-    
+
     /* We may have been restored after a window change; pretend we've
      * received a WINCH. */
     kill(0, SIGWINCH);

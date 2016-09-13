@@ -20,7 +20,7 @@ all: test
 
 output:
 	mkdir -p $@
-  
+
 clean:
 	rm -r output
 
@@ -37,14 +37,14 @@ test: output
 	@echo Waiting for test...
 	@head -1 output/sem.fifo >/dev/null & $(TAIL) --pid=$$! --follow=name output/results.txt
 	@grep FAIL output/results.txt && exit 1 || exit 0
-  
+
 # Convenience target to attach to any session still running.
 attach:
 	$(TMUX) -S $(TMUX_SOCKET) attach
 # Convenience target to kill any sessions
 kill:
 	$(TMUX) -S $(TMUX_SOCKET) -C kill-server
-  
+
 # Convenience to print out the current screen
 show:
 	echo capture-pane -p | $(TMUX) -S $(TMUX_SOCKET) -C attach

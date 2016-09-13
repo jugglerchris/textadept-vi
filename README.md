@@ -73,10 +73,10 @@ Dependencies
 Besides Textadept (currently tested on 7.8):
 * textadept-vi uses [textredux](http://rgieseke.github.io/textredux/)
   for some features (grep results) and the command entry.
-  
+
   NOTE: Currently this needs a fork with added support for using
   Textadept 7.8's buffer-based command entry:
-  
+
   https://github.com/jugglerchris/textredux/
 
 Testing
