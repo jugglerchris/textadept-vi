@@ -32,7 +32,7 @@ function M.cut(movement, register)
         if sline ~= eline then
             local sline_start = buffer:position_from_line(sline)
             local prestart = buffer:get_line(sline):sub(1, start-sline_start)
-            
+
             local eline_start = buffer:position_from_line(eline)
             local postend = buffer:get_line(eline):sub(end_-eline_start+1)
 
@@ -153,10 +153,10 @@ function M.reindent(movement)
             next_indent = prev_indent + indent_inc * pat:match(prev_line)
             -- disregard any dedent we would have applied to the previous line
             next_indent = next_indent - indent_inc * dpat:match(prev_line)
-            
+
             -- found a non-blank line, so stop.
             break
-        end 
+        end
         prev_lineno = prev_lineno-1
         break
     end
@@ -169,7 +169,7 @@ function M.reindent(movement)
             -- Special case - looking at this line may
             -- make us want to dedent (eg closing brace/tag)
             this_indent = this_indent + indent_inc * dpat:match(line)
-            
+
             -- If a line is all blanks, remove any whitespace.
             buffer.line_indentation[lineno] = line:match('^%s*$') and 0 or this_indent
         else

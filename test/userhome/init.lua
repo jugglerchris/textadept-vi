@@ -19,7 +19,7 @@ do
     while true do
         local name = iter(dir_obj)
         if name == nil then break end
-        local basename= name:match("(.+)%.lua$") 
+        local basename= name:match("(.+)%.lua$")
 --        test.log('name='..name..', base='..tostring(basename) .. "\n")
         if basename ~= nil then
             testfiles[#testfiles+1] = basename

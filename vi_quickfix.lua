@@ -33,7 +33,7 @@ local function pretty(x)
             bits[#bits+1] = "\n"
         end
         bits[#bits+1] = '}\n'
-        
+
         return table.concat(bits)
     elseif type(x) == 'string' then
         return "'" .. x .. "'"

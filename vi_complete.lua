@@ -133,25 +133,25 @@ M.wordchars = 'a-zA-Z0-9_'
 
 function get_words(forwards, here, prefix)
     local words = {}  -- ordered list of words
-    
+
     local wordstart = here - #prefix
-    
+
     local search = buffer.search_next
-    
+
     -- Avoid finding the current word
     buffer.current_pos = here+1
     buffer:search_anchor()
-    
+
     local endpos = here
-    
+
     local pat = '\\<'..prefix..'['..M.wordchars..']*\\>'
-    
+
     local wrapped = false
     while true do
-        local nextpos = search(buffer, buffer.FIND_REGEXP + buffer.FIND_MATCHCASE, pat) 
+        local nextpos = search(buffer, buffer.FIND_REGEXP + buffer.FIND_MATCHCASE, pat)
         if nextpos < 0 then
             if wrapped then break end
-            
+
             -- Start from the end
             wrapped = true
             buffer.current_pos = 0
@@ -163,7 +163,7 @@ function get_words(forwards, here, prefix)
           if nextpos == wordstart or nextpos < 0 then break end
           local word = buffer:get_sel_text()
           words[#words+1] = word
-          
+
           buffer.current_pos = nextpos+1
           buffer:search_anchor()
         end
@@ -171,7 +171,7 @@ function get_words(forwards, here, prefix)
     -- Remove duplicates in the appropriate direction
     local result = {}
     local seen = {}
-    
+
     local s, e, step = 1, #words, 1
     if not forwards then
         -- Start from the end
@@ -219,7 +219,7 @@ M.search_types = search_types
 local function find_prefix()
     local curpos = buffer.current_pos
     local pos = buffer:word_start_position(curpos-1, true)
-    
+
     return pos, buffer:text_range(pos, curpos)
 end
 
@@ -227,9 +227,9 @@ end
 local function enter_complete(forwards)
     keys.MODE = vi_mode.INSERT_CNP
     local here = buffer.current_pos
-    
+
     local wordstart, prefix = find_prefix()
-    
+
     -- Set up state
     M.state = {
         forwards = forwards, -- initial direction
@@ -241,7 +241,7 @@ local function enter_complete(forwards)
         prefix = prefix,
         here = here,
     }
-    
+
 end
 
 -- Enter completion mode, backwards

@@ -13,7 +13,7 @@ end
 -- Find expression forwards from the current point.
 function M.find(regex, forward)
     local pat = ta_regex.compile(regex)
-    
+
     -- Search a subset of the buffer, and adjust the match to set the
     -- start/end pointers correctly.
     local function search(startpos, endpos)
@@ -25,7 +25,7 @@ function M.find(regex, forward)
         end
         return m
     end
-    
+
     -- As search(), but search backwards.
     -- This isn't as efficient, as it searches forward and waits for the
     -- last match.
@@ -46,7 +46,7 @@ function M.find(regex, forward)
         end
         return res
     end
-    
+
     local m = nil
     if forward then
         local startpos = buffer.current_pos + 1
@@ -60,17 +60,17 @@ function M.find(regex, forward)
     else
         local startpos = 0
         local endpos = buffer.current_pos
-        
+
         m = search_rev(startpos, endpos) or search_rev(0, buffer.length)
     end
-    
+
     if m then
         local s, e = m._start, m._end
         buffer:set_sel(e, s)
     else
         ui.statusbar_text = "Not found"
     end
-    
+
     return false
 end
 

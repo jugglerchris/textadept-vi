@@ -126,11 +126,11 @@ state = {
 
     last_insert_string = nil, -- Last inserted text
     insert_pos = nil,
-    
+
     errmsg = '',              -- error from a command
-    
+
     registers = {},           -- cut/paste registers
-    
+
     variables = {             -- Configurable variables
         grepprg = "grep -rn --devices=skip",
     },
@@ -198,7 +198,7 @@ function update_status()
 
     if mode == nil then return end
     if M._saved_keys == nil then return end -- mfx
-    
+
     if mode.name == COMMAND then
         msg = "(command) "
     elseif mode.name == VISUAL then
@@ -265,7 +265,7 @@ local _num_any = _num_hex + _num_dec
 local _ends_after = Cmt(Carg(1), function(subj, pos, col)
                                     return pos > col
                                  end)
-                                 
+
 -- Find it anywhere (first match)
 -- Returns captures: startpos, base ("dec"/"hex"), endpos
 local _find_num = P{ (_num_any * _ends_after * Cp()) + 1*V(1) }
@@ -275,9 +275,9 @@ local function _find_number()
     local line = buffer:get_cur_line()
     local col = buffer.column[buffer.current_pos]
     local linepos = buffer:position_from_line(buffer:line_from_position(buffer.current_pos))
-    
+
     local startpos, base, endpos = _find_num:match(line, 1, col)
-    
+
     if startpos ~= nil then
         return base, linepos+startpos-1, linepos + endpos-1
     else
@@ -300,16 +300,16 @@ local numtype_to_fmt = {
 -- increment (which may be negative).
 function do_inc(increment)
     local numtype, start_, end_ = _find_number()
-    
+
     if numtype == nil then return end
-    
+
     local numstr = buffer:text_range(start_, end_)
     local val = tonumber(numstr, numtype_to_base[numtype])
-    
+
     val = val + increment
-    
+
     local newstr = string.format(numtype_to_fmt[numtype], val)
-    
+
     buffer:set_selection(start_, end_)
     buffer:replace_sel(newstr)
 end
@@ -333,9 +333,9 @@ end
 local function vi_paste(after, register)
     local buf = state.registers[register or '"']
     if not buf then return end
-    
+
     local pos = buffer.current_pos
-    
+
     if buf.line then
         local lineno = buffer:line_from_position(pos)
         if after then
@@ -571,7 +571,7 @@ MOV_TYPES = {
 -- Apply a movement command, which may be attached to an editing action.
 local function do_movement(f, movtype)
     assert(MOV_TYPES[movtype], "Invalid or missing motion type: [["..tostring(movtype).."]]")
-    
+
     if state.pending_action == nil then
         -- no action, just move
         f()
@@ -599,10 +599,10 @@ local function do_movement(f, movtype)
             else
                 local endlineno = buffer:line_from_position(end_)
                 local endcol = end_ - buffer.position_from_line(endlineno)
-                
+
                 if movtype == MOV_INC then
                   -- inclusive motion - include the last character
-                  if end_ < buffer.text_length and 
+                  if end_ < buffer.text_length and
                      endcol < buffer:line_length(endlineno) then
                      end_ = end_ + 1
                   end
@@ -666,7 +666,7 @@ function M.enter_insert_then_end_undo(cb)
         state.numarg = 0
     end
     state.last_numarg = rpt
-        
+
     enter_mode(mode_insert)
     insert_start_edit()
     mode_command.restart = function()
@@ -696,16 +696,16 @@ end
 
 local function enter_replace_with_undo(cb)
     begin_undo()
-    
+
     -- Save the numeric argument
     local rpt = get_numarg() or 1
-        
+
     buffer.overtype = true
     enter_mode(mode_insert)
     insert_start_edit()
     mode_command.restart = function()
         buffer.overtype = false
-        
+
         if rpt > 1 then
           do_replace(buffer.current_pos+1, string.rep(state.last_insert_string, rpt-1))
         end
@@ -774,10 +774,10 @@ local function movdesc_get_range_ex(movdesc, rpt_motion, rpt_cmd)
     else
         local endlineno = buffer:line_from_position(end_)
         local endcol = end_ - buffer.position_from_line(endlineno)
-                
+
         if movtype == MOV_INC then
             -- inclusive motion - include the last character
-            if end_ < buffer.text_length and 
+            if end_ < buffer.text_length and
                 endcol < buffer:line_length(endlineno) then
                 end_ = end_ + 1
             end
@@ -828,7 +828,7 @@ local function with_motion(actions, handler)
        begin_undo()
        handler(movement, reg)
        end_undo()
-       
+
        state.last_action = function(new_rpt)
            local rpt = (new_rpt and new_rpt > 0) and new_rpt or cmdrpt
            local movement = movdesc_get_range_ex(mdesc, rpt, 1)
@@ -923,7 +923,7 @@ FILENAME_CHARS = "abcdefghijklmnopqrstuvwxyz" ..
 function find_filename_at_pos()
     local s, e, filename = vi_ta_util.find_word_at(buffer.current_pos, FILENAME_CHARS)
     local lineno = nil
-    
+
     if buffer:text_range(e, e+1) == ":" then
         local _
         _, _, linenostr = vi_ta_util.find_word_at(e+1, "0123456789")
@@ -931,13 +931,13 @@ function find_filename_at_pos()
             lineno = tonumber(linenostr)
         end
     end
-    
+
     if filename:sub(1,1) == '/' or filename:sub(1,2) == "./" then
         -- Absolute path: keep as is
     else
         -- Relative - find one
         local paths = vi_find_files.find_matching_files(filename)
-        
+
         if paths and #paths >= 1 then
             filename = paths[1]
         else
@@ -962,24 +962,24 @@ surround_keys = vi_motion.bind_motions({
       return function()
          local cmdrpt = get_numarg()
          local start, end_ = movdesc_get_range(movdesc, nil, cmdrpt)
-         
+
          local pre = ask_string('Pre text')
          local post = ask_string('Post text')
-         
+
          if movdesc[1] == MOV_LINE then
              pre = pre .. "\n"
              post = post .. "\n"
          end
-         
+
          local function handler(start, end_, movtype)
              buffer:insert_text(end_, post)
              buffer:insert_text(start, pre)
          end
-         
+
          begin_undo()
          handler(start, end_, movtype)
          end_undo()
-         
+
          state.last_action = function(rpt)
              local start, end_ = movdesc_get_range(movdesc, rpt, 1)
              begin_undo()
@@ -995,7 +995,7 @@ local function ensure_cursor()
   local lineno = buffer:line_from_position(docpos)
   local linestart = buffer:position_from_line(lineno)
   local length = line_length(lineno)
-  
+
   if docpos-linestart >= length then
       buffer.current_pos = linestart + length - 1
   end
@@ -1036,14 +1036,14 @@ end
                        end
                        end_undo()
                      end
-                     
+
                      state.last_action = handler
 
                      handler(cmdrpt)
                  end
              end
          end
-           
+
 })
 
 --- Open or close all folds recursively.
@@ -1084,49 +1084,49 @@ mode_command = {
              buffer.anchor = pos
             end, MOV_LINE),
 
-	-- Mark actions
-	m = function()
-	    state.pending_keyhandler = function(sym)
-	        -- TODO: Marks should move if text is inserted before them.
-	        if string.match(sym, "^%a$") then
-		    -- alphabetic, so store the mark
-		    state.marks[sym] = buffer.current_pos
-		end
-	    end
-	end,
-	['`'] = setmetatable({}, {
+        -- Mark actions
+        m = function()
+            state.pending_keyhandler = function(sym)
+                -- TODO: Marks should move if text is inserted before them.
+                if string.match(sym, "^%a$") then
+                    -- alphabetic, so store the mark
+                    state.marks[sym] = buffer.current_pos
+                end
+            end
+        end,
+        ['`'] = setmetatable({}, {
         __index = function(t, key)
-	        if string.match(key, "^%a$") then
-		       -- alphabetic, so restore the mark
+                if string.match(key, "^%a$") then
+                       -- alphabetic, so restore the mark
                return function()
                  newpos = state.marks[key]
                  if newpos ~= nil then
-		 	        do_movement(function () buffer.goto_pos(newpos) end, MOV_EXC)
-		         end
-		       end
-	        end
+                                do_movement(function () buffer.goto_pos(newpos) end, MOV_EXC)
+                         end
+                       end
+                end
         end}),
 
-	['0'] = function()
+        ['0'] = function()
              if state.numarg == 0 then
                 mk_movement(buffer.home, MOV_EXC)()
              else
                 addarg(0)
-	     end
+             end
           end,
-	['1'] = dodigit(1),
-	['2'] = dodigit(2),
-	['3'] = dodigit(3),
-	['4'] = dodigit(4),
-	['5'] = dodigit(5),
-	['6'] = dodigit(6),
-	['7'] = dodigit(7),
-	['8'] = dodigit(8),
-	['9'] = dodigit(9),
+        ['1'] = dodigit(1),
+        ['2'] = dodigit(2),
+        ['3'] = dodigit(3),
+        ['4'] = dodigit(4),
+        ['5'] = dodigit(5),
+        ['6'] = dodigit(6),
+        ['7'] = dodigit(7),
+        ['8'] = dodigit(8),
+        ['9'] = dodigit(9),
 
-	-- edit mode commands
+        -- edit mode commands
         i = function() enter_insert_with_undo(post_insert(function() end)) end,
-     	a = function()
+        a = function()
              buffer.char_right()
              enter_insert_with_undo(post_insert(buffer.char_right))
         end,
@@ -1203,16 +1203,16 @@ mode_command = {
                        local line1 = buffer:get_line(lineno)
                        local line2 = buffer:get_line(lineno+1)
                        local joiner = ''
-                       
+
                        -- Strip line ending
                        line1 = line1:match('(.-)[\n\r]*$')
-                       
+
                        -- Add an extra space after a sentence end
                        if line1:match('[%.$]$') then joiner = ' ' end
-                       
+
                        -- Strip leading whitespace in second line
                        line2 = line2:match('%s*(.*)')
-                       
+
                        -- Set the range to change and replace it
                        buffer.target_start = buffer:position_from_line(lineno)
                        buffer.target_end = buffer:position_from_line(lineno+1) + buffer:line_length(lineno+1)
@@ -1240,12 +1240,12 @@ mode_command = {
         y = with_motion({
            y = { MOV_LINE, vi_motions.sel_line, 1 },
         }, vi_ops.yank),
-        
+
         -- Temporary binding to test improved way of doing compound commands.
         c = with_motion_insert({
            -- insert non-motion completions (eg tt?) here.
           c = { MOV_LINE, vi_motions.sel_line, 1 },
-              
+
           -- cw is a special case, and doesn't include whitespace at the end
           -- of the words.  It behaves more like ce, but doesn't change
           -- line at the end of a word.
@@ -1266,7 +1266,7 @@ mode_command = {
         ['<'] = with_motion({
           ['<'] = { MOV_LINE, vi_motions.sel_line, 1 },
         }, vi_ops.undent),
-         
+
         x = function()
             do_action(function(rept)
                 local here = buffer.current_pos
@@ -1289,7 +1289,7 @@ mode_command = {
         ['='] = with_motion({
           ['='] = { MOV_LINE, vi_motions.sel_line, 1 },
         }, vi_ops.reindent),
-         
+
         p = function()
             -- Paste a new line.
             do_action(repeatable(function(reg) vi_paste(true, reg) end))
@@ -1305,20 +1305,20 @@ mode_command = {
               -- Redo the last action, taking into account possible prefix arg.
               local rpt = get_numarg()
               state.last_action(rpt)
-              
+
               -- Slightly unclean way of making sure the cursor doesn't end
               -- up past the end of the line.
               local line, pos = buffer.get_cur_line()
               if pos >= line:len() then buffer.char_left() end
            end,
 
-	-- Enter ex mode command
-	[':'] = function() M.ex_mode.start(enter_command) end,
+        -- Enter ex mode command
+        [':'] = function() M.ex_mode.start(enter_command) end,
         ['@'] = {
             [':'] = M.ex_mode.repeat_last_command,
         },
-	['ce']= function() ui.command_entry.enter_mode('lua_command') end,
-        
+        ['ce']= function() ui.command_entry.enter_mode('lua_command') end,
+
     -- Tags
     ['c]'] = function()
                 local pos = buffer.current_pos
@@ -1332,7 +1332,7 @@ mode_command = {
                 end
     end,
     ['ct'] = vi_tags.pop_tag,
-    
+
     -- Errors (in compile error buffer)
     ['c}'] = function() textadept.run.goto_error(false, true) end,
 
@@ -1343,14 +1343,14 @@ mode_command = {
         ['-'] = function() vi_views.grow_view(view, -(get_numarg() or 1)) end,
     },
     ['c^'] = function()
-        if view.vi_last_buf then 
+        if view.vi_last_buf then
             bufnum = _BUFFERS[view.vi_last_buf]
             if bufnum then
                 view:goto_buffer(view.vi_last_buf)
             end
         end
     end,
-    
+
     -- Folds
     z = {
       o = function() buffer:fold_line(buffer:line_from_position(buffer.current_pos), buffer.FOLDACTION_EXPAND) end,
@@ -1358,11 +1358,11 @@ mode_command = {
       M = function() do_fold_all(buffer.FOLDACTION_CONTRACT) end,
       R = function() do_fold_all(buffer.FOLDACTION_EXPAND) end,
     },
-    
+
     -- Increment/decrement under cursor
     ca = function() do_action(function(rpt) do_inc(rpt) end) end,
     cx = function() do_action(function(rpt) do_inc(-1*rpt) end) end,
-    
+
     -- Show help
     f1 = textadept.editing.show_documentation,
     },
@@ -1378,14 +1378,14 @@ events.connect(events.VIEW_BEFORE_SWITCH, function()
        end
 end)
 
-events.connect(events.VIEW_AFTER_SWITCH, function () 
+events.connect(events.VIEW_AFTER_SWITCH, function ()
        -- Add undo boundaries when switching buffers
        if keys.MODE == mode_insert.name then
            break_edit_end()
        end
     end)
 
-events.connect(events.BUFFER_BEFORE_SWITCH, function () 
+events.connect(events.BUFFER_BEFORE_SWITCH, function ()
        -- Save the previous buffer to be able to switch back
        if not buffer._textredux  then
            view.vi_last_buf = buffer
@@ -1412,11 +1412,11 @@ function M.install_keymap()
   mode_command.bindings = keys
   -- And make sure that our mode is represented.
   keys[COMMAND] = keys
-  
+
   keys[INSERT] = mode_insert.bindings
   keys[INSERT_CNP] = M.vi_complete.get_keys(keys[INSERT])
   keys[VISUAL] = mode_visual.bindings
-  
+
   -- Delegate to the motion commands.
   setmetatable(keys, {
     __index = function(t,k)
@@ -1436,7 +1436,7 @@ end
 -- Undo the installation.  Assumes that it's properly paired with
 -- install_keymap().
 function M.restore_keymap()
-  -- Restore the original keys. 
+  -- Restore the original keys.
   if not M._saved_keys then
       M.err('No saved keymap')
       return

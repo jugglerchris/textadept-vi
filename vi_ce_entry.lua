@@ -39,18 +39,18 @@ local function ve_refresh(buf)
   buf.margin_width_n[1] = 0
   buf.margin_width_n[2] = 0
   buf.margin_width_n[3] = 0
-  
+
   buf.margin_width_n[4] = #buf.data.prompt
   buf.margin_type_n[4] = buf.MARGIN_TEXT
   buf.margin_text[0] = buf.data.prompt
   buf.margin_style[0] = 8 -- error (red)
-  
+
   buf:add_text(buf.data.text, redux.core.style.comment)
   buf:goto_pos(buf.data.pos)
 
   local linesize = CURSES and 1 or 20
   local offset = CURSES and 4 or 100
-  
+
   if buf.data.completions then
       local cs = buf.data.completions
       local comp_offset = buf.data.completions_offset
@@ -75,9 +75,9 @@ end
 local function common_prefix(s1, s2)
     local len = #s1
     if #s2 < len then len = #s2 end
-    
+
     local prefixlen = 0
-    
+
     for i=1,len do
         if s1:sub(i,i) == s2:sub(i,i) then
             prefixlen = i
@@ -94,7 +94,7 @@ local function replace_word(buf, repl)
     local pos = buf.data.pos
     local preceding = t:sub(1, pos)
     local startpos, to_complete, endpos = preceding:match("^.-()(%S*)()$")
-    
+
     t = t:sub(1, startpos-1) .. repl .. t:sub(endpos)
     buf.data.text = t
     buf.data.pos = startpos + #repl - 1
@@ -113,14 +113,14 @@ local function complete_now(expand)
     local t = buf.data.text
     local pos = buf.data.pos
     local preceding = t:sub(1, pos)
-    
+
     local startpos, to_complete, endpos = preceding:match("^.-()(%S*)()$")
     local first_word = t:match("^(%S*)")
     local completions = buf.data.complete(to_complete, first_word) or {}
-    
+
     if #completions == 1 and expand then
         local repl = completions[1]
-        
+
         replace_word(buf, repl)
     elseif #completions >= 1 then
         -- See if there's a common prefix
@@ -173,7 +173,7 @@ end
 local function do_enter()
     local buffer = ui.command_entry
     local buf = buffer._textredux
-    
+
     if buf.data.completions_sel and buf.data.completions_sel ~= 0 then
         -- We've selected a completion.
         local chosen = buf.data.completions[buf.data.completions_sel]
@@ -187,7 +187,7 @@ local function do_enter()
         local hist = buf.data.context._history
         local histsaveidx = buf.data.histsaveidx
         close(buf)
-             
+
         -- Save the command in the history
         hist[histsaveidx] = cmd
         handler(cmd)
@@ -251,7 +251,7 @@ local ve_keys = {
                 sel_line = #buf.data.completions
             end
             buf.data.completions_sel = sel_line
-            
+
             local min_visible = buf.data.completions_offset + 1
             local max_visible = buf.data.completions_offset + M.MAX_COMPLETION_LINES
             if sel_line > max_visible or sel_line < min_visible then
@@ -289,7 +289,7 @@ local ve_keys = {
                 sel_line = 1
             end
             buf.data.completions_sel = sel_line
-            
+
             local min_visible = buf.data.completions_offset + 1
             local max_visible = buf.data.completions_offset + M.MAX_COMPLETION_LINES
             if sel_line > max_visible or sel_line < min_visible then
@@ -352,7 +352,7 @@ local function do_start(context)
       histsaveidx=#context._history+1,
   }
   buf.data.marginstate = save_margins(ui.command_entry)
-  
+
   buf:attach_to_command_entry()
   ui.command_entry.height = 1
 end

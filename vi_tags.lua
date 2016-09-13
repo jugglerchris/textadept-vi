@@ -25,7 +25,7 @@ local function load_tags()
             if not results[tname] then results[tname] = {} end
             -- And append.
             local l = results[tname]  -- now guaranteed to be a table
-          
+
             do
                -- Try to separate the ex command from extension fields
                local e,f = excmd:match('^(.-);"\t(.*)$')
@@ -56,12 +56,12 @@ function M.find_tag_exact(name)
     local result = tags[name]
     if result then
         local newidx = state.tagidx + 1
-        
+
         -- Clear the stack above where we are.
         while newidx <= #state.tagstack do
             state.tagstack[#state.tagstack] = nil
         end
-        
+
         state.tagstack[newidx] = {
            i=1,         -- which tag within this list
            tags=result, -- this level's tags
@@ -111,7 +111,7 @@ end
 function M.goto_tag(tag)
     io.open_file(tag.filename)
     local excmd = tag.excmd
-    
+
     local _, pat = excmd:match("^([?/])(.*)%1$")
     if pat then
         -- TODO: properly handle regexes and line number tags.
@@ -126,7 +126,7 @@ function M.goto_tag(tag)
                 return "\\" .. magic
             end
           end)
-        
+
         buffer.current_pos = 0
         buffer.search_anchor()
         local pos = buffer:search_next(buffer.FIND_REGEXP + buffer.FIND_MATCHCASE, pat)
@@ -137,14 +137,14 @@ function M.goto_tag(tag)
         end
         return
     end
-    
+
     -- Try a numeric line number
     local pat = excmd:match("^(%d+)$")
     if pat then
         buffer.goto_line(tonumber(pat)-1)
         return
     end
-    
+
     -- unknown tag pattern
     vi_mode.err('Tag pat: '..excmd)
 end

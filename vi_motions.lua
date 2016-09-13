@@ -12,25 +12,25 @@ end
 
 function M.char_right()
     local line, pos = buffer.get_cur_line()
-	local docpos = buffer.current_pos
+        local docpos = buffer.current_pos
     -- Don't include line ending characters, so we can't use buffer.line_length().
     local lineno = buffer:line_from_position(docpos)
-	local length = line_length(lineno)
-	if pos < (length - 1) then
-	    buffer.char_right()
-	end
+        local length = line_length(lineno)
+        if pos < (length - 1) then
+            buffer.char_right()
+        end
 end
 
 ---  Move the cursor down one line.
--- 
+--
 function M.line_down()
     local bufstate = buf_state(buffer)
-    
+
     local lineno = buffer.line_from_position(buffer.current_pos)
     local linestart = buffer.position_from_line(lineno)
     if lineno < buffer.line_count then
         local ln = lineno + 1
-        
+
         -- Find a visible line (skip over folds)
         while not buffer.line_visible[ln] do
             ln = ln + 1
@@ -49,7 +49,7 @@ function M.line_down()
 end
 
 ---  Move the cursor up one line.
--- 
+--
 function M.line_up()
     local bufstate = buf_state(buffer)
     local lineno = buffer.line_from_position(buffer.current_pos)
@@ -102,7 +102,7 @@ end
 -- Move to the end of the next word
  function M.word_end()
      buffer.char_right()
-     buffer.word_right_end() 
+     buffer.word_right_end()
      local lineno = buffer:line_from_position(buffer.current_pos)
      local col = buffer.current_pos - buffer.position_from_line(lineno)
      if col == 0 then
@@ -139,7 +139,7 @@ local function paragraph_move(forward, rep)
     for i=1,rep do
         -- Go until blank line on an open fold
         for lineno=buffer:line_from_position(buffer.current_pos)+step,endAt,step do
-            if lineno == endAt or (buffer.line_visible[lineno] and 
+            if lineno == endAt or (buffer.line_visible[lineno] and
                                    line_length(lineno) == 0) then
                 buffer:goto_line(lineno)
                 break
@@ -267,11 +267,11 @@ function M.match_brace()
        buffer:goto_pos(pos)
        return
    end
-   
+
    -- Get the current line and position, as we'll need it for
    -- the next tests.
    local line, idx = buffer:get_cur_line()
-   
+
    -- Are we on a C conditional?
    do
        -- TODO: cache the pattern
@@ -279,14 +279,14 @@ function M.match_brace()
        local S = lpeg.S
        local C = lpeg.C
        local R = lpeg.R
-       
+
        local ws = S' \t'
-      
-       local cpppat = (ws ^ 0) * P"#" * (ws ^ 0) * 
+
+       local cpppat = (ws ^ 0) * P"#" * (ws ^ 0) *
                   (C(P"if" + P"elif" + P"else"+ P"ifdef" + P"endif") + -R("az", "AZ", "09"))
-       
+
        local cppcond = cpppat:match(line)
-       
+
        -- How each operation adjusts the nesting level
        local nestop = {
            ['if'] = 1,
@@ -295,7 +295,7 @@ function M.match_brace()
            ['elif'] = 0,
            ['endif'] = -1,
        }
-       
+
        local lineno = buffer.line_from_position(buffer.current_pos)
        local level = 0
        if cppcond == 'endif' then
@@ -329,10 +329,10 @@ function M.match_brace()
            end
        end
    end
-   
+
    -- Try searching forwards on the line
    local bracketpat =  "[%(%)<>%[%]{}]"
-   
+
    local newidx, _, c = line:find(bracketpat, idx+1)
    if newidx then
        pos = buffer:brace_match(orig_pos + newidx - idx - 1)

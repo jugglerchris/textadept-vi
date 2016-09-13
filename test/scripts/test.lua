@@ -79,7 +79,7 @@ end
 -- Run test <testname>, from tests/<testname>.lua
 function M.run(testname)
     if not test_enabled[testname] then return end
-    
+
     log("  "..testname.."...")
     numtests = numtests + 1
     local testfile =  _USERHOME .. "/../tests/" .. testname .. ".lua"
@@ -92,9 +92,9 @@ function M.run(testname)
         return
     end
     local res = nil
-    
+
     local test_coro = coroutine.create(testfunc)
-    
+
     while true do
         logd("Resuming test_coro: ")
         local co_res, co_results = coroutine.resume(test_coro)
@@ -110,10 +110,10 @@ function M.run(testname)
             if coroutine.status(test_coro) == "dead" then
                 -- It succeeded
                 res = true
-                
+
                 -- But has the view split (eg for an error buffer)?
                 if #_VIEWS ~= 1 then res = false end
-                
+
                 break
             else
                 -- Try again later
@@ -123,7 +123,7 @@ function M.run(testname)
             end
         end
     end
-    if res then 
+    if res then
         passes = passes + 1
         log(green('OK'..'\n'))
     else
@@ -135,7 +135,7 @@ function M.run(testname)
         tmux:write('capture-pane\n')
         tmux:flush()
         if  fail_immediate then error(msg) end
-        
+
     end
     -- Close any buffers opened for the test.
     -- First, get a list of the buffers; if we close them during the
@@ -160,7 +160,7 @@ function M.run(testname)
     while #_VIEWS > 1 do
         view:unsplit()
     end
-    
+
     -- Clear up some leftover state
     vi_mode.state.numarg = 0
 end
@@ -182,7 +182,7 @@ function M.queue(f)
 --    io.open_file('files/dummy.txt')
     local function xpwrapped()
         local res, rest = xpcall(f, debug.traceback)
-        if not res then 
+        if not res then
             log(rest)
             error(rest)
         end
@@ -231,7 +231,7 @@ local tableEq
 function eq(a, b)
     -- Easy case: builtin equal works for most cases.
     if a == b then return true end
-    
+
     if type(a) ~= 'table' or type(b) ~= 'table' then
         -- If not both tables, then not equal.
         return false
@@ -246,14 +246,14 @@ function tableEq(a, b)
   for k,v in pairs(a) do
       if not eq(v, b[k]) then return false end
   end
-  
+
   -- Second, check that every key in b exists in a.
   -- We don't need to compare - if the key is in a then we've already
   -- checked.
   for k,_ in pairs(b) do
     if a[k] == nil then return false end
   end
-  
+
   -- They must be equal
   return true
 end
@@ -271,7 +271,7 @@ function M.tostring(a)
     end
     for k,v in pairs(a) do
         -- Do the non-contiguous-integer keys
-        if type(k) == 'number' and k == math.ceil(k) and k <= maxn and k >= 1 then 
+        if type(k) == 'number' and k == math.ceil(k) and k <= maxn and k >= 1 then
            -- Ignore an integer key we've already seen
         else
             table.insert(sbits, '['..M.tostring(k)..'] = '..M.tostring(v)..', ')
@@ -290,7 +290,7 @@ local function assertEqLevel(a, b, level)
 end
 
 --- Assert that a and b are equal.  Tables are equal if their keys
---  and values are equal.  Returns true or calls error().  
+--  and values are equal.  Returns true or calls error().
 function M.assertEq(a, b)
     return assertEqLevel(a, b, 2)
 end
@@ -318,14 +318,14 @@ function tableMatches(a, b)
       local ok, err = matches(v, b[k])
       if not ok then return false, k.."->"..err end
   end
-  
+
   -- Second, check that every key in b exists in a.
   -- We don't need to compare - if the key is in a then we've already
   -- checked.
   for k,_ in pairs(b) do
     if a[k] == nil then return false, k.."==nil" end
   end
-  
+
   -- They must be equal
   return true
 end
@@ -344,7 +344,7 @@ end
 local function matchesFilename(a, b)
     local path1 = lfs.abspath(a)
     local path2 = lfs.abspath(b)
-    
+
     if path1 == path2 then
         return true
     else
@@ -358,23 +358,23 @@ end
 function matches(a, b)
     -- Easy case: builtin equal works for most cases.
     if a == b then return true end
-    
+
     -- If one is a wildcard, then this matches.
     if a == M.STAR or b == M.STAR then return true end
-    
+
     -- Check for a filename match
     if getmetatable(a) == filename_mt then
         return matchesFilename(a[1], b)
     elseif getmetatable(b) == filename_mt then
         return matchesFilename(a, b[1])
     end
-    
-    
+
+
     if type(a) ~= 'table' or type(b) ~= 'table' then
         -- If not both tables, then not equal.
         return false, "Type mismatch"
     end
-    
+
     -- Check for fuzzy maches
     if getmetatable(a) == fuzzy_mt then
         return fuzzyMatches(a, b)
@@ -469,9 +469,9 @@ end
 function M.getscreen(first, last)
     first = first or 0
     last = last or 23
-    
+
     local tmux = io.popen("TMUX= tmux -q -S ./output/tmux-socket -C capture-pane -S "..first.." -E "..last.." -p", "r")
-    
+
     local parts = {}
     for line in tmux:lines("*L") do
         if line:match('^%%begin') or line:match('^%%end') then

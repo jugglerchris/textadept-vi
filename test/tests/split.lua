@@ -41,7 +41,7 @@ assertSplitMatches(ui.get_split_table(),
                 vertical=true,
                 size=40,
               })
-              
+
 test.key('c-w', 'c-w')
 test.colon('split')
 test.open('c.txt')
@@ -58,11 +58,11 @@ assertSplitMatches(ui.get_split_table(),
                 vertical=true,
                 size=40,
               })
-              
+
 assertFileEq(buffer.filename, 'files/c.txt')
 test.colon('e files/d.txt')
 assertFileEq(buffer.filename, 'files/d.txt')
-              
+
 assertSplitMatches(ui.get_split_table(),
               {
                 {
@@ -75,11 +75,11 @@ assertSplitMatches(ui.get_split_table(),
                 vertical=true,
                 size=40,
               })
-              
+
 assertFileEq(buffer.filename, 'files/d.txt')
 test.colon('b c.txt')
 assertFileEq(buffer.filename, 'files/c.txt')
-              
+
 assertSplitMatches(ui.get_split_table(),
               {
                 {

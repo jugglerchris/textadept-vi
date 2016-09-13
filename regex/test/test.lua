@@ -10,7 +10,7 @@ local tableEq
 function eq(a, b)
     -- Easy case: builtin equal works for most cases.
     if a == b then return true end
-    
+
     if type(a) ~= 'table' or type(b) ~= 'table' then
         -- If not both tables, then not equal.
         return false
@@ -25,14 +25,14 @@ function tableEq(a, b)
   for k,v in pairs(a) do
       if not eq(v, b[k]) then return false end
   end
-  
+
   -- Second, check that every key in b exists in a.
   -- We don't need to compare - if the key is in a then we've already
   -- checked.
   for k,_ in pairs(b) do
     if a[k] == nil then return false end
   end
-  
+
   -- They must be equal
   return true
 end
@@ -50,7 +50,7 @@ function M.tostring(a)
     end
     for k,v in pairs(a) do
         -- Do the non-contiguous-integer keys
-        if type(k) == 'number' and k == math.ceil(k) and k <= maxn and k >= 1 then 
+        if type(k) == 'number' and k == math.ceil(k) and k <= maxn and k >= 1 then
            -- Ignore an integer key we've already seen
         else
             table.insert(sbits, '['..M.tostring(k)..'] = '..M.tostring(v)..', ')
@@ -69,7 +69,7 @@ local function assertEqLevel(a, b, level)
 end
 
 --- Assert that a and b are equal.  Tables are equal if their keys
---  and values are equal.  Returns true or calls error().  
+--  and values are equal.  Returns true or calls error().
 function M.assertEq(a, b)
     return assertEqLevel(a, b, 2)
 end

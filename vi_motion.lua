@@ -15,7 +15,7 @@ local function wrap_table(tab, f)
     result = setmetatable({wrapped=1, tt=tab}, {
         __index = function(t, k)
             local m = tab[k]
-            
+
             if m == nil then
                 return nil
             elseif type(m) == 'table' and m[1] == nil then
@@ -113,7 +113,7 @@ local motions = {
   [' ']       = { MOV_EXC,  r(vi_motions.char_right), 1 }, -- TODO COMPAT: vim moves to next line at EOL
   -- TODO: pgdown, kppgdown, pgup, kppgup
   -- TODO: del
-  
+
   -- Search motions
   n = { MOV_EXC, r(vi_motions.search_next), 1 },
   N = { MOV_EXC, r(vi_motions.search_prev), 1 },
@@ -139,7 +139,7 @@ local function index_digits(t, k)
         if precount == nil and k == '0' then
             return MOTION_ZERO -- special case - 0 is a motion by itself.
         end
-        
+
         -- Rely on the master table never having PREFIX_COUNT.
         if precount == nil then
             local wrapped = t
@@ -153,7 +153,7 @@ local function index_digits(t, k)
                         return t
                     else
                         local res = wrapped[k]
-                        
+
                         if type(res)=='table' and res[1] then
                             -- This is a motion, so apply the multiple
                             res = { res[1], res[2], wt[PREFIX_COUNT] }
@@ -164,11 +164,11 @@ local function index_digits(t, k)
             t = newtab
             precount = 0
         end
-            
+
         -- Update the count in the (possibly new) wrapper table
         precount = (precount * 10) + (k+0)
         t[PREFIX_COUNT] = precount
-        
+
         -- Return the wrapper
         return t
     else
@@ -206,7 +206,7 @@ local sel_motions = setmetatable({
              local s = buffer:word_start_position(pos, true)
              buffer:search_anchor()
              local e = buffer:search_next(buffer.FIND_REGEXP, "\\s\\w") + 1
-             
+
              return s, e
           end, 1},
 --    W = function() return 'WORD' end,
@@ -216,7 +216,7 @@ local sel_motions = setmetatable({
              local pos = buffer.current_pos
              local s = buffer:word_start_position(pos, true)
              local e = buffer:word_end_position(pos)
-             
+
              return s, e
           end, 1},
 --    W = function() return 'WORD' end,
@@ -224,7 +224,7 @@ local sel_motions = setmetatable({
 }, {
   __index=wrap_table(motions, M.movf_to_self),
 })
-  
+
 M.sel_motions = sel_motions
 
 -- Return an entry suitable for the keys table which implements the vi motion

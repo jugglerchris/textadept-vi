@@ -21,7 +21,7 @@ local function mkmatch_luapat(pat, allow_wild_end)
         fullpat = fullpat .. '.*'
     end
     fullpat = fullpat .. '$'
-    return function(text) 
+    return function(text)
         local result = text:match(fullpat)
         return result
     end
@@ -168,7 +168,7 @@ function M.matching_files_nopat(text)
     local escape = function(s) return s end
     return do_matching_files(text, mkmatch_null, escape)
 end
-        
+
 -- Find files with patterns
 function M.matching_files(text, doescape)
     -- Escape by default
