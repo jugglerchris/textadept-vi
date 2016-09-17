@@ -512,7 +512,7 @@ function M.run_in_vim(init_data, keylist)
     -- -c: directory to start in
     -- -k: destroy target window if needed
     -- -t: target widnow
-    tmux:write([[new-window -c ./output 'vim ]]..vimfilename.."'\n")
+    tmux:write([[new-window -c ./output 'vim -u ./userhome/vimrc ]]..vimfilename.."'\n")
     tmux:flush()
 
     -- Assume it's switched to the new window
