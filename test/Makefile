@@ -1,4 +1,4 @@
-export LC_ALL := en_US.UTF-8
+export LC_ALL := en_GB.UTF-8
 
 STRACE :=
 TMUX_EXTRA :=
