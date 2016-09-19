@@ -4,7 +4,7 @@ local M = {}
 local function unsplit_other(ts)
     if ts.vertical == nil then
         -- Ensure this view is focused (so we don't delete the focused view)
-	ui.goto_view(ts)
+        ui.goto_view(ts)
         view.unsplit(ts)
     else
         unsplit_other(ts[1])
