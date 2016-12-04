@@ -150,7 +150,7 @@ function M.run(testname)
     -- now actually close.
     for k, buf in ipairs(toclose) do
         -- convert back from buffer to index using _G._BUFFERS.
-        view:goto_buffer(_G._BUFFERS[buf])
+        view:goto_buffer(buf)
         buffer:set_save_point()  -- assert not dirty
         if not io.close_buffer(buf) then
             log('Error closing buffer ' .. tostring(buffer.filename))
@@ -512,7 +512,7 @@ function M.run_in_vim(init_data, keylist)
     -- -c: directory to start in
     -- -k: destroy target window if needed
     -- -t: target widnow
-    tmux:write([[new-window -c ./output 'vim ]]..vimfilename.."'\n")
+    tmux:write([[new-window -c ./output 'vim -N -u ./userhome/vimrc ]]..vimfilename.."'\n")
     tmux:flush()
 
     -- Assume it's switched to the new window

@@ -191,7 +191,7 @@ function M.find_matching_files(pattern)
             results[#results+1] = filename
         end
     end
-    lfs.dir_foreach('.', f, { folders = { "build"}}, false)
+    lfs.dir_foreach('.', f, { folders = { "build"}}, nil, false)
     return results
 end
 

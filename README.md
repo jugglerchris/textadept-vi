@@ -24,13 +24,8 @@ package.cpath = "/home/username/.textadept/textadept-vi/?.so;" .. package.cpath
 _G.vi_mode = require 'vi_mode'
 ```
 
-Textadept-vi also uses a slightly modified textredux (with support for using
-the Scintilla-based command entry in recent Textadept versions):
-    https://github.com/jugglerchris/textredux.git
-
-I think it's likely that textredux will add this support (possibly a bit
-differently), at which point textadept-vi will switch back to upstream
-textredux.
+Textadept-vi also requires a recent version of the
+[textredux](https://rgieseke.github.io/textredux/) module.
 
 Support
 -------
@@ -39,7 +34,7 @@ tracker](https://github.com/jugglerchris/textadept-vi/issues).
 
 What works
 ----------
-* Movement commands: h,j,k,l,w,b,e,H,M,L,%,^,_,$,0,G,{,}
+* Movement commands: h,j,k,l,w,b,e,H,M,L,%,^,_,$,0,G,gg,{,}
 * Selection motions: aw,iw
 * Simple mark/jump: m, ', `
 * Numeric prefix
@@ -70,14 +65,9 @@ a NUL character.
 
 Dependencies
 ------------
-Besides Textadept (currently tested on 7.8):
+Besides Textadept (currently tested on 9.0 beta).
 * textadept-vi uses [textredux](http://rgieseke.github.io/textredux/)
   for some features (grep results) and the command entry.
-
-  NOTE: Currently this needs a fork with added support for using
-  Textadept 7.8's buffer-based command entry:
-
-  https://github.com/jugglerchris/textredux/
 
 Testing
 -------

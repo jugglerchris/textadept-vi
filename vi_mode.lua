@@ -1338,7 +1338,7 @@ mode_command = {
 
     -- Views and buffers
     cw = {
-        cw = { ui.goto_view, 1, true },  -- cycle between views
+        cw = function() ui.goto_view(1) end,  -- cycle between views
         ['+'] = function() vi_views.grow_view(view, get_numarg() or 1) end,
         ['-'] = function() vi_views.grow_view(view, -(get_numarg() or 1)) end,
     },
@@ -1346,7 +1346,7 @@ mode_command = {
         if view.vi_last_buf then
             bufnum = _BUFFERS[view.vi_last_buf]
             if bufnum then
-                view:goto_buffer(bufnum)
+                view:goto_buffer(view.vi_last_buf)
             end
         end
     end,

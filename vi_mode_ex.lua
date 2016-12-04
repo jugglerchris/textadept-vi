@@ -5,7 +5,6 @@ local vi_tags = require('vi_tags')
 local vi_quickfix = require('vi_quickfix')
 local vi_regex = require('regex.pegex')
 M.use_vi_entry = true
-M.use_vi_entry_ce = true
 local vi_entry
 local vi_views = require('vi_views')
 local lpeg = require 'lpeg'
@@ -356,7 +355,7 @@ function command_to_buffer(command, workdir, buftype, when_finished, read_only)
         end
         if my_view then
             if cur_view ~= my_view then
-                ui.goto_view(_VIEWS[my_view])
+                ui.goto_view(my_view)
             end
 
             msgbuf:append_text(s)
@@ -364,7 +363,7 @@ function command_to_buffer(command, workdir, buftype, when_finished, read_only)
             msgbuf:set_save_point()
 
             if my_view ~= cur_view then
-                ui.goto_view(_VIEWS[cur_view])
+                ui.goto_view(cur_view)
             end
         end
     end
@@ -435,7 +434,7 @@ M.ex_commands = {
     end,
     n = function(args)
         if #args ~= 1 then ex_error("Too many arguments to :"..args[1]); return end
-        view:goto_buffer(1, true)
+        view:goto_buffer(1)
     end,
     ['ne']    = function(args) M.ex_commands.n(args) end,
     ['nex']   = function(args) M.ex_commands.n(args) end,
@@ -446,7 +445,7 @@ M.ex_commands = {
     ['next!'] = function(args) M.ex_commands.n(args) end,
     N = function(args)
         if #args ~= 1 then ex_error("Too many arguments to :"..args[1]); return end
-        view:goto_buffer(-1, true)
+        view:goto_buffer(-1)
     end,
     ['N!'] = function(args) M.ex_commands.N(args) end,
     b = function(args)
@@ -457,7 +456,7 @@ M.ex_commands = {
             for i, buf in ipairs(_BUFFERS) do
                 if buf and buf.filename and ((bufpat and bufpat:match(buf.filename)) or buf.filename:find(bufname, 1, true)) then
                    -- TODO: handle more than one matching
-                   view:goto_buffer(i)
+                   view:goto_buffer(buf)
                    return
                 end
             end
@@ -898,11 +897,7 @@ local function do_complete(word, cmd)
 end
 
 if M.use_vi_entry then
-    if M.use_vi_entry_ce then
-        vi_entry = require('vi_ce_entry')
-    else
-        vi_entry = require('vi_entry')
-    end
+    vi_entry = require('vi_ce_entry')
     state.entry_state = vi_entry.new(':', handle_ex_command, do_complete)
 end
 
