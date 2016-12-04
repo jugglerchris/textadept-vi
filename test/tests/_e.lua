@@ -33,3 +33,11 @@ test.assertEq(buffer:get_text(), 'e files/foo%.xml')
 
 -- Exit the entry to avoid confusion in later tests.
 test.key('escape')
+
+-- % should expand to the current filename
+test.keys(':e Ma')
+test.key('tab')
+test.assertEq(buffer:get_text(), 'e Makefile')
+
+-- Exit the entry to avoid confusion in later tests.
+test.key('escape')
