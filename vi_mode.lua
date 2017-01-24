@@ -934,6 +934,8 @@ function find_filename_at_pos()
 
     if filename:sub(1,1) == '/' or filename:sub(1,2) == "./" then
         -- Absolute path: keep as is
+    elseif lfs.attributes(filename) then
+        -- The file exists right here, don't waste time searching.
     else
         -- Relative - find one
         local paths = vi_find_files.find_matching_files(filename)
