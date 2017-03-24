@@ -554,9 +554,15 @@ M.ex_commands = {
                 cmd[#cmd+1] = arg
             end
         end
+
         -- Append arguments
         for i = 2,#args do
             cmd[#cmd+1] = args[i]
+        end
+
+        if #args <= 2 then
+            -- Append an implicit '.' path
+            cmd[#cmd+1] = '.'
         end
 
         command_to_buffer(cmd, ".", "*grep*", choose_errors_from_buf)
