@@ -4,13 +4,14 @@ local vi_tags = require('vi_tags')
 
 -- update the display from the current word after moving.
 local function update_word()
-    -- Save and restore the selection
     local pos = M.state.pos
     local listpos = M.state.listpos
-    local sel_start = buffer.selection_start
+    local sel_start = M.state.wordstart
+    local sel_end = M.state.current_end
     local word = (listpos == 0) and M.state.prefix or M.state.words[listpos][pos]
+    buffer:set_selection(sel_end, sel_start)
     buffer:replace_sel(word)
-    buffer:set_selection(sel_start + #word, sel_start)
+    M.state.current_end = buffer.selection_end
     return true
 end
 
@@ -236,7 +237,7 @@ local function enter_complete(forwards)
         words = {[0]={} },  -- list of word lists (in the order of search_types, with a dummy zeroth list.)
         listpos = 0, -- current word list (0 is empty)
         pos = 0,  -- current entry in words[listpos]
-        current_pos = here,
+        current_end = here,
         wordstart = wordstart,
         prefix = prefix,
         here = here,
