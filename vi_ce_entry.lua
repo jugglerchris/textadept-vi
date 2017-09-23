@@ -143,6 +143,9 @@ local function complete_now(expand)
     local completions = buf.data.complete(to_complete, first_word) or {}
     debug_complete("complete_now: completions="..debug_ts(completions))
 
+    -- Completions are no longer stale.
+    buf.data.completions_stale = false
+
     if #completions == 1 and expand then
         local repl = completions[1]
         debug_complete("complete_now: One completion so expanding: repl=[["..debug_ts(repl).."]]")
@@ -227,7 +230,7 @@ local ve_keys = {
     ['\t'] = function()
         local buffer = ui.command_entry
         local buf = buffer._textredux
-        if buf.data.completions ~= nil and #buf.data.completions > 1 then
+        if buf.data.completions ~= nil and #buf.data.completions > 1 and not buf.data.completions_stale then
             complete_advance()
         else
             complete_now(true)
@@ -348,6 +351,9 @@ local function set_key(k)
         buf.data.pos = pos + 1
         if buf.data.completions then
             complete_now()
+            -- We should retry completion on tab even if we have saved the completions,
+            -- but we can continue using them if just typing extra characters.
+            buf.data.completions_stale = true
         end
         buf:refresh()
     end
