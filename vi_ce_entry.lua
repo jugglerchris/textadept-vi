@@ -15,6 +15,7 @@ if DEBUG_COMPLETE then
     end
 else
     debug_complete = function() end
+    debug_ts = function() return "" end
 end
 
 local redux = require'textredux'
