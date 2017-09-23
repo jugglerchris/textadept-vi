@@ -4,7 +4,6 @@ local M = {}
 local vi_tags = require('vi_tags')
 local vi_quickfix = require('vi_quickfix')
 local vi_regex = require('regex.pegex')
-M.use_vi_entry = true
 local vi_entry
 local vi_views = require('vi_views')
 local lpeg = require 'lpeg'
@@ -902,10 +901,8 @@ local function do_complete(word, cmd)
     end
 end
 
-if M.use_vi_entry then
-    vi_entry = require('vi_ce_entry')
-    state.entry_state = vi_entry.new(':', handle_ex_command, do_complete)
-end
+vi_entry = require('vi_ce_entry')
+state.entry_state = vi_entry.new(':', handle_ex_command, do_complete)
 
 function M.start(exitfunc)
     state.exitfunc = exitfunc
@@ -913,12 +910,7 @@ function M.start(exitfunc)
 
     -- If using vi_entry, the current buffer won't be easily available.
     state.cur_buf = buffer
-    if M.use_vi_entry then
-        state.entry_state:start()
-    else
-        ui.command_entry.entry_text = ""
-        ui.command_entry.enter_mode('vi_ex_command')
-    end
+    state.entry_state:start()
 end
 
 --- Run an ex command that may not have come directly from the command line.
