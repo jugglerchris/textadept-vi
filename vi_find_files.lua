@@ -110,7 +110,12 @@ function do_matching_files(text, mk_matcher, escape)
     local patparts = {} -- the pieces of the pattern
     debug_find("do_matching_files(text=[["..debug_ts(text).."]], mk_matcher, [["..debug_ts(escape).."]])")
     -- Split the pattern into parts separated by /
+    local is_abs
     if text then
+        if text:sub(1,1) == '/' then
+            text = text:sub(2)
+            is_abs = true
+        end
         for part in text:gmatch('[^/]+') do
             table.insert(patparts, part)
         end
@@ -127,7 +132,7 @@ function do_matching_files(text, mk_matcher, escape)
     local dirs = { }
 
     -- The start depends on whether the path is absolute or relative
-    if text and text:sub(1, 1) == '/' then
+    if is_abs then
         table.insert(dirs, '/')
     elseif patparts[1] == '~' then
         -- Handle ~/...
@@ -193,9 +198,15 @@ function do_matching_files(text, mk_matcher, escape)
     for _,res in ipairs(dirs) do
         local level = 1
         debug_find("   res=[["..res.."]]")
+        local res_is_dir = lfs.attributes(res, 'mode') == 'directory'
+        -- Remove the leading / for this search
+        if is_abs then
+            assert(res:sub(1,1) == "/")
+            res = res:sub(2)
+        end
         for piece in res:gmatch('[^/]*') do
             local last = (level == #patparts)
-            local isdir = (not last) or (lfs.attributes(res, 'mode') == 'directory')
+            local isdir = (not last) or res_is_dir
             debug_find("   level="..level..", last="..tostring(last)..", isdir="..debug_ts(isdir))
             debug_find("   piece=[["..debug_ts(piece).."]]")
             ps = parts[level] or {}
@@ -211,13 +222,13 @@ function do_matching_files(text, mk_matcher, escape)
             level = level + 1
         end
     end
-    debug_find("do_matching_files: #3: parts="..debug_ts(dirs))
+    debug_find("do_matching_files: #3: parts="..debug_ts(parts))
 
     -- Now rebuild the pattern, with some ambiguities removed
     local narrowed = false  -- whether we've added more unambiguous info
     local newparts = {}
     -- keep absolute or relative
-    if text:sub(1,1) == '/' then
+    if is_abs then
         table.insert(newparts,  '/')
     end
     for level,matches in ipairs(parts) do
