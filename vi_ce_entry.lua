@@ -4,6 +4,7 @@ local M = {
 local DEBUG_COMPLETE = false
 local debug_complete
 local debug_complete_file
+local debug_ts
 if DEBUG_COMPLETE then
     debug_ts = require('vi_util').tostring
     debug_complete = function(text)
