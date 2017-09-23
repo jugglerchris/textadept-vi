@@ -1,5 +1,20 @@
 -- Search for file by name/pattern.
 local M = {}
+local DEBUG_FIND_FILES=false
+local debug_find
+local debug_find_files_file
+if DEBUG_FIND_FILES then
+    debug_ts = require('vi_util').tostring
+    debug_find = function(text)
+        if debug_find_files_file == nil then
+            debug_find_files_file = io.open("ta_debug_find_files.txt", "w")
+        end
+        debug_find_files_file:write(text .. "\n")
+        debug_find_files_file:flush()
+    end
+else
+    debug_find = function() end
+end
 
 local lfs = _G.lfs
 local vi_regex = require('regex.pegex')
@@ -42,6 +57,7 @@ end
 local ignore_complete_files = { ['.'] = 1 }
 function do_matching_files(text, mk_matcher, escape)
     local patparts = {} -- the pieces of the pattern
+    debug_find("do_matching_files(text=[["..debug_ts(text).."]], mk_matcher, [["..debug_ts(escape).."]])")
     -- Split the pattern into parts separated by /
     if text then
         for part in text:gmatch('[^/]+') do
@@ -53,6 +69,7 @@ function do_matching_files(text, mk_matcher, escape)
             table.insert(patparts, '')
         end
     end
+    debug_find("do_matching_files: patparts="..debug_ts(patparts))
     -- partmatches[n] is a list of matches for patparts[n] at that level
     local parts = { }
     -- Set of directories to look in
@@ -69,15 +86,20 @@ function do_matching_files(text, mk_matcher, escape)
     else
         table.insert(dirs, './')
     end
+    debug_find("do_matching_files: parts="..debug_ts(parts))
+    debug_find("do_matching_files: dirs="..debug_ts(dirs))
 
     -- For each path section
     for level, patpart in ipairs(patparts) do
+      debug_find("for each path: level="..debug_ts(level)..", patpart="..debug_ts(patpart))
       local last = (level == #patparts)
 
+      debug_find("for each: last="..debug_ts(last))
       -- If the last part, then allow trailing parts
       -- TODO: if we complete from a middle-part, then
       -- this test should be for where the cursor is.
       local allow_wild_end = last
+      debug_find("for each: allow_wild_end="..debug_ts(allow_wild_end))
 
       -- The set of paths for the following loop
       local newdirs = {}
@@ -85,7 +107,9 @@ function do_matching_files(text, mk_matcher, escape)
 
       -- For each possible directory at this level
       for _,dir in ipairs(dirs) do
+        debug_find(" for dir [["..debug_ts(dir).."]]")
         for fname in lfs.dir(dir) do
+          debug_find("   for fname [["..debug_ts(fname).."]]")
           if not ignore_complete_files[fname] and matcher(fname) then
             local fullpath
             if dir == "./" then
@@ -93,11 +117,13 @@ function do_matching_files(text, mk_matcher, escape)
             else
                 fullpath = dir .. fname
             end
+            debug_find("   for fname: fullpath=[["..debug_ts(fullpath).."]]")
             local isdir = lfs.attributes(fullpath, 'mode') == 'directory'
+            debug_find("   for fname: isdir=[["..debug_ts(isdir).."]]")
 
             -- Record this path if it's not a non-directory with more path
             -- parts to go.
-            if lfs.attributes(fullpath, 'mode') == 'directory' then
+            if isdir then
                 table.insert(newdirs, fullpath .. '/')
             elseif last then
                 table.insert(newdirs, fullpath)
@@ -108,6 +134,7 @@ function do_matching_files(text, mk_matcher, escape)
       -- Switch to the next level of items
       dirs = newdirs
     end  -- loop through pattern parts
+    debug_find("do_matching_files: dirs="..debug_ts(dirs))
 
     -- Find out the set of components at each level
     -- parts[level] is a table { fname=1,fname2=1, fname,fname2}
@@ -122,8 +149,10 @@ function do_matching_files(text, mk_matcher, escape)
               ps[piece] = 1
               table.insert(ps, piece)
             end
+            level = level + 1
         end
     end
+    debug_find("do_matching_files: #3: parts="..debug_ts(dirs))
 
     -- Now rebuild the pattern, with some ambiguities removed
     local narrowed = false  -- whether we've added more unambiguous info
@@ -133,33 +162,36 @@ function do_matching_files(text, mk_matcher, escape)
         table.insert(newparts,  '/')
     end
     for level,matches in ipairs(parts) do
+        debug_find("for level="..debug_ts(level)..", matches="..debug_ts(matches))
         local last = (level == #parts)
+        debug_find("   last="..tostring(last)..", #matches="..tostring(#matches))
         if #matches == 1 then
             -- Only one thing, so use that.
             local newpart = escape(matches[1])
+            debug_find("   newpart=[["..debug_ts(newpart).."]]")
             if newpart ~= patparts[level] then
                 narrowed = true
             end
+            debug_find("   narrowed=[["..debug_ts(narrowed).."]]")
             table.insert(newparts, newpart)
-            -- matches[fname] is true if all options are directories
-            if last and matches[matches[1]] then
-                table.insert(newparts, '/')
-            end
         else
             table.insert(newparts, patparts[level])
         end
         if not last then table.insert(newparts, '/') end
     end
+    debug_find("After loop, newparts="..debug_ts(newparts))
     local files
     if narrowed then
         files = { table.concat(newparts) }
     else
+        debug_find("After loop not narrowed, but dirs="..debug_ts(dirs))
         files = {}
         table.sort(dirs)
         for i,d  in ipairs(dirs) do
             files[i] = escape(d)
         end
     end
+    debug_find("do_matching_files: files="..debug_ts(files))
     return files
 end
 
