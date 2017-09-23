@@ -62,7 +62,7 @@ local function get_matching_files(text, doescape)
     if text == "%" then
         local result = relpath(state.cur_buf.filename)
         if doescape then
-            result = vi_find_files.luapat_escape(result)
+            result = vi_find_files.glob_escape(result)
         end
         return { result }
     end

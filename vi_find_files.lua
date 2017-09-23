@@ -3,6 +3,7 @@ local M = {}
 local DEBUG_FIND_FILES=false
 local debug_find
 local debug_find_files_file
+local debug_ts
 if DEBUG_FIND_FILES then
     debug_ts = require('vi_util').tostring
     debug_find = function(text)
@@ -13,6 +14,7 @@ if DEBUG_FIND_FILES then
         debug_find_files_file:flush()
     end
 else
+    debug_ts = function() return "" end
     debug_find = function() end
 end
 
@@ -30,12 +32,62 @@ function M.luapat_escape(s)
     return s
 end
 
+-- Escape a glob pattern to make it an exact match.
+function M.glob_escape(s)
+    -- replace metacharacters
+    local s = s:gsub("[][\\*?]", function (s) return "\\"..s end)
+
+    return s
+end
+
 local function mkmatch_luapat(pat, allow_wild_end)
     local fullpat = '^' .. pat
+
     if allow_wild_end then
         fullpat = fullpat .. '.*'
     end
     fullpat = fullpat .. '$'
+    return function(text)
+        local result = text:match(fullpat)
+        return result
+    end
+end
+
+-- Convert a glob pattern into a Lua pattern
+local function glob_to_luapat(pat)
+    local tab = {'^'}
+    local i=1
+    while i <= #pat do
+        local c = pat:sub(i, i)
+        if c == "*" then
+            table.insert(tab, ".*")
+        elseif c == "?" then
+            table.insert(tab, ".")
+        elseif c:match("[%^%$%(%)%%%.%[%]%+%-]") then
+            table.insert(tab, "%")
+            table.insert(tab, c)
+        -- elseif handle character class
+        else
+            table.insert(tab, c)
+        end
+        i = i + 1
+    end
+    return table.concat(tab)
+end
+
+local function mkmatch_glob(pat, allow_wild_end)
+    -- Convert a glob pattern into a Lua pattern
+    local fullpat = glob_to_luapat(pat)
+    if allow_wild_end then
+        -- Special case for empty pattern - don't match dotfiles
+        if fullpat == "^" then
+            fullpat = fullpat .. '[^%.].*'
+        else
+            fullpat = fullpat .. '.*'
+        end
+    end
+    fullpat = fullpat .. '$'
+    debug_find("mkmatch_glob: [["..pat.."]] -> [["..fullpat.."]]")
     return function(text)
         local result = text:match(fullpat)
         return result
@@ -54,7 +106,6 @@ local function mkmatch_null(pat, allow_wild_end)
     end
 end
 
-local ignore_complete_files = { ['.'] = 1 }
 function do_matching_files(text, mk_matcher, escape)
     local patparts = {} -- the pieces of the pattern
     debug_find("do_matching_files(text=[["..debug_ts(text).."]], mk_matcher, [["..debug_ts(escape).."]])")
@@ -110,7 +161,7 @@ function do_matching_files(text, mk_matcher, escape)
         debug_find(" for dir [["..debug_ts(dir).."]]")
         for fname in lfs.dir(dir) do
           debug_find("   for fname [["..debug_ts(fname).."]]")
-          if not ignore_complete_files[fname] and matcher(fname) then
+          if matcher(fname) then
             local fullpath
             if dir == "./" then
                 fullpath = fname
@@ -123,7 +174,7 @@ function do_matching_files(text, mk_matcher, escape)
 
             -- Record this path if it's not a non-directory with more path
             -- parts to go.
-            if isdir then
+            if isdir and not last then
                 table.insert(newdirs, fullpath .. '/')
             elseif last then
                 table.insert(newdirs, fullpath)
@@ -137,17 +188,25 @@ function do_matching_files(text, mk_matcher, escape)
     debug_find("do_matching_files: dirs="..debug_ts(dirs))
 
     -- Find out the set of components at each level
-    -- parts[level] is a table { fname=1,fname2=1, fname,fname2}
+    -- parts[level] is a table { fname="f",fname2="f",dirname="d",fileordir="b", fname,fname2}
     local parts = {}
     for _,res in ipairs(dirs) do
         local level = 1
+        debug_find("   res=[["..res.."]]")
         for piece in res:gmatch('[^/]*') do
+            local last = (level == #patparts)
+            local isdir = (not last) or (lfs.attributes(res, 'mode') == 'directory')
+            debug_find("   level="..level..", last="..tostring(last)..", isdir="..debug_ts(isdir))
+            debug_find("   piece=[["..debug_ts(piece).."]]")
             ps = parts[level] or {}
             parts[level] = ps
 
+            local type = isdir and "d" or "f"
             if ps[piece] == nil then
-              ps[piece] = 1
+              ps[piece] = type
               table.insert(ps, piece)
+            elseif ps[piece] ~= type then
+              ps[piece] = "b"
             end
             level = level + 1
         end
@@ -174,6 +233,9 @@ function do_matching_files(text, mk_matcher, escape)
             end
             debug_find("   narrowed=[["..debug_ts(narrowed).."]]")
             table.insert(newparts, newpart)
+            if last and matches[matches[1]] == "d" then
+                table.insert(newparts, '/')
+            end
         else
             table.insert(newparts, patparts[level])
         end
@@ -201,17 +263,17 @@ function M.matching_files_nopat(text)
     return do_matching_files(text, mkmatch_null, escape)
 end
 
--- Find files with patterns
+-- Find files with globs.
 function M.matching_files(text, doescape)
     -- Escape by default
     local escape
     if doescape == nil or doescape then
-        escape = M.luapat_escape
+        escape = M.glob_escape
     else
         escape = function(s) return s end
     end
 
-    return do_matching_files(text, mkmatch_luapat, escape)
+    return do_matching_files(text, mkmatch_glob, escape)
 end
 
 -- Find files matching a Regex pattern (or a string match)
