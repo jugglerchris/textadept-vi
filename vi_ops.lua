@@ -70,9 +70,32 @@ end
 
 function M.indent(movement)
     local start, end_ = movement.s, movement.e
+    -- Scintilla decides between replacing the selection with a tab,
+    -- or indenting the selection, based on whether it's more than
+    -- one line or not.  Unfortunately that means that if there's no
+    -- newline on the last line, and we try to indent the last line,
+    -- the selection doesn't appear to be multiline as the end of the
+    -- selection is still on the same line.
+    local startline = buffer:line_from_position(start)
+    local endline = buffer:line_from_position(end_)
+    local curpos = buffer.current_pos
+    local temp_eol = false
+    if startline == endline and end_ == buffer.length then
+        buffer:insert_text(buffer.length, '\n')
+        assert(buffer.length == end_ + 1)
+        end_ = end_ + 1
+        temp_eol = true
+    end
     buffer:set_sel(start, end_)
     buffer:tab()
     buffer:clear_selections()
+    if temp_eol then
+        -- Remove the dummy EOL we added.
+        buffer:set_sel(buffer.length-1, buffer.length)
+        assert(buffer:get_sel_text() == "\n")
+        buffer:clear()
+        buffer:clear_selections()
+    end
     buffer:goto_pos(buffer.line_indent_position[buffer:line_from_position(start)])
 end
 
