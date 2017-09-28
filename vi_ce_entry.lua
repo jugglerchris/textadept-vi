@@ -236,6 +236,22 @@ local ve_keys = {
             complete_now(true)
         end
     end,
+    left = function()
+        local buffer = ui.command_entry
+        local buf = buffer._textredux
+        if buf.data.pos >= 1 then
+            buf.data.pos = buf.data.pos - 1
+            buf:refresh()
+        end
+    end,
+    right = function()
+        local buffer = ui.command_entry
+        local buf = buffer._textredux
+        if buf.data.pos < #buf.data.text then
+            buf.data.pos = buf.data.pos + 1
+            buf:refresh()
+        end
+    end,
     ['\b'] = function()
         local buffer = ui.command_entry
         local buf = buffer._textredux
