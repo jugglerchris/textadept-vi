@@ -161,6 +161,9 @@ function M.run(testname)
         view:unsplit()
     end
 
+    -- Exit the command entry mode if needed
+    M.key('escape')
+
     -- Clear up some leftover state
     vi_mode.state.numarg = 0
 end

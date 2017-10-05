@@ -1,6 +1,23 @@
 local M = {
     MAX_COMPLETION_LINES = 5
 }
+local DEBUG_COMPLETE = false
+local debug_complete
+local debug_complete_file
+local debug_ts
+if DEBUG_COMPLETE then
+    debug_ts = require('vi_util').tostring
+    debug_complete = function(text)
+        if debug_complete_file == nil then
+            debug_complete_file = io.open("ta_debug_complete.txt", "w")
+        end
+        debug_complete_file:write(text .. "\n")
+        debug_complete_file:flush()
+    end
+else
+    debug_complete = function() end
+    debug_ts = function() return "" end
+end
 
 local redux = require'textredux'
 
@@ -94,18 +111,24 @@ local function replace_word(buf, repl)
     local pos = buf.data.pos
     local preceding = t:sub(1, pos)
     local startpos, to_complete, endpos = preceding:match("^.-()(%S*)()$")
+    debug_complete("replace_word: text=[["..debug_ts(t).."]]")
+    debug_complete("replace_word: pos="..debug_ts(pos))
+    debug_complete("replace_word: preceding=[["..debug_ts(preceding).."]]")
 
     t = t:sub(1, startpos-1) .. repl .. t:sub(endpos)
     buf.data.text = t
     buf.data.pos = startpos + #repl - 1
+    debug_complete("replace_word: text=[["..debug_ts(t).."]]")
     buf:refresh()
 end
 
 -- expand=nil/false means only show completions, don't update buffer.
 local function complete_now(expand)
+    debug_complete("complete_now("..debug_ts(expand)..")")
     local buffer = ui.command_entry
     local buf = buffer._textredux
     if not buf.data.complete then
+        debug_complete("complete_now: not buf.data.complete")
         return
     end
     buf.data.completions = nil
@@ -116,10 +139,16 @@ local function complete_now(expand)
 
     local startpos, to_complete, endpos = preceding:match("^.-()(%S*)()$")
     local first_word = t:match("^(%S*)")
+    debug_complete("complete_now: first_word='"..debug_ts(first_word).."'")
     local completions = buf.data.complete(to_complete, first_word) or {}
+    debug_complete("complete_now: completions="..debug_ts(completions))
+
+    -- Completions are no longer stale.
+    buf.data.completions_stale = false
 
     if #completions == 1 and expand then
         local repl = completions[1]
+        debug_complete("complete_now: One completion so expanding: repl=[["..debug_ts(repl).."]]")
 
         replace_word(buf, repl)
     elseif #completions >= 1 then
@@ -131,10 +160,13 @@ local function complete_now(expand)
                 prefix = common_prefix(prefix, completions[i])
                 if #prefix == 0 then break end
             end
+            debug_complete("complete_now: expand: prefix=[["..debug_ts(prefix).."]]")
         end
         if #prefix > #to_complete then
+            debug_complete("complete_now: prefix is longer, so replacing.")
             replace_word(buf, prefix)
         else
+            debug_complete("complete_now: No longer prefix, showing completions.")
             -- No common prefix, so show completions.
             buf.data.completions = completions
             buf.data.completions_offset = 0
@@ -198,10 +230,26 @@ local ve_keys = {
     ['\t'] = function()
         local buffer = ui.command_entry
         local buf = buffer._textredux
-        if buf.data.completions ~= nil and #buf.data.completions > 1 then
+        if buf.data.completions ~= nil and #buf.data.completions > 1 and not buf.data.completions_stale then
             complete_advance()
         else
             complete_now(true)
+        end
+    end,
+    left = function()
+        local buffer = ui.command_entry
+        local buf = buffer._textredux
+        if buf.data.pos >= 1 then
+            buf.data.pos = buf.data.pos - 1
+            buf:refresh()
+        end
+    end,
+    right = function()
+        local buffer = ui.command_entry
+        local buf = buffer._textredux
+        if buf.data.pos < #buf.data.text then
+            buf.data.pos = buf.data.pos + 1
+            buf:refresh()
         end
     end,
     ['\b'] = function()
@@ -319,6 +367,9 @@ local function set_key(k)
         buf.data.pos = pos + 1
         if buf.data.completions then
             complete_now()
+            -- We should retry completion on tab even if we have saved the completions,
+            -- but we can continue using them if just typing extra characters.
+            buf.data.completions_stale = true
         end
         buf:refresh()
     end

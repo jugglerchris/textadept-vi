@@ -4,7 +4,6 @@ local M = {}
 local vi_tags = require('vi_tags')
 local vi_quickfix = require('vi_quickfix')
 local vi_regex = require('regex.pegex')
-M.use_vi_entry = true
 local vi_entry
 local vi_views = require('vi_views')
 local lpeg = require 'lpeg'
@@ -63,7 +62,7 @@ local function get_matching_files(text, doescape)
     if text == "%" then
         local result = relpath(state.cur_buf.filename)
         if doescape then
-            result = vi_find_files.luapat_escape(result)
+            result = vi_find_files.glob_escape(result)
         end
         return { result }
     end
@@ -772,15 +771,6 @@ local function matching_buffers(text)
     return buffers
 end
 
-local function complete_buffers(pos, text)
-    local buffers = matching_buffers(text)
-    if #buffers == 1 then
-        ui_ce.entry_text = string.sub(ui_ce.entry_text, 1, pos-1) .. buffers[1]
-    else
-        ui_ce.show_completions(buffers)
-    end
-end
-
 local function matching_commands(text)
     local commands = {}
     local tlen = #text
@@ -802,41 +792,6 @@ local function complete_commands(pos, text)
     end
 end
 
-local function complete_files(pos, text)
-    local files = get_matching_files(text)
-    if #files == 0 then
-        ex_error("No completions")
-    elseif #files == 1 then
-        -- Substitute directly
-        ui_ce.entry_text = string.sub(ui_ce.entry_text, 1, pos+dirlen-1) .. files[1]
-    else
-        -- Several completions
-        ui_ce.show_completions(files)
-    end
-end
-
-local function complete_tags(pos, text)
-    local tagnames = vi_tags.match_tag(text)
-    do_complete_simple(pos, tagnames)
-end
-
-local function complete_paths(pos, text)
-    local files = find_matching_files(text)
-    do_complete_simple(pos, files)
-end
-
-M.completions = {
-    b = complete_buffers,
-    e = complete_files,
-    w = complete_files,
-    wq = complete_files,
-    x = complete_files,
-    tag = complete_tags,
-    tsel = complete_tags,
-    find = complete_paths,
-    grep = complete_files,  -- for the search root
-}
-
 -- Completers for the new entry method
 M.completions_word = {
     b = matching_buffers,
@@ -852,46 +807,6 @@ M.completions_word = {
     grep = get_matching_files,  -- for the search root
 }
 
--- Register our command_entry keybindings
-keys.vi_ex_command = {
-    ['\n'] = function ()
-               local exit = state.exitfunc
-               state.exitfunc = nil
-               return ui_ce.finish_mode(function(text)
-                                              handle_ex_command(text)
-                                              exit()
-                                      end)
-             end,
-    ['\t'] = function ()
-        local cmd = ui_ce.entry_text:match("^(%S+)%s")
-        local lastpos, lastword = ui_ce.entry_text:match("%s()(%S+)$")
-        if not lastpos then lastpos = ui_ce.entry_text:len() end
-        if cmd and M.completions[cmd] then
-            debugwrap(M.completions[cmd])(lastpos, lastword)
-        else
-            debugwrap(complete_commands(1, lastword))
-        end
-    end,
-    up = function ()
-        if state.histidx > 1 then
-            -- Save current text
-            state.history[state.histidx] = ui_ce.entry_text
-
-            state.histidx = state.histidx - 1
-            ui_ce.entry_text = state.history[state.histidx]
-        end
-    end,
-    down= function ()
-        if state.histidx < #state.history then
-            -- Save current text
-            state.history[state.histidx] = ui_ce.entry_text
-
-            state.histidx = state.histidx + 1
-            ui_ce.entry_text = state.history[state.histidx]
-        end
-    end,
-}
-
 local function do_complete(word, cmd)
     if cmd and M.completions_word[cmd] then
         return M.completions_word[cmd](word)
@@ -902,10 +817,8 @@ local function do_complete(word, cmd)
     end
 end
 
-if M.use_vi_entry then
-    vi_entry = require('vi_ce_entry')
-    state.entry_state = vi_entry.new(':', handle_ex_command, do_complete)
-end
+vi_entry = require('vi_ce_entry')
+state.entry_state = vi_entry.new(':', handle_ex_command, do_complete)
 
 function M.start(exitfunc)
     state.exitfunc = exitfunc
@@ -913,12 +826,7 @@ function M.start(exitfunc)
 
     -- If using vi_entry, the current buffer won't be easily available.
     state.cur_buf = buffer
-    if M.use_vi_entry then
-        state.entry_state:start()
-    else
-        ui.command_entry.entry_text = ""
-        ui.command_entry.enter_mode('vi_ex_command')
-    end
+    state.entry_state:start()
 end
 
 --- Run an ex command that may not have come directly from the command line.
@@ -936,7 +844,6 @@ end
 --- Add a new custom ex command.
 function M.add_ex_command(name, handler, completer)
     M.ex_commands[name] = handler
-    M.completions[name] = completer
 end
 
 return M
