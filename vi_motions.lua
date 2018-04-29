@@ -262,7 +262,7 @@ end
 function M.match_brace()
    local orig_pos = buffer.current_pos
    -- Simple case: match on current character
-   local pos = buffer:brace_match(buffer.current_pos)
+   local pos = buffer:brace_match(buffer.current_pos, 0)
    if pos >= 0 then
        buffer:goto_pos(pos)
        return
@@ -335,7 +335,7 @@ function M.match_brace()
 
    local newidx, _, c = line:find(bracketpat, idx+1)
    if newidx then
-       pos = buffer:brace_match(orig_pos + newidx - idx - 1)
+       pos = buffer:brace_match(orig_pos + newidx - idx - 1, 0)
        if pos >= 0 then
            buffer:goto_pos(pos)
        end
