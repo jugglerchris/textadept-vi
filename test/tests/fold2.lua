@@ -11,7 +11,7 @@ test.keys('zc')
 assertAt(0,0)
 -- Try moving over folded function
 test.key('j')
-assertAt(4,0) -- should have skipped the body
+assertAt(3,0) -- should have skipped the body
 
 test.key('k')
 assertAt(0,0) -- should have skipped the body

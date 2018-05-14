@@ -11,7 +11,7 @@ test.keys('zc')
 assertAt(0,0)
 -- Try moving over folded function
 test.key('j')
-assertAt(4,0) -- should have skipped the body
+assertAt(3,0) -- should have skipped the body
 
 test.key('k')
 assertAt(0,0) -- should have skipped the body
@@ -26,12 +26,12 @@ local function lines_visible()
 end
 
 test.keys('zM')
-assertEq(lines_visible(), {true, false, false, false, true, false, false, false})
+assertEq(lines_visible(), {true, false, false, true, true, false, false, false})
 test.keys('zR')
 assertEq(lines_visible(), {true, true, true, true, true, true, true, true})
 test.keys('zM')
-assertEq(lines_visible(), {true, false, false, false, true, false, false, false})
+assertEq(lines_visible(), {true, false, false, true, true, false, false, false})
 -- Check that lines become visible when searching
 test.keys('/retur') test.key('enter')
 assertAt(6, 3)
-assertEq(lines_visible(), {true, false, false, false, true, true, true, true})
+assertEq(lines_visible(), {true, false, false, true, true, true, true, true})

@@ -1053,8 +1053,8 @@ end
 --  list.
 local function do_fold_all(action)
     for line = 0, buffer.line_count do
-        if bit32.band(line, buffer.FOLDLEVELHEADERFLAG) and
-           bit32.band(line, buffer.FOLDLEVELBASE) then
+        if line & buffer.FOLDLEVELHEADERFLAG and
+           line & buffer.FOLDLEVELBASE then
             buffer:fold_children(line, action)
         end
     end
