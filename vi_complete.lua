@@ -145,7 +145,7 @@ function get_words(forwards, here, prefix)
 
     local endpos = here
 
-    local pat = '\\<'..prefix..'['..M.wordchars..']*\\>'
+    local pat = '\\b'..prefix..'['..M.wordchars..']*\\b'
 
     local wrapped = false
     while true do
