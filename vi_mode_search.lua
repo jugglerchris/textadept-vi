@@ -191,7 +191,7 @@ local function search_word_common(backwards)
     local s, e = buffer:word_start_position(pos, true), buffer:word_end_position(pos)
     local word = buffer:text_range(s, e)
     if word == "" then return end
-    state.pattern = '\\<' .. word .. '\\>'
+    state.pattern = '\\b' .. word .. '\\b'
     state.backwards = backwards
     if backwards then
         -- Avoid hitting the current word again if the cursor isn't at the
