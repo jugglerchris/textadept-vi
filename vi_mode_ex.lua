@@ -338,6 +338,7 @@ function command_to_buffer(command, workdir, buftype, when_finished, read_only)
         msgbuf._type = buftype
     else
         -- Clear the buffer
+        msgbuf.read_only = false
         msgbuf:clear_all()
     end
     ui._print(buftype, "Running: " .. table.concat(command, " "))
@@ -356,7 +357,6 @@ function command_to_buffer(command, workdir, buftype, when_finished, read_only)
             if cur_view ~= my_view then
                 ui.goto_view(my_view)
             end
-
             msgbuf:append_text(s)
             msgbuf:goto_pos(msgbuf.length)
             msgbuf:set_save_point()
