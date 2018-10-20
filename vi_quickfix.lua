@@ -12,8 +12,8 @@ local Cc = lpeg.Cc
 
 local ws = S" \t"
 local to_nl = (P(1) - P"\n") ^ 0
-local errpat_newdir = Ct(P"make: Entering directory `" * Cg((P(1) - P"'")^0, 'newdir')* P"'")
-local errpat_leavedir = Ct(P"make: Leaving directory `" * Cg((P(1) - P"'")^0, 'leavedir')* P"'")
+local errpat_newdir = Ct(P"make: Entering directory " * S("'`") * Cg((P(1) - P"'")^0, 'newdir')* P"'")
+local errpat_leavedir = Ct(P"make: Leaving directory " * S("'`") * Cg((P(1) - P"'")^0, 'leavedir')* P"'")
 local errpat_error = Ct((P"In file included from " ^-1) * Cg((P(1) - S":\n") ^ 0, 'path') * P":" * Cg(R"09" ^ 0, 'lineno') * P":" * (S(" \t") ^ 0) * Cg(to_nl, "message"))
 local errpat_error_nofile = Ct((P"error" + P"Error" + P"ERROR") * P":" * ws * Cg(to_nl, "message")) +
                             Ct(Cg(P"make: ***" * to_nl, "message"))
