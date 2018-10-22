@@ -53,7 +53,6 @@ end
 
 local ts = require('vi_util').tostring
 function M.save_location(filename, pos, taglist)
-    cme_log('save_location: '..ts(state.tagstack))
     local newidx = state.tagidx + 1
     state.tagstack[newidx] = {
        i=1,         -- which tag within this list
@@ -63,7 +62,6 @@ function M.save_location(filename, pos, taglist)
     }
     state.lasttag = taglist
     state.tagidx = newidx
-    cme_log('save_location2: '..ts(state.tagstack))
 end
 
 function M.find_tag_exact(name)
