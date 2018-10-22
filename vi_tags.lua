@@ -51,6 +51,21 @@ local function get_tags()
     return state.tags
 end
 
+local ts = require('vi_util').tostring
+function M.save_location(filename, pos, taglist)
+    cme_log('save_location: '..ts(state.tagstack))
+    local newidx = state.tagidx + 1
+    state.tagstack[newidx] = {
+       i=1,         -- which tag within this list
+       tags=taglist, -- this level's tags
+       fromname=filename,  -- where we came from
+       frompos=pos,        -- where we came from
+    }
+    state.lasttag = taglist
+    state.tagidx = newidx
+    cme_log('save_location2: '..ts(state.tagstack))
+end
+
 function M.find_tag_exact(name)
     local tags = get_tags()
     local result = tags[name]
@@ -62,14 +77,7 @@ function M.find_tag_exact(name)
             state.tagstack[#state.tagstack] = nil
         end
 
-        state.tagstack[newidx] = {
-           i=1,         -- which tag within this list
-           tags=result, -- this level's tags
-           fromname=buffer.filename,  -- where we came from
-           frompos=buffer.current_pos,-- where we came from
-        }
-        state.lasttag = result
-        state.tagidx = newidx
+        M.save_location(buffer.filename, buffer.current_pos, result)
         return result[1]
     else
         return nil
@@ -93,7 +101,7 @@ function M.pop_tag()
     if state.tagidx >= 1 then
         local tos = state.tagstack[state.tagidx]
         io.open_file(tos.fromname)
-        buffer.goto_pos(tos.frompos)
+        buffer:goto_pos(tos.frompos)
         state.tagidx = state.tagidx - 1
     else
         vi_mode.err("Top of stack")
