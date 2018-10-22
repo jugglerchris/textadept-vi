@@ -209,7 +209,7 @@ function update_status()
     msg = msg .. err
     ui.statusbar_text = msg
 
-    state.errmsg = ''
+    --state.errmsg = ''
 end
 events.connect(events.UPDATE_UI, update_status)
 
