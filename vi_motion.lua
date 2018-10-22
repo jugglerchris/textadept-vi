@@ -79,6 +79,22 @@ local function restore_mark(reg)
      end, 1 }
 end
 
+-- Table of character keys, returning true.
+local characters = setmetatable({}, {
+  __index = function(t, key)
+    if string.match(key, "^%a$") then
+      return key
+    else
+      return nil
+    end
+  end,
+})
+
+local function till_char_right(c)
+    return { MOV_EXC, function()
+        vi_motions.next_char_of(c)
+     end, 1 }
+end
 -- Table of basic motion commands.  Each is a list:
 -- { type, f, count }
 -- where f is a function to do the movement, type is one of
@@ -99,6 +115,7 @@ local motions = {
   ['}'] = { MOV_EXC, vi_motions.paragraph_forward, 1 },
   G = { MOV_LINE, vi_motions.goto_line, -1},
   ["'"] = wrap_table(registers, restore_mark),
+  t = wrap_table(characters, till_char_right),
   ['%'] = { MOV_INC, vi_motions.match_brace, 1 },
   -- these are included here so that they work with a repeat count:
   ['left']    = { MOV_EXC,  r(vi_motions.char_left), 1 },

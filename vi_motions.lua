@@ -379,4 +379,24 @@ function M.search_back(cb)
     end)
 end
 
+-- Return the position (if any) of the next occurance of character c
+-- on the current line.
+function M.next_char_of(c)
+    local orig_pos = buffer.current_pos
+    local lineno = buffer:line_from_position(buffer.current_pos)
+    buffer.target_start = buffer.current_pos + 1
+    buffer.target_end = buffer.line_end_position[lineno]
+
+    local orig_flags = buffer.search_flags
+    buffer.search_flags = buffer.FIND_MATCHCASE
+    local pos = buffer:search_in_target(c)
+    buffer.search_flags = orig_flags
+
+    if pos >= 0 then
+        buffer:goto_pos(pos)
+    else
+        buffer:goto_pos(orig_pos)
+    end
+end
+
 return M
