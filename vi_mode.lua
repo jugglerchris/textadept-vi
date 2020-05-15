@@ -56,7 +56,7 @@ function enter_mode(m)
     mode = m
 
     dbg("Enter mode:" .. m.name)
-    keys.MODE = m.name
+    keys.mode = m.name
 
     if m.restart then
         local restart = m.restart
@@ -1319,7 +1319,7 @@ mode_command = {
         ['@'] = {
             [':'] = M.ex_mode.repeat_last_command,
         },
-        ['ce']= function() ui.command_entry.enter_mode('lua_command') end,
+        ['ce']= function() ui.command_entry.run() end,
 
     -- Tags
     ['c]'] = function()
@@ -1375,14 +1375,14 @@ M.mode_command = mode_command
 
 events.connect(events.VIEW_BEFORE_SWITCH, function()
        -- Add undo boundaries when switching buffers
-       if keys.MODE == mode_insert.name then
+       if keys.mode == mode_insert.name then
            break_edit_start()
        end
 end)
 
 events.connect(events.VIEW_AFTER_SWITCH, function ()
        -- Add undo boundaries when switching buffers
-       if keys.MODE == mode_insert.name then
+       if keys.mode == mode_insert.name then
            break_edit_end()
        end
     end)
@@ -1487,26 +1487,6 @@ events.connect(events.BUFFER_BEFORE_SWITCH, function()
     end
 end)
 
---[[ The following are adaptations of functions from Textadept 8.0's core/file_io.lua
-    Copyright 2007-2015 Mitchell mitchell.att.foicica.com.
-  ]]
--- Like io.reload_file, but can work with a different buffer
-function _reload_file(buffer)
-  if not buffer.filename then return end
-  local pos, first_visible_line = buffer.current_pos, buffer.first_visible_line
-  local f = assert(io.open(buffer.filename, 'rb'))
-  local text = f:read('*a')
-  f:close()
-  local encoding, encoding_bom = buffer.encoding, buffer.encoding_bom
-  if encoding_bom then text = text:sub(#encoding_bom + 1, -1) end
-  if encoding then text = text:iconv('UTF-8', encoding) end
-  buffer:clear_all()
-  buffer:add_text(text, #text)
-  buffer:line_scroll(0, first_visible_line)
-  buffer:goto_pos(pos)
-  buffer:set_save_point()
-  buffer.mod_time = lfs.attributes(buffer.filename, 'modification')
-end
 -- Adapted from the FILE_CHANGED event handler
 local function ask_reload_buffer(buf)
   local msg = ('"%s"\n%s'):format(buf.filename:iconv('UTF-8', _CHARSET),
@@ -1516,7 +1496,7 @@ local function ask_reload_buffer(buf)
     informative_text = msg, icon = 'gtk-dialog-question',
     button1 = _L['_Yes'], button2 = _L['_No']
   }
-  if button == 1 then _reload_file(buf) end
+  if button == 1 then buf:reload() end
 end
 -- Adapted from update_modified_file()
 local function check_buffer_for_modification(buf)

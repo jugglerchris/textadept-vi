@@ -30,7 +30,7 @@ local function save_margins(buffer)
         text = {},
         style = {},
     }
-    for i=0,4 do
+    for i=1,5 do
         result.width[i] = buffer.margin_width_n[i]
         result.type[i] = buffer.margin_type_n[i]
         result.text[i] = buffer.margin_text[i]
@@ -40,7 +40,7 @@ local function save_margins(buffer)
 end
 
 local function restore_margins(buffer, state)
-    for i=0,4 do
+    for i=1,5 do
         buffer.margin_width_n[i] = state.width[i]
         buffer.margin_type_n[i] = state.type[i]
         buffer.margin_text[i] = state.text[i]
@@ -52,15 +52,15 @@ end
 redux.core.style.string_hl = redux.core.style.string .. { back="#FFFFFF" }
 local function ve_refresh(buf)
   -- Disable all margins, except one we'll use for the :
-  buf.margin_width_n[0] = 0
   buf.margin_width_n[1] = 0
   buf.margin_width_n[2] = 0
   buf.margin_width_n[3] = 0
+  buf.margin_width_n[4] = 0
 
-  buf.margin_width_n[4] = #buf.data.prompt
-  buf.margin_type_n[4] = buf.MARGIN_TEXT
-  buf.margin_text[0] = buf.data.prompt
-  buf.margin_style[0] = 8 -- error (red)
+  buf.margin_width_n[5] = #buf.data.prompt
+  buf.margin_type_n[5] = buf.MARGIN_TEXT
+  buf.margin_text[1] = buf.data.prompt
+  buf.margin_style[1] = 8 -- error (red)
 
   buf:add_text(buf.data.text, redux.core.style.comment)
   buf:goto_pos(buf.data.pos)

@@ -148,7 +148,7 @@ keys.vi_search_command = {
     end,
     ['esc'] = function()
               ui_ce.enter_mode(nil)  -- Exit command_entry mode
-              keys.MODE = "vi_command"
+              keys.mode = "vi_command"
           end,
     ['\b'] = function()
         if ui.command_entry:get_text() == "" then

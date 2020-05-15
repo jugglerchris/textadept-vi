@@ -402,9 +402,9 @@ M.ex_commands = {
     w = function(args)
          --dbg("Fn:" .. tostring(_G.buffer.filename))
          if #args == 2 then
-             io.save_file_as(args[2])
+             buffer:save_as(args[2])
          elseif #args == 1 then
-             io.save_file()
+             buffer:save()
          else
              ex_error("Too many arguments to :"..args[1])
          end
@@ -465,7 +465,7 @@ M.ex_commands = {
         if #args > 1 then
             ex_error("Arguments to bdelete not supported yet.")
         else
-            io.close_buffer()
+            buf:close()
         end
     end,
     q = function(args)
