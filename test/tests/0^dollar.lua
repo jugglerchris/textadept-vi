@@ -5,8 +5,8 @@ local colno = test.colno
 local assertEq = test.assertEq
 
 test.key('$')
-assertEq(colno(), 14)
+assertEq(colno(), 15)
 test.key('0')
-assertEq(colno(), 0)
+assertEq(colno(), 1)
 test.key('^')
-assertEq(colno(), 2)
+assertEq(colno(), 3)
