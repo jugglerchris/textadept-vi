@@ -576,8 +576,8 @@ M.ex_commands = {
             ui.print("Running: " .. table.concat(command, " "))
             command_to_buffer(command, "./", "*shell*")
         else
-            buffer:set_selection(buffer:position_from_line(range[2]),
-                                 buffer:position_from_line(range[1]-1))
+            buffer:set_selection(buffer:position_from_line(range[2]+1),
+                                 buffer:position_from_line(range[1]))
             textadept.editing.filter_through(table.concat(command, " "))
         end
     end,
