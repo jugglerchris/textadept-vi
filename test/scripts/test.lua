@@ -498,9 +498,13 @@ function M.getscreen(first, last)
 end
 
 -- Return the current line number
-function M.lineno() return buffer:line_from_position(buffer.current_pos) end
+-- The tests were written before the Great Renumbering in textadept 11,
+-- so for now we'll return the old number.
+function M.lineno() return buffer:line_from_position(buffer.current_pos)-1 end
 
-function M.colno() return buffer.column[buffer.current_pos] end
+-- The tests were written before the Great Renumbering in textadept 11,
+-- so for now we'll return the old number.
+function M.colno() return buffer.column[buffer.current_pos]-1 end
 
 -- Assert an absolute position
 function M.assertAt(line, col)
