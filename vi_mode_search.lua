@@ -120,20 +120,18 @@ end
 
 -- Register our key bindings for the command entry
 local ui_ce = ui.command_entry
+local function finish_search(text)
+    local exitfunc = state.exitfunc
+    state.exitfunc = nil
+    if string.len(text) == 0 then
+        text = state.pattern
+    end
+    exitfunc(function()
+        state.pattern = text
+        do_search(state.backwards)
+    end)
+end
 keys.vi_search_command = {
-    ['\n'] = function ()
-              local exitfunc = state.exitfunc
-              state.exitfunc = nil
-              return ui_ce.finish_mode(function(text)
-                                   if string.len(text) == 0 then
-                                       text = state.pattern
-                                   end
-                                   exitfunc(function()
-                                       state.pattern = text
-                                       do_search(state.backwards)
-                                   end)
-                               end)
-            end,
     cv = {
         ['\t'] = function()
             return keys.vi_search_command['\t']()
@@ -162,7 +160,7 @@ local function start_common(exitfunc)
     state.in_search_mode = true
     state.exitfunc = exitfunc
     ui.command_entry:set_text("")
-    ui.command_entry.enter_mode('vi_search_command')
+    ui.command_entry.run(finish_search)
 end
 
 function M.start(exitfunc)
