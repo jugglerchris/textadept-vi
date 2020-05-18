@@ -197,11 +197,12 @@ function M.queue(f)
         logd('doquit()\narg=' .. tostring(arg) .. '\n')
         quit()
     end
+    local fakekeys
     local function continuetest()
         logd('continuetest()\n')
         if coroutine.status(testrun) == "dead" then
             logd("Disconnecting continuetest\n")
---            events.disconnect(events.KEYPRESS, doquit)
+            events.disconnect(events.KEYPRESS, doquit)
 --            events.disconnect(events.QUIT, continuetest)
             M.report()
             -- signal the end of the test
@@ -213,17 +214,18 @@ function M.queue(f)
         else
             logd("Continuing testrun\n")
             coroutine.resume(testrun)
-            return true
+            return
         end
     end
-    local function fakekeys(...)
+    fakekeys = function(...)
         -- First disconnect this handler...
         events.disconnect(events.KEYPRESS, fakekeys)
         -- ... then retrigger the event
         local result = events.emit(events.KEYPRESS, ...)
         -- ... and then reconnect and return the result.
         events.connect(events.KEYPRESS, fakekeys, 1)
-        return continuetest()
+        continuetest()
+        return result
     end
     -- and start if off on initialisation
     events.connect(events.INITIALIZED, function()
