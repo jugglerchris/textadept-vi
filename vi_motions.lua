@@ -12,13 +12,13 @@ end
 
 function M.char_right()
     local line, pos = buffer.get_cur_line()
-        local docpos = buffer.current_pos
+    local docpos = buffer.current_pos
     -- Don't include line ending characters, so we can't use buffer.line_length().
     local lineno = buffer:line_from_position(docpos)
-        local length = line_length(lineno)
-        if pos < (length - 1) then
-            buffer.char_right()
-        end
+    local length = line_length(lineno)
+    if pos < length then
+        buffer.char_right()
+    end
 end
 
 ---  Move the cursor down one line.
