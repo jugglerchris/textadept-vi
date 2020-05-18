@@ -276,7 +276,7 @@ local function _find_number()
     local col = buffer.column[buffer.current_pos]
     local linepos = buffer:position_from_line(buffer:line_from_position(buffer.current_pos))
 
-    local startpos, base, endpos = _find_num:match(line, 1, col)
+    local startpos, base, endpos = _find_num:match(line, 1, col-1)
 
     if startpos ~= nil then
         return base, linepos+startpos-1, linepos + endpos-1
