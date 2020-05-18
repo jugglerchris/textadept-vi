@@ -777,7 +777,7 @@ local function movdesc_get_range_ex(movdesc, rpt_motion, rpt_cmd)
 
         if movtype == MOV_INC then
             -- inclusive motion - include the last character
-            if end_ < buffer.text_length and
+            if end_ <= buffer.text_length and
                 endcol < buffer:line_length(endlineno) then
                 end_ = end_ + 1
             end

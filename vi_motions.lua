@@ -163,8 +163,8 @@ function M.line_end(rep)
         end
     end
     buffer:line_end()
-    local line, pos = buffer.get_cur_line()
-    if pos > 0 then buffer:char_left() end
+    local line, pos = buffer:get_cur_line()
+    if pos > 1 then buffer:char_left() end
 end
 
 -- Select motions (return start,end_)
@@ -239,11 +239,11 @@ end
 function M.goto_line(lineno)
     if lineno > 0 then
         -- Textadept does zero-based line numbers.
-        buffer.goto_line(lineno-1)
+        buffer:goto_line(lineno)
     else
         -- With no arg, go to last line.
-        buffer.document_end()
-        buffer.home()
+        buffer:document_end()
+        buffer:home()
     end
 end
 
@@ -251,11 +251,11 @@ end
 function M.goto_line_0(lineno)
     if lineno > 0 then
         -- Textadept does zero-based line numbers.
-        buffer.goto_line(lineno-1)
+        buffer:goto_line(lineno)
     else
         -- With no arg, or 0, go to last line.
-        buffer.goto_line(0)
-        buffer.home()
+        buffer:goto_line(1)
+        buffer:home()
     end
 end
 
