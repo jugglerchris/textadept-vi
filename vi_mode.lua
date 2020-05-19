@@ -454,7 +454,7 @@ mode_insert = {
         esc = function()
             insert_end_edit()
             local line, pos = buffer.get_cur_line()
-            if pos > 0 then buffer.char_left() end
+            if pos > 1 then buffer.char_left() end
             enter_mode(mode_command)
         end,
 
@@ -1149,7 +1149,7 @@ mode_command = {
             local function ins_new_line()
               buffer.home()
               begin_undo()
-              if buffer.current_pos == 0 then
+              if buffer.current_pos == 1 then
                  -- start of buffer
                  buffer.new_line()
                  buffer.char_left()  -- position cursor at start of the inserted
