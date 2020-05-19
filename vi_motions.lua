@@ -193,7 +193,7 @@ function M.sel_word(numwords)
   local pos = buffer.current_pos
 
   -- Simple case: off the end of the buffer.
-  if pos >= buflen then
+  if pos > buflen then
       return buflen, buflen
   end
 
@@ -212,20 +212,20 @@ function M.sel_word(numwords)
     local p = pos
     for i=1,numwords do
         -- Skip over whitespace
-        while p < buflen and w_isblank(c) do
+        while p <= buflen and w_isblank(c) do
           p = nextpos
           nextpos = buffer:position_after(nextpos)
           c = buffer:text_range(p, nextpos)
         end
         -- And now find the end of the word or nonblank-sequence
-        if p < buflen and w_isword(c) then
-          while p < buflen and w_isword(c) do
+        if p <= buflen and w_isword(c) then
+          while p <= buflen and w_isword(c) do
             p = nextpos
             nextpos = buffer:position_after(nextpos)
             c = buffer:text_range(p, nextpos)
           end
         else
-          while p < buflen and w_isother(c) do
+          while p <= buflen and w_isother(c) do
             p = nextpos
             nextpos = buffer:position_after(nextpos)
             c = buffer:text_range(p, nextpos)
