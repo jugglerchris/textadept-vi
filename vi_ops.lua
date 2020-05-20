@@ -80,9 +80,9 @@ function M.indent(movement)
     local endline = buffer:line_from_position(end_)
     local curpos = buffer.current_pos
     local temp_eol = false
-    if startline == endline and end_ == buffer.length then
-        buffer:insert_text(buffer.length, '\n')
-        assert(buffer.length == end_ + 1)
+    if startline == endline and end_ == buffer.length+1 then
+        buffer:insert_text(buffer.length+1, '\n')
+        assert(buffer.length == end_)
         end_ = end_ + 1
         temp_eol = true
     end
@@ -91,7 +91,7 @@ function M.indent(movement)
     buffer:clear_selections()
     if temp_eol then
         -- Remove the dummy EOL we added.
-        buffer:set_sel(buffer.length-1, buffer.length)
+        buffer:set_sel(buffer.length, buffer.length+1)
         assert(buffer:get_sel_text() == "\n")
         buffer:clear()
         buffer:clear_selections()
