@@ -109,7 +109,7 @@ end
 local function replace_word(buf, repl)
     local t = buf.data.text
     local pos = buf.data.pos
-    local preceding = t:sub(1, pos)
+    local preceding = t:sub(1, pos-1)
     local startpos, to_complete, endpos = preceding:match("^.-()(%S*)()$")
     debug_complete("replace_word: text=[["..debug_ts(t).."]]")
     debug_complete("replace_word: pos="..debug_ts(pos))
@@ -117,7 +117,7 @@ local function replace_word(buf, repl)
 
     t = t:sub(1, startpos-1) .. repl .. t:sub(endpos)
     buf.data.text = t
-    buf.data.pos = startpos + #repl - 1
+    buf.data.pos = startpos + #repl
     debug_complete("replace_word: text=[["..debug_ts(t).."]]")
     buf:refresh()
 end
@@ -135,7 +135,7 @@ local function complete_now(expand)
     buf.data.completions_sel = 0
     local t = buf.data.text
     local pos = buf.data.pos
-    local preceding = t:sub(1, pos)
+    local preceding = t:sub(1, pos-1)
 
     local startpos, to_complete, endpos = preceding:match("^.-()(%S*)()$")
     local first_word = t:match("^(%S*)")
@@ -239,7 +239,7 @@ local ve_keys = {
     left = function()
         local buffer = ui.command_entry
         local buf = buffer._textredux
-        if buf.data.pos >= 1 then
+        if buf.data.pos > 1 then
             buf.data.pos = buf.data.pos - 1
             buf:refresh()
         end
@@ -247,7 +247,7 @@ local ve_keys = {
     right = function()
         local buffer = ui.command_entry
         local buf = buffer._textredux
-        if buf.data.pos < #buf.data.text then
+        if buf.data.pos <= #buf.data.text then
             buf.data.pos = buf.data.pos + 1
             buf:refresh()
         end
@@ -261,8 +261,8 @@ local ve_keys = {
             return
         end
         local pos = buffer.current_pos
-        if pos >= 1 then
-            t = t:sub(1, pos-1) .. t:sub(pos+1, -1)
+        if pos > 1 then
+            t = t:sub(1, pos-2) .. t:sub(pos, -1)
             buf.data.text = t
             buf.data.pos = pos - 1
             buf:refresh()
@@ -274,10 +274,10 @@ local ve_keys = {
         local buf = buffer._textredux
         local t = buf.data.text
         local pos = buffer.current_pos
-        if pos > 0 then
-            t = t:sub(pos+1, -1)
+        if pos > 1 then
+            t = t:sub(pos, -1)
             buf.data.text = t
-            buf.data.pos = 0
+            buf.data.pos = 1
             buf:refresh()
         end
     end,
@@ -323,7 +323,7 @@ local ve_keys = {
                 end
             end
             buf.data.text = hist[idx]
-            buf.data.pos = #buf.data.text
+            buf.data.pos = #buf.data.text+1
         end
         buf:refresh()
     end,
@@ -350,7 +350,7 @@ local ve_keys = {
                 idx = idx + 1
                 buf.data.histidx = idx
                 buf.data.text = hist[idx]
-                buf.data.pos = #buf.data.text
+                buf.data.pos = #buf.data.text+1
             end
         end
         buf:refresh()
@@ -362,7 +362,7 @@ local function set_key(k)
         local buf = buffer._textredux
         local t = buf.data.text
         local pos = buffer.current_pos
-        t = t:sub(1, pos) .. k .. t:sub(pos+1, -1)
+        t = t:sub(1, pos-1) .. k .. t:sub(pos, -1)
         buf.data.text = t
         buf.data.pos = pos + 1
         if buf.data.completions then
@@ -395,7 +395,7 @@ local function do_start(context)
   buf.data = {
       prompt=context._prompt,
       text = '',
-      pos=0,
+      pos=1,
       handler=context._handler,
       complete=context._complete,
       context=context,
