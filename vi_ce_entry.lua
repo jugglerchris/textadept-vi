@@ -244,6 +244,18 @@ local ve_keys = {
             buf:refresh()
         end
     end,
+    home = function()
+        local buffer = ui.command_entry
+        local buf = buffer._textredux
+        buf.data.pos = 1
+        buf:refresh()
+    end,
+    ['end'] = function()
+        local buffer = ui.command_entry
+        local buf = buffer._textredux
+        buf.data.pos = #buf.data.text + 1
+        buf:refresh()
+    end,
     right = function()
         local buffer = ui.command_entry
         local buf = buffer._textredux
