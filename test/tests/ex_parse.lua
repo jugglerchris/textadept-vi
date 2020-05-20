@@ -22,7 +22,7 @@ local commands = {
 }
 
 -- Start from line 7
-buffer:goto_line(6)
+buffer:goto_line(7)
 
 for _, data in pairs(commands) do
     local addrstring = data[1]

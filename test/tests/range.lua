@@ -26,7 +26,7 @@ local ranges = {
 }
 
 -- Start from line 7
-buffer:goto_line(6)
+buffer:goto_line(7)
 
 for _, data in pairs(ranges) do
     local addrstring = data[1]
