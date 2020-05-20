@@ -80,7 +80,7 @@ function M.word_right()
     local col = buffer.current_pos - buffer.position_from_line(lineno)
     -- Textadept sticks at the end of the line.
     if col >= line_length(lineno) then
-        if lineno == buffer.line_count-1 then
+        if lineno == buffer.line_count then
             buffer:char_left()
         else
             buffer:word_right()
