@@ -340,7 +340,7 @@ local function vi_paste(after, register)
         local lineno = buffer:line_from_position(pos)
         if after then
             lineno = lineno + 1
-            if lineno >= buffer.line_count then
+            if lineno > buffer.line_count then
                 -- add a line if necessary
                 buffer:line_end()
                 buffer:new_line()
@@ -354,7 +354,7 @@ local function vi_paste(after, register)
     else
         local lineno = buffer:line_from_position(pos)
         local lineend = buffer.line_end_position[lineno]
-        if after and pos < buffer.length and pos < lineend then
+        if after and pos <= buffer.length and pos < lineend then
             pos = pos + 1
         end
     end
