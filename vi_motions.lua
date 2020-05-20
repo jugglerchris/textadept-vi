@@ -7,7 +7,7 @@ local buf_state = vi_ta_util.buf_state
 -- Normal motions
 function M.char_left()
   local line, pos = buffer.get_cur_line()
-  if pos > 0 then buffer.char_left() end
+  if pos > 1 then buffer.char_left() end
 end
 
 function M.char_right()
