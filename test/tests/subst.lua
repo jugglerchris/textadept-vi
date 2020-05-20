@@ -14,14 +14,14 @@ end
 checkOrig()
 
 ex('2s/f/_/')
-assertEq(buffer:get_line(1), [[hey bee cee dee ee e_f
+assertEq(buffer:get_line(2), [[hey bee cee dee ee e_f
 ]])
 key('u')
 
 checkOrig()
 
 ex('2s/f/_/g')
-assertEq(buffer:get_line(1), [[hey bee cee dee ee e__
+assertEq(buffer:get_line(2), [[hey bee cee dee ee e__
 ]])
 key('u')
 
