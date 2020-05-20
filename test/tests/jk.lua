@@ -1,7 +1,7 @@
 -- Test the up/down arrows
 test.open('1_10.txt')
 local lineno = test.lineno
-assert(buffer.current_pos == 0)
+assert(buffer.current_pos == 1)
 assert(lineno() == 0)
 test.key('k')
 assert(lineno() == 0)

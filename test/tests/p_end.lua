@@ -12,7 +12,7 @@ test.key('escape')
 test.key('p')
 assertEq(colno(), 3)
 assertEq(lineno(), 3)
-assertEq(buffer:get_line(3), "one ")
+assertEq(buffer:get_line(4), "one ")
 test.key('O', 'escape')
 test.key('p')
 assertEq(buffer:get_text(),

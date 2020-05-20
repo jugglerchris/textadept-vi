@@ -7,18 +7,18 @@ local buf_state = vi_ta_util.buf_state
 -- Normal motions
 function M.char_left()
   local line, pos = buffer.get_cur_line()
-  if pos > 0 then buffer.char_left() end
+  if pos > 1 then buffer.char_left() end
 end
 
 function M.char_right()
     local line, pos = buffer.get_cur_line()
-        local docpos = buffer.current_pos
+    local docpos = buffer.current_pos
     -- Don't include line ending characters, so we can't use buffer.line_length().
     local lineno = buffer:line_from_position(docpos)
-        local length = line_length(lineno)
-        if pos < (length - 1) then
-            buffer.char_right()
-        end
+    local length = line_length(lineno)
+    if pos < length then
+        buffer.char_right()
+    end
 end
 
 ---  Move the cursor down one line.
@@ -80,7 +80,7 @@ function M.word_right()
     local col = buffer.current_pos - buffer.position_from_line(lineno)
     -- Textadept sticks at the end of the line.
     if col >= line_length(lineno) then
-        if lineno == buffer.line_count-1 then
+        if lineno == buffer.line_count then
             buffer:char_left()
         else
             buffer:word_right()
@@ -163,8 +163,8 @@ function M.line_end(rep)
         end
     end
     buffer:line_end()
-    local line, pos = buffer.get_cur_line()
-    if pos > 0 then buffer:char_left() end
+    local line, pos = buffer:get_cur_line()
+    if pos > 1 then buffer:char_left() end
 end
 
 -- Select motions (return start,end_)
@@ -193,7 +193,7 @@ function M.sel_word(numwords)
   local pos = buffer.current_pos
 
   -- Simple case: off the end of the buffer.
-  if pos >= buflen then
+  if pos > buflen then
       return buflen, buflen
   end
 
@@ -212,20 +212,20 @@ function M.sel_word(numwords)
     local p = pos
     for i=1,numwords do
         -- Skip over whitespace
-        while p < buflen and w_isblank(c) do
+        while p <= buflen and w_isblank(c) do
           p = nextpos
           nextpos = buffer:position_after(nextpos)
           c = buffer:text_range(p, nextpos)
         end
         -- And now find the end of the word or nonblank-sequence
-        if p < buflen and w_isword(c) then
-          while p < buflen and w_isword(c) do
+        if p <= buflen and w_isword(c) then
+          while p <= buflen and w_isword(c) do
             p = nextpos
             nextpos = buffer:position_after(nextpos)
             c = buffer:text_range(p, nextpos)
           end
         else
-          while p < buflen and w_isother(c) do
+          while p <= buflen and w_isother(c) do
             p = nextpos
             nextpos = buffer:position_after(nextpos)
             c = buffer:text_range(p, nextpos)
@@ -239,11 +239,11 @@ end
 function M.goto_line(lineno)
     if lineno > 0 then
         -- Textadept does zero-based line numbers.
-        buffer.goto_line(lineno-1)
+        buffer:goto_line(lineno)
     else
         -- With no arg, go to last line.
-        buffer.document_end()
-        buffer.home()
+        buffer:document_end()
+        buffer:home()
     end
 end
 
@@ -251,11 +251,11 @@ end
 function M.goto_line_0(lineno)
     if lineno > 0 then
         -- Textadept does zero-based line numbers.
-        buffer.goto_line(lineno-1)
+        buffer:goto_line(lineno)
     else
         -- With no arg, or 0, go to last line.
-        buffer.goto_line(0)
-        buffer.home()
+        buffer:goto_line(1)
+        buffer:home()
     end
 end
 

@@ -77,7 +77,7 @@ end
 
 -- Helper functions for parsing addresses
 local function _curline()
-    return buffer:line_from_position(buffer.current_pos) + 1
+    return buffer:line_from_position(buffer.current_pos)
 end
 local function _lastline()
     return buffer.line_count
@@ -92,7 +92,7 @@ local function _searchfwd(re)
     local lineno = _curline()
 
     for i=lineno,_lastline() do
-        local line = buffer:get_line(i-1)
+        local line = buffer:get_line(i)
         if pat:match(line) then
             return i
         end
@@ -187,7 +187,7 @@ local function clist_go(item)
     -- If no file/line, don't do anything.
     if item.path and item.lineno then
         io.open_file(item.path)
-        buffer.goto_line(item.lineno-1)
+        buffer.goto_line(item.lineno)
         state.clists[state.clistidx].idx = item.idx
     end
 end
@@ -226,9 +226,6 @@ local function command_substitute(args, range)
     if range == nil then
         local lineno = buffer:line_from_position(buffer.current_pos)
         range = { lineno, lineno }
-    else
-        -- convert from 1-based to 0-based line numbers
-        range = { range[1]-1, range[2]-1 }
     end
 
     local pat = vi_regex.compile(searchpat)
@@ -402,9 +399,9 @@ M.ex_commands = {
     w = function(args)
          --dbg("Fn:" .. tostring(_G.buffer.filename))
          if #args == 2 then
-             io.save_file_as(args[2])
+             buffer:save_as(args[2])
          elseif #args == 1 then
-             io.save_file()
+             buffer:save()
          else
              ex_error("Too many arguments to :"..args[1])
          end
@@ -465,7 +462,7 @@ M.ex_commands = {
         if #args > 1 then
             ex_error("Arguments to bdelete not supported yet.")
         else
-            io.close_buffer()
+            buf:close()
         end
     end,
     q = function(args)
@@ -576,8 +573,8 @@ M.ex_commands = {
             ui.print("Running: " .. table.concat(command, " "))
             command_to_buffer(command, "./", "*shell*")
         else
-            buffer:set_selection(buffer:position_from_line(range[2]),
-                                 buffer:position_from_line(range[1]-1))
+            buffer:set_selection(buffer:position_from_line(range[2]+1),
+                                 buffer:position_from_line(range[1]))
             textadept.editing.filter_through(table.concat(command, " "))
         end
     end,

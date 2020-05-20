@@ -108,7 +108,7 @@ local function exit_complete()
     local pos = buffer.current_pos
     buffer:clear_selections()
     buffer:goto_pos(pos)
-    keys.MODE = vi_mode.INSERT
+    keys.mode = vi_mode.INSERT
 end
 
 -- Wrap the insert-mode keys for the complete mode.
@@ -226,7 +226,7 @@ end
 
 -- Set up the completion state.
 local function enter_complete(forwards)
-    keys.MODE = vi_mode.INSERT_CNP
+    keys.mode = vi_mode.INSERT_CNP
     local here = buffer.current_pos
 
     local wordstart, prefix = find_prefix()

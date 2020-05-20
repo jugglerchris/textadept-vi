@@ -152,7 +152,7 @@ function M.run(testname)
         -- convert back from buffer to index using _G._BUFFERS.
         view:goto_buffer(buf)
         buffer:set_save_point()  -- assert not dirty
-        if not io.close_buffer(buf) then
+        if not buf:close() then
             log('Error closing buffer ' .. tostring(buffer.filename))
         end
     end
@@ -193,16 +193,17 @@ function M.queue(f)
         return rest
     end
     local testrun = coroutine.create(xpwrapped)
-    local function doquit()
-        logd('doquit()\n')
+    local function doquit(arg)
+        logd('doquit()\narg=' .. tostring(arg) .. '\n')
         quit()
     end
+    local fakekeys
     local function continuetest()
         logd('continuetest()\n')
         if coroutine.status(testrun) == "dead" then
             logd("Disconnecting continuetest\n")
             events.disconnect(events.KEYPRESS, doquit)
-            events.disconnect(events.QUIT, continuetest)
+--            events.disconnect(events.QUIT, continuetest)
             M.report()
             -- signal the end of the test
             log("Finished")
@@ -213,8 +214,18 @@ function M.queue(f)
         else
             logd("Continuing testrun\n")
             coroutine.resume(testrun)
-            return true
+            return
         end
+    end
+    fakekeys = function(...)
+        -- First disconnect this handler...
+        events.disconnect(events.KEYPRESS, fakekeys)
+        -- ... then retrigger the event
+        local result = events.emit(events.KEYPRESS, ...)
+        -- ... and then reconnect and return the result.
+        events.connect(events.KEYPRESS, fakekeys, 1)
+        continuetest()
+        return result
     end
     -- and start if off on initialisation
     events.connect(events.INITIALIZED, function()
@@ -222,8 +233,8 @@ function M.queue(f)
         coroutine.resume(testrun)
         logd("end of INITIALIZED\n")
         -- Run the queued function a bit on every keypress
-        events.connect(events.QUIT, continuetest, 1)
-        events.connect(events.KEYPRESS, doquit, 1)
+        --events.connect(events.QUIT, continuetest, 1)
+        events.connect(events.KEYPRESS, fakekeys, 1)
         logd("Connected QUIT and KEYPRESS events\n")
     end)
 end
@@ -489,9 +500,13 @@ function M.getscreen(first, last)
 end
 
 -- Return the current line number
-function M.lineno() return buffer:line_from_position(buffer.current_pos) end
+-- The tests were written before the Great Renumbering in textadept 11,
+-- so for now we'll return the old number.
+function M.lineno() return buffer:line_from_position(buffer.current_pos)-1 end
 
-function M.colno() return buffer.column[buffer.current_pos] end
+-- The tests were written before the Great Renumbering in textadept 11,
+-- so for now we'll return the old number.
+function M.colno() return buffer.column[buffer.current_pos]-1 end
 
 -- Assert an absolute position
 function M.assertAt(line, col)

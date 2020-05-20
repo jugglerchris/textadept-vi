@@ -24,7 +24,7 @@ assertEq(lineno(), 6)
 -- Delete first 2 paragraphs
 test.key('d', '2', '{')
 assertEq(lineno(), 0)
-assertEq(line_length(lineno()), 0)
+assertEq(line_length(lineno()+1), 0)
 assertEq(buffer.line_count, 5)
 assertEq(state.registers['"'],{line=true, text=[[
 this

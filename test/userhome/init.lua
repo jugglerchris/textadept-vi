@@ -2,12 +2,20 @@
 pcall(require, 'luacov')
 
 -- Used to be in properties.lua
-buffer.margin_width_n[0] = 0
 buffer.margin_width_n[1] = 0
-buffer.margin_width_n[2] = 1
+buffer.margin_width_n[2] = 0
 buffer.margin_width_n[3] = 1
+buffer.margin_width_n[4] = 1
+buffer.margin_width_n[5] = 0
 buffer.use_tabs = false
 buffer.indent = 2
+
+local function remove_line_number_margin()
+    buffer.margin_width_n[1] = 0
+end
+events.connect(events.BUFFER_NEW, remove_line_number_margin)
+events.connect(events.VIEW_NEW, remove_line_number_margin)
+events.connect(events.FILE_OPENED, remove_line_number_margin)
 
 ok, msg = xpcall(function()
 -- Make textadept-vi available

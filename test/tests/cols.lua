@@ -4,7 +4,7 @@ test.open('ramps.txt')
 local assertEq = test.assertEq
 local lineno = test.lineno
 local colno = test.colno
-assertEq(buffer.current_pos, 0)
+assertEq(buffer.current_pos, 1)
 for i=1,12 do
   test.key('j')
   assert(colno() == 0)

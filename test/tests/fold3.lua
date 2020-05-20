@@ -19,7 +19,7 @@ assertAt(0,0) -- should have skipped the body
 local function lines_visible()
     local result = {}
     local i = 0
-    for i=0,buffer.line_count-1 do
+    for i=1,buffer.line_count do
         result[#result+1] = buffer.line_visible[i]
     end
     return result
