@@ -7,7 +7,7 @@ scriptability, so this is the solution.  The aim is for my trained fingers
 to keep working, while (at least eventually) making good use of textadept's
 features.
 
-It requires a recent textadept (7.8 at time of writing).
+It requires a recent textadept (11 alpha at time of writing).
 
 I use this as my default editor, and it implements the common features of
 vi/vim that I used to use; there are many less common features I haven't
