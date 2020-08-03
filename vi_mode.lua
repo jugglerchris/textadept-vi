@@ -98,9 +98,9 @@ function key_handler_common(code, shift, ctrl, alt, meta)
     if not sym then return end -- ignore unknown keys
 
     -- dbg("Code:", code)
-    if alt then sym = 'a' .. sym end
-    if ctrl then sym = 'c' .. sym end
-    if shift then sym = 's' .. sym end -- Need to change for alphabetic
+    if alt then sym = 'alt+' .. sym end
+    if ctrl then sym = 'ctrl+' .. sym end
+    if shift then sym = 'shift+' .. sym end -- Need to change for alphabetic
 
     if state.pending_keyhandler ~= nil then
         -- Call this instead
@@ -1302,7 +1302,7 @@ mode_command = {
         end,
         -- edit commands
         u = buffer.undo,
-        cr = buffer.redo,
+        ['ctrl+r'] = buffer.redo,
         ['.'] = function()
               -- Redo the last action, taking into account possible prefix arg.
               local rpt = get_numarg()
@@ -1319,10 +1319,10 @@ mode_command = {
         ['@'] = {
             [':'] = M.ex_mode.repeat_last_command,
         },
-        ['ce']= function() ui.command_entry.run() end,
+        ['ctrl+e']= function() ui.command_entry.run() end,
 
     -- Tags
-    ['c]'] = function()
+    ['ctrl+]'] = function()
                 local pos = buffer.current_pos
                 local s, e = buffer:word_start_position(pos, true), buffer:word_end_position(pos)
                 local word = buffer:text_range(s, e)
@@ -1333,18 +1333,18 @@ mode_command = {
                     M.err("Not found")
                 end
     end,
-    ['ct'] = vi_tags.pop_tag,
+    ['ctrl+t'] = vi_tags.pop_tag,
 
     -- Errors (in compile error buffer)
-    ['c}'] = function() textadept.run.goto_error(false, true) end,
+    ['ctrl+}'] = function() textadept.run.goto_error(false, true) end,
 
     -- Views and buffers
-    cw = {
-        cw = function() ui.goto_view(1) end,  -- cycle between views
+    ['ctrl+w'] = {
+        ['ctrl+w'] = function() ui.goto_view(1) end,  -- cycle between views
         ['+'] = function() vi_views.grow_view(view, get_numarg() or 1) end,
         ['-'] = function() vi_views.grow_view(view, -(get_numarg() or 1)) end,
     },
-    ['c^'] = function()
+    ['ctrl+^'] = function()
         if view.vi_last_buf then
             bufnum = _BUFFERS[view.vi_last_buf]
             if bufnum then
@@ -1362,8 +1362,8 @@ mode_command = {
     },
 
     -- Increment/decrement under cursor
-    ca = function() do_action(function(rpt) do_inc(rpt) end) end,
-    cx = function() do_action(function(rpt) do_inc(-1*rpt) end) end,
+    ['ctrl+a'] = function() do_action(function(rpt) do_inc(rpt) end) end,
+    ['ctrl+x'] = function() do_action(function(rpt) do_inc(-1*rpt) end) end,
 
     -- Show help
     f1 = textadept.editing.show_documentation,
