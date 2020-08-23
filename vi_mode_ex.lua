@@ -378,7 +378,7 @@ end
 
 M.ex_commands = {
     e = function(args)
-        dbg("In e handler")
+--        dbg("In e handler")
         if args[2] ~= nil then
             local filename = expand_filename(args[2])
             io.open_file(filename)
