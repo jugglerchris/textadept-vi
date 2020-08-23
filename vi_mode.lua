@@ -468,10 +468,10 @@ mode_insert = {
         pgdn =  allow_autoc(break_edit(buffer.page_down)),
 
         -- These don't quite behave as vim, but they'll do for now.
-        cp = M.vi_complete.complete_backwards,
-        cn = M.vi_complete.complete_forwards,
+        ['ctrl+p'] = M.vi_complete.complete_backwards,
+        ['ctrl+n'] = M.vi_complete.complete_forwards,
 
-        cv = self_insert_tab,
+        ['ctrl+v'] = self_insert_tab,
     }
 }
 
