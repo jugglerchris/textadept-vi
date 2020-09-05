@@ -29,7 +29,7 @@ keys('1G')
 checkOrig()
 
 ex("'a,'bs/^/__/")
-  return assertEq(buffer:get_text(), [[1
+assertEq(buffer:get_text(), [[1
 2
 3
 __4

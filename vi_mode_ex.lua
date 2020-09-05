@@ -82,6 +82,12 @@ end
 local function _lastline()
     return buffer.line_count
 end
+local function _mark(m)
+    local markpos = vi_mode.state.marks[m:sub(2,2)]
+    if markpos ~= nil then
+        return buffer:line_from_position(markpos)
+    end
+end
 
 local function _tolinenum(a)
     return tonumber(a)
@@ -117,6 +123,7 @@ local function add(a,b) return a+b end
 local ex_addr_num = (R"09" ^ 1) / _tolinenum
 local ex_addr_here = (P".") / _curline
 local ex_addr_end = (P"$") / _lastline
+local ex_addr_mark = (P"'" * R"az") / _mark
 
 -- A regular expressions.
 local ex_quoted_slash = (P"\\/" + (1 - P"/"))
@@ -124,7 +131,7 @@ local ex_pattern_nonempty = ex_quoted_slash ^ 1
 local ex_pattern = ex_pattern_nonempty + P(0)
 
 local ex_addr_fwd = (P"/" * C(ex_pattern_nonempty ^ 1) * P"/") / _searchfwd
-local ex_addr_base = ex_addr_num + ex_addr_here + ex_addr_end + ex_addr_fwd
+local ex_addr_base = ex_addr_num + ex_addr_here + ex_addr_end + ex_addr_mark + ex_addr_fwd
 local addr_adder = (P"+" * ex_addr_num)
 local addr_subber = (P"-" * ex_addr_num) / neg
 local ex_addr = Cf(ex_addr_base * (addr_adder + addr_subber)^0, add) + Cf((P(0) / _curline) * (addr_adder + addr_subber)^1, add)
