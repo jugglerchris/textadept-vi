@@ -462,7 +462,7 @@ M.ex_commands = {
         if #args > 1 then
             ex_error("Arguments to bdelete not supported yet.")
         else
-            buf:close()
+            buffer:close()
         end
     end,
     q = function(args)
