@@ -132,7 +132,7 @@ local function finish_search(text)
     end)
 end
 keys.vi_search_command = {
-    cv = {
+    ['ctrl+v'] = {
         ['\t'] = function()
             return keys.vi_search_command['\t']()
         end,

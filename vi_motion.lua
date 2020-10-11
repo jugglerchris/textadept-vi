@@ -82,7 +82,7 @@ end
 -- Table of character keys, returning true.
 local characters = setmetatable({}, {
   __index = function(t, key)
-    if string.match(key, "^%a$") then
+    if type(key) == "string" and string.match(key, "^[%g ]$") then
       return key
     else
       return nil

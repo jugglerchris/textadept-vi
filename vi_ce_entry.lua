@@ -280,7 +280,7 @@ local ve_keys = {
             buf:refresh()
         end
     end,
-    cu = function()
+    ['ctrl+u'] = function()
         -- Clear to start of line
         local buffer = ui.command_entry
         local buf = buffer._textredux

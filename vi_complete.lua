@@ -116,8 +116,8 @@ end
 -- exit this mode.
 function M.get_keys(insert_keys)
     return setmetatable({
-      cp = next_backwards,
-      cn = next_forwards,
+      ['ctrl+p'] = next_backwards,
+      ['ctrl+n'] = next_forwards,
       esc = exit_complete,
     }, {
       __index = function(t,k)
