@@ -1,6 +1,8 @@
 -- Turn on coverage analysis if available
 pcall(require, 'luacov')
 
+_NOCOMPAT = true
+
 -- Used to be in properties.lua
 buffer.margin_width_n[1] = 0
 buffer.margin_width_n[2] = 0
