@@ -159,20 +159,8 @@ keys.vi_search_command = {
 local function start_common(exitfunc)
     state.in_search_mode = true
     state.exitfunc = exitfunc
+    ui.command_entry.run(finish_search)
     ui.command_entry:set_text("")
-    -- The command entry as of Textadept 11.0 beta has a history which is indexed
-    -- on the function passed in, which means that it starts with the last thing
-    -- entered in that mode.  But when I've used the "*" or "#" commands, that
-    -- doesn't add to the history, and so "/<enter>" or "?<enter>" ends up searching
-    -- for the previous explicit search rather than what "*" or "#" searched for.
-    -- The current workaround is to make sure we give it a different function each
-    -- time, so it doesn't use the history.  We need _dummy because otherwise the
-    -- closure has no captures and is optimised to the same function every time.
-    local _dummy = nil
-    ui.command_entry.run(function(...)
-        if _dummy then  end
-        return finish_search(...)
-    end)
 end
 
 function M.start(exitfunc)
