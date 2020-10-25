@@ -133,6 +133,7 @@ state = {
 
     variables = {             -- Configurable variables
         grepprg = "grep -rn --devices=skip",
+        findprg = nil,        -- Set to a program to use instead of Lua file find.
     },
 
     visual = { },             -- State for visual mode

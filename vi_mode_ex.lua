@@ -175,7 +175,24 @@ local function ex_error(msg)
     vi_mode.err(msg)
 end
 
-local find_matching_files = vi_find_files.find_matching_files
+local find_matching_files = function(pat)
+    local findprg = vi_mode.state.variables.findprg
+    if findprg ~= nil then
+        local fproc = os.spawn(findprg .. " " .. pat)
+        local files = {}
+        while true do
+            local line, err, errmsg = fproc:read()
+            -- TODO: log errors and stderr
+            if line == nil then break end
+            table.insert(files, line)
+        end
+        fproc:close()
+        return files
+    else
+        -- Default to built-in function
+        return vi_find_files.find_matching_files(pat)
+    end
+end
 
 -- Given a list of items, prompt the user to choose one.
 local function choose_list(title, items, cb)
