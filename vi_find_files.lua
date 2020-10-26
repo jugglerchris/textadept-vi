@@ -288,7 +288,7 @@ function M.matching_files(text, doescape)
 end
 
 -- Find files matching a Regex pattern (or a string match)
-function M.find_matching_files(pattern)
+function find_matching_files_lua(pattern)
     local results = {}
     local pat = vi_regex.compile(pattern)
     local function f(filename)
@@ -298,6 +298,25 @@ function M.find_matching_files(pattern)
     end
     lfs.dir_foreach('.', f, { folders = { "build"}}, nil, false)
     return results
+end
+
+function M.find_matching_files(pat)
+    local findprg = vi_mode.state.variables.findprg
+    if findprg ~= nil then
+        local fproc = os.spawn(findprg .. " " .. pat)
+        local files = {}
+        while true do
+            local line, err, errmsg = fproc:read()
+            -- TODO: log errors and stderr
+            if line == nil then break end
+            table.insert(files, line)
+        end
+        fproc:close()
+        return files
+    else
+        -- Default to built-in function
+        return find_matching_files_lua(pat)
+    end
 end
 
 return M
