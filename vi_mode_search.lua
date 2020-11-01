@@ -160,7 +160,6 @@ local function start_common(exitfunc)
     state.in_search_mode = true
     state.exitfunc = exitfunc
     ui.command_entry.run(finish_search)
-    ui.command_entry:set_text("")
 end
 
 function M.start(exitfunc)
@@ -190,6 +189,7 @@ local function search_word_common(backwards)
     local word = buffer:text_range(s, e)
     if word == "" then return end
     state.pattern = '\\b' .. word .. '\\b'
+    ui.command_entry.append_history(finish_search, state.pattern)
     state.backwards = backwards
     if backwards then
         -- Avoid hitting the current word again if the cursor isn't at the
