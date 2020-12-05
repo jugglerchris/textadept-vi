@@ -1,5 +1,11 @@
 local M = {}
 
+-- In Textadept 11.0 (and some betas), there is some code to detect key mappings
+-- using the old style ('ca' instead of 'ctrl+a'); however this interacts badly
+-- with our metatable-based key maps - so we need to disable that compatibility
+-- code.
+_NOCOMPAT = true
+
 ------ Configuration (should make it possible to pass it in) ------
 -- If true, then convert alt-x or meta-x into ESC x (NCURSES only).  This means
 -- that you can no longer use alt-key bindings, but means that you can quickly
