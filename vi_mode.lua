@@ -465,6 +465,8 @@ mode_insert = {
             enter_mode(mode_command)
         end,
 
+        ['ctrl+ '] = keys['ctrl+ '],
+        ['ctrl+\n'] = keys['ctrl+\n'],
         up    = allow_autoc(break_edit(vi_up)),
         down  = allow_autoc(break_edit(vi_down)),
         left  = break_edit(buffer.char_left),
