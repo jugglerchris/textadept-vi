@@ -1320,7 +1320,7 @@ mode_command = {
               -- Slightly unclean way of making sure the cursor doesn't end
               -- up past the end of the line.
               local line, pos = buffer.get_cur_line()
-              if pos >= line:len() then buffer.char_left() end
+              if pos > line:len() then buffer.char_left() end
            end,
 
         -- Enter ex mode command
