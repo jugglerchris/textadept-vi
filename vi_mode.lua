@@ -337,9 +337,11 @@ end
 --- Paste from a register (by default the unnamed register "")
 --  If after is true, then will paste after the current character or line
 --  (depending on whether the buffer was line or character based)
-local function vi_paste(after, register)
+local function vi_paste(after, rpt, register)
     local buf = state.registers[register or '"']
     if not buf then return end
+
+    rpt = rpt or 1
 
     local pos = buffer.current_pos
 
@@ -365,9 +367,11 @@ local function vi_paste(after, register)
             pos = pos + 1
         end
     end
-    buffer:insert_text(pos, buf.text)
+    for i=1, rpt do
+        buffer:insert_text(pos, buf.text)
+    end
     if not buf.line then
-        buffer:goto_pos(pos + buf.text:len()-1)
+        buffer:goto_pos(pos + buf.text:len()*rpt - 1)
     end
 end
 
@@ -1303,11 +1307,11 @@ mode_command = {
 
         p = function()
             -- Paste a new line.
-            do_action(repeatable(function(reg) vi_paste(true, reg) end))
+            do_action(function(rpt, reg) vi_paste(true, rpt, reg) end)
         end,
 
         P = function()
-            do_action(repeatable(function(reg) vi_paste(false, reg) end))
+            do_action(function(rpt, reg) vi_paste(false, rpt, reg) end)
         end,
         -- edit commands
         u = buffer.undo,
