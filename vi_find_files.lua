@@ -107,10 +107,14 @@ local function mkmatch_null(pat, allow_wild_end)
 end
 
 function do_matching_files(text, mk_matcher, escape)
-    local patparts = {} -- the pieces of the pattern
     debug_find("do_matching_files(text=[["..debug_ts(text).."]], mk_matcher, [["..debug_ts(escape).."]])")
+    -- First check for ~/
+    if text:sub(1,2) == "~/" then
+        text = os.getenv('HOME') .. '/' .. text:sub(3)
+    end
     -- Split the pattern into parts separated by /
     local is_abs
+    local patparts = {} -- the pieces of the pattern
     if text then
         if text:sub(1,1) == '/' then
             text = text:sub(2)
@@ -134,11 +138,6 @@ function do_matching_files(text, mk_matcher, escape)
     -- The start depends on whether the path is absolute or relative
     if is_abs then
         table.insert(dirs, '/')
-    elseif patparts[1] == '~' then
-        -- Handle ~/...
-        table.insert(dirs, os.getenv("HOME") .. "/")
-        -- Remove the initial ~
-        table.remove(patparts, 1)
     else
         table.insert(dirs, './')
     end
@@ -231,6 +230,7 @@ function do_matching_files(text, mk_matcher, escape)
     if is_abs then
         table.insert(newparts,  '/')
     end
+    debug_find("Narrowing loop.  patparts="..debug_ts(patparts))
     for level,matches in ipairs(parts) do
         debug_find("for level="..debug_ts(level)..", matches="..debug_ts(matches))
         local last = (level == #parts)
