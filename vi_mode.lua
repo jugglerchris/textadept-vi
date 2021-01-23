@@ -933,8 +933,9 @@ FILENAME_CHARS = "abcdefghijklmnopqrstuvwxyz" ..
                  "_.-#,/"
 -- Find a filename under the cursor and try to open that file.
 -- If the filename is followed by :number, then go to that line in the file.
-function find_filename_at_pos()
-    local s, e, filename = vi_ta_util.find_word_at(buffer.current_pos, FILENAME_CHARS)
+function find_filename_at_pos(pos)
+    local mypos = pos or buffer.current_pos
+    local s, e, filename = vi_ta_util.find_word_at(mypos, FILENAME_CHARS)
     local lineno = nil
 
     if buffer:text_range(e, e+1) == ":" then
@@ -962,10 +963,11 @@ function find_filename_at_pos()
     if filename then
         io.open_file(filename)
         if lineno ~= nil then
-            buffer:goto_line(lineno-1)
+            buffer:goto_line(lineno)
         end
     end
 end
+M.find_filename_at_pos = find_filename_at_pos
 
 -- Key binding which takes a motion, then prompts for two strings for
 -- before and after, and wraps the region with that text.

@@ -289,7 +289,7 @@ local function choose_errors_from_buf(buf, cb)
         -- Push the results list to the stack
         state.clistidx = #state.clists+1
         state.clists[state.clistidx] = { list=results, idx=1 }
-        choose_list('Errors', results, cb)
+--        choose_list('Errors', results, cb)
     end
 end
 
@@ -329,7 +329,7 @@ end
 -- buftype: the buffer type (eg "*make*"), which will be created or cleared.
 -- when_finished: a function called with the buffer when the process
 --                exits.
-function command_to_buffer(command, workdir, buftype, when_finished, read_only)
+function command_to_buffer(command, workdir, buftype, lexer, when_finished, read_only)
     local msgbuf = nil
     for n,buf in ipairs(_BUFFERS) do
         if buf._type == buftype then
@@ -344,6 +344,9 @@ function command_to_buffer(command, workdir, buftype, when_finished, read_only)
         -- Clear the buffer
         msgbuf.read_only = false
         msgbuf:clear_all()
+    end
+    if lexer then
+        msgbuf:set_lexer(lexer)
     end
     ui._print(buftype, "Running: " .. table.concat(command, " "))
     local function getoutput(s)
@@ -538,7 +541,7 @@ M.ex_commands = {
         for _,b in ipairs(_BUFFERS) do
             b:annotation_clear_all()
         end
-        command_to_buffer(command, "./", "*make*", choose_errors_annotated_from_buf, true)
+        command_to_buffer(command, "./", "*make*", nil, choose_errors_annotated_from_buf, true)
     end,
 
     -- Search files
@@ -568,7 +571,7 @@ M.ex_commands = {
             cmd[#cmd+1] = '.'
         end
 
-        command_to_buffer(cmd, ".", "*grep*", choose_errors_from_buf)
+        command_to_buffer(cmd, ".", "*grep*", "tavi_grep", choose_errors_from_buf)
     end,
 
     ['!'] = function(args, range)
@@ -694,6 +697,13 @@ M.ex_commands = {
         textadept.run.build()
     end,
     run = textadept.run.run,
+}
+
+keys.tavi_grep = {
+    ['\n'] = function()
+               buffer:home()
+               vi_mode.find_filename_at_pos()
+            end,
 }
 
 local function errhandler(msg)
