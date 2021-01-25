@@ -640,6 +640,20 @@ M.ex_commands = {
         end
         choose_list_lexed('*grep*', 'tavi_grep', clist)
     end,
+    colder = function(args)
+        if state.clistidx > 1 then
+            state.clistidx = state.clistidx - 1
+        end
+        ex_error("List " .. tostring(state.clistidx) .. " of "
+                 .. tostring(#state.clists))
+    end,
+    cnewer = function(args)
+        if state.clistidx < #state.clists then
+            state.clistidx = state.clistidx + 1
+        end
+        ex_error("List " .. tostring(state.clistidx) .. " of "
+                 .. tostring(#state.clists))
+    end,
 
     -- Tags
     tag = function(args)
