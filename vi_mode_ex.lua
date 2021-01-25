@@ -188,6 +188,31 @@ local function choose_list(title, items, cb)
     list:show()
 end
 
+local function get_buffer_by_type(buftype)
+    for n,buf in ipairs(_BUFFERS) do
+        if buf._type == buftype then
+            return buf
+        end
+    end
+    local buf = buffer.new()
+    buf._type = buftype
+    return buf
+end
+
+-- Given a list of items, prompt the user to choose one.
+local function choose_list_lexed(buftype, lexer, clist)
+    local buf = get_buffer_by_type(buftype)
+    buf.read_only = false
+    buf:clear_all()
+    for _, item in ipairs(clist.list) do
+        buf:append_text(item[1] .. "\n")
+    end
+    buf.read_only = true
+    buf:set_lexer(lexer)
+    view:goto_buffer(buf)
+    buf:goto_line(clist.idx)
+end
+
 -- Jump to an item in a clist ({ text, path=filename, lineno=lineno, idx=idx })
 -- Jump to a quickfix item
 local function clist_go(item)
@@ -330,21 +355,10 @@ end
 -- when_finished: a function called with the buffer when the process
 --                exits.
 function command_to_buffer(command, workdir, buftype, lexer, when_finished, read_only)
-    local msgbuf = nil
-    for n,buf in ipairs(_BUFFERS) do
-        if buf._type == buftype then
-            msgbuf = buf
-            break
-        end
-    end
-    if msgbuf == nil then
-        msgbuf = buffer.new()
-        msgbuf._type = buftype
-    else
-        -- Clear the buffer
-        msgbuf.read_only = false
-        msgbuf:clear_all()
-    end
+    local msgbuf = get_buffer_by_type(buftype)
+    -- Clear the buffer
+    msgbuf.read_only = false
+    msgbuf:clear_all()
     if lexer then
         msgbuf:set_lexer(lexer)
     end
@@ -365,7 +379,7 @@ function command_to_buffer(command, workdir, buftype, lexer, when_finished, read
                 ui.goto_view(my_view)
             end
             msgbuf:append_text(s)
-            msgbuf:goto_pos(msgbuf.length)
+            --msgbuf:goto_pos(msgbuf.length)
             msgbuf:set_save_point()
 
             if my_view ~= cur_view then
@@ -624,7 +638,7 @@ M.ex_commands = {
             ex_error("No clist")
             return
         end
-        choose_list('Matches found', clist.list, clist_go)
+        choose_list_lexed('*grep*', 'tavi_grep', clist)
     end,
 
     -- Tags
