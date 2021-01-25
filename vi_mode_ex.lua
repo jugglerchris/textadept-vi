@@ -716,6 +716,11 @@ M.ex_commands = {
 keys.tavi_grep = {
     ['\n'] = function()
                buffer:home()
+               local lineno = buffer:line_from_position(buffer.current_pos)
+               local clist = state.clists[state.clistidx]
+               if clist then
+                   clist.idx = lineno
+               end
                vi_mode.find_filename_at_pos()
             end,
 }
