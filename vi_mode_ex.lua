@@ -482,6 +482,9 @@ M.ex_commands = {
             end
         end
     end,
+    buffers = function(args)
+        ui.switch_buffer()
+    end,
     bdelete = function(args)
         if #args > 1 then
             ex_error("Arguments to bdelete not supported yet.")
