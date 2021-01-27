@@ -387,8 +387,8 @@ function command_to_buffer(command, workdir, buftype, lexer, when_finished, read
             end
         end
     end
-    local function endproc()
-        msgbuf:append_text('Finished:' .. table.concat(command, " "))
+    local function endproc(status)
+        msgbuf:append_text('Finished:' .. table.concat(command, " ") .. ' with status ' .. tostring(status))
         msgbuf:set_save_point()
         if read_only then
             msgbuf.read_only = true
@@ -397,7 +397,8 @@ function command_to_buffer(command, workdir, buftype, lexer, when_finished, read
             when_finished(msgbuf)
         end
     end
-    spawn(table.concat(command, " "), workdir, getoutput, getoutput, endproc)
+    msgbuf.ta_data = {}
+    msgbuf.ta_data.proc = spawn(table.concat(command, " "), workdir, getoutput, getoutput, endproc)
 end
 
 M.ex_commands = {
@@ -740,6 +741,12 @@ keys.tavi_grep = {
                end
                vi_mode.find_filename_at_pos()
             end,
+    ['ctrl+c'] = function()
+        -- Kill the process if possible
+        if buffer and buffer.ta_data and buffer.ta_data.proc then
+            buffer.ta_data.proc:kill()
+        end
+    end
 }
 
 local function errhandler(msg)
