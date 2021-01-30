@@ -1,7 +1,7 @@
 -- Test vi_complete.lua
 local assertEq = test.assertEq
 local keys = test.keys
-local vi_complete = require'vi_complete'
+local vi_complete = require'textadept-vi.vi_complete'
 local t = vi_complete._test
 
 test.open('words.txt')

@@ -2,7 +2,7 @@
 local assertEq = test.assertEq
 local log = test.log
 local ts = test.tostring
-local vi_mode_ex = require'vi_mode_ex'
+local vi_mode_ex = require'textadept-vi.vi_mode_ex'
 
 test.open('1_100.txt')
 

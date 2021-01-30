@@ -3,7 +3,7 @@
 local assertEq = test.assertEq
 
 local myvar = nil
-local vi_mode = require 'vi_mode'
+local vi_mode = require 'textadept-vi.vi_mode'
 vi_mode.ex_mode.add_ex_command('tester', function(args)
       assertEq(args, {'tester', 'arg1', 'arg2'})
       myvar = 'success'

@@ -1,7 +1,7 @@
 -- Test the { and } motions
 test.open('wrap.txt')
 
-local vi_ta_util = require 'vi_ta_util'
+local vi_ta_util = require 'textadept-vi.vi_ta_util'
 
 local assertEq = test.assertEq
 local lineno = test.lineno
