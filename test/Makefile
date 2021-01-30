@@ -3,7 +3,7 @@ export LC_ALL := en_GB.UTF-8
 STRACE :=
 TMUX_EXTRA :=
 
-TA ?= ../../textadept-curses
+TA ?= ../../../textadept-curses
 ifeq ($(DEBUG),1)
 STRACE := strace -s4096 -o output/ta.strace
 TMUX_EXTRA :=  \; attach
