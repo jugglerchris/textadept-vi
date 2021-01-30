@@ -1,6 +1,6 @@
 local M = {}
 
-local vi_ta_util = require 'vi_ta_util'
+local vi_ta_util = require 'textadept-vi.vi_ta_util'
 local line_length = vi_ta_util.line_length
 local buf_state = vi_ta_util.buf_state
 

@@ -6,7 +6,7 @@ local debug_complete
 local debug_complete_file
 local debug_ts
 if DEBUG_COMPLETE then
-    debug_ts = require('vi_util').tostring
+    debug_ts = require('textadept-vi.vi_util').tostring
     debug_complete = function(text)
         if debug_complete_file == nil then
             debug_complete_file = io.open("ta_debug_complete.txt", "w")

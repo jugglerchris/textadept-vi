@@ -1,6 +1,6 @@
 -- Implement word completion (with ctrl-p/ctrl-n) in insert mode.
 local M = {}
-local vi_tags = require('vi_tags')
+local vi_tags = require('textadept-vi.vi_tags')
 
 -- update the display from the current word after moving.
 local function update_word()

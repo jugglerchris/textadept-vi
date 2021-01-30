@@ -29,7 +29,7 @@ function _G.cme_log(...) test.log(...) test.log('\n') end
 
 test = require 'test'
 
-vi_mode = require 'vi_mode'
+vi_mode = require 'textadept-vi.vi_mode'
 
 -- Get the list of tests to run
 local testfiles = {}

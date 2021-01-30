@@ -12,23 +12,23 @@ _NOCOMPAT = true
 -- type ESC followed by vi commands without waiting for the ESC to time out.
 M.strip_alt = true
 
-M.ex_mode = require 'vi_mode_ex'
-M.search_mode = require 'vi_mode_search'
-M.vi_tags = require 'vi_tags'
-M.lang = require 'vi_lang'
-M.vi_complete = require 'vi_complete'
-vi_find_files = require 'vi_find_files'
-vi_visual = require('vi_visual')
+M.ex_mode = require 'textadept-vi.vi_mode_ex'
+M.search_mode = require 'textadept-vi.vi_mode_search'
+M.vi_tags = require 'textadept-vi.vi_tags'
+M.lang = require 'textadept-vi.vi_lang'
+M.vi_complete = require 'textadept-vi.vi_complete'
+vi_find_files = require 'textadept-vi.vi_find_files'
+vi_visual = require('textadept-vi.vi_visual')
 local lpeg = require 'lpeg'
 
-local vi_motion = require 'vi_motion'
-local vi_motions = require 'vi_motions'
+local vi_motion = require 'textadept-vi.vi_motion'
+local vi_motions = require 'textadept-vi.vi_motions'
 local vi_down = vi_motions.line_down
 local vi_up= vi_motions.line_up
 local vi_tags = M.vi_tags
-local vi_ops = require'vi_ops'
-local vi_ta_util = require 'vi_ta_util'
-local vi_views = require 'vi_views'
+local vi_ops = require'textadept-vi.vi_ops'
+local vi_ta_util = require 'textadept-vi.vi_ta_util'
+local vi_views = require 'textadept-vi.vi_views'
 local line_length = vi_ta_util.line_length
 local buf_state = vi_ta_util.buf_state
 

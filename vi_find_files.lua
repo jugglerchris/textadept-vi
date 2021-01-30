@@ -5,7 +5,7 @@ local debug_find
 local debug_find_files_file
 local debug_ts
 if DEBUG_FIND_FILES then
-    debug_ts = require('vi_util').tostring
+    debug_ts = require('textadept-vi.vi_util').tostring
     debug_find = function(text)
         if debug_find_files_file == nil then
             debug_find_files_file = io.open("ta_debug_find_files.txt", "w")
@@ -19,7 +19,7 @@ else
 end
 
 local lfs = _G.lfs
-local vi_regex = require('regex.pegex')
+local vi_regex = require('textadept-vi.regex.pegex')
 
 -- Escape a Lua pattern to make it an exact match.
 function M.luapat_escape(s)

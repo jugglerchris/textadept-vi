@@ -2,7 +2,7 @@
 local M = {}
 
 -- Implementations of the movements
-local vi_motions = require 'vi_motions'
+local vi_motions = require 'textadept-vi.vi_motions'
 
 -- Wrap a possibly nested table, returning a proxy which modifies any value
 -- which isn't a nested table.  A nested table is considered one with no

@@ -51,7 +51,7 @@ local function get_tags()
     return state.tags
 end
 
-local ts = require('vi_util').tostring
+local ts = require('textadept-vi.vi_util').tostring
 function M.save_location(filename, pos, taglist)
     local newidx = state.tagidx + 1
     state.tagstack[newidx] = {

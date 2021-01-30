@@ -1,8 +1,8 @@
 -- Support for visual mode.
 local M = {}
 
-local vi_motion = require('vi_motion')
-local vi_ops = require('vi_ops')
+local vi_motion = require('textadept-vi.vi_motion')
+local vi_ops = require('textadept-vi.vi_ops')
 
 local state  -- This will be vi_mode.state later (but import time is too early)
 

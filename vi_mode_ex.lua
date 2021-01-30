@@ -1,13 +1,13 @@
 -- Handle the ex buffer emulation
 -- Modeled on textadept's command_entry.lua
 local M = {}
-local vi_tags = require('vi_tags')
-local vi_quickfix = require('vi_quickfix')
-local vi_regex = require('regex.pegex')
+local vi_tags = require('textadept-vi.vi_tags')
+local vi_quickfix = require('textadept-vi.vi_quickfix')
+local vi_regex = require('textadept-vi.regex.pegex')
 local vi_entry
-local vi_views = require('vi_views')
+local vi_views = require('textadept-vi.vi_views')
 local lpeg = require 'lpeg'
-local vi_find_files = require 'vi_find_files'
+local vi_find_files = require 'textadept-vi.vi_find_files'
 local P, R, S = lpeg.P, lpeg.R, lpeg.S
 local C, Cc, Cf, Cp, Ct, Carg, Cg = lpeg.C, lpeg.Cc, lpeg.Cf, lpeg.Cp, lpeg.Ct, lpeg.Carg, lpeg.Cg
 
@@ -874,7 +874,7 @@ local function do_complete(word, cmd)
     end
 end
 
-vi_entry = require('vi_ce_entry')
+vi_entry = require('textadept-vi.vi_ce_entry')
 state.entry_state = vi_entry.new(':', handle_ex_command, do_complete)
 
 function M.start(exitfunc)
