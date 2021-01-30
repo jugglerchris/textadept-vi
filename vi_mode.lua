@@ -1479,6 +1479,7 @@ function M.install_lexers()
     -- the textadept-vi lexers without having to copy or symlink into
     -- _USERHOME/lexers/.
     -- See: https://github.com/orbitalquark/textadept/discussions/38#discussioncomment-306369
+    -- This assumes that we're installed in the normal location under _USERHOME/modules.
     events.connect(events.BUFFER_NEW, function()
         buffer:private_lexer_call(_SCINTILLA.functions.load_lexer_library[1], _USERHOME .. '/modules/textadept-vi/lexers')
     end)
