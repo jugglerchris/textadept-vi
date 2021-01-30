@@ -1474,7 +1474,19 @@ function M.restore_keymap()
   M._saved_keys = nil -- mfx
 end
 
+function M.install_lexers()
+    -- This is an undocumented (so may break in future) way to install
+    -- the textadept-vi lexers without having to copy or symlink into
+    -- _USERHOME/lexers/.
+    -- See: https://github.com/orbitalquark/textadept/discussions/38#discussioncomment-306369
+    events.connect(events.BUFFER_NEW, function()
+        buffer:private_lexer_call(_SCINTILLA.functions.load_lexer_library[1], _USERHOME .. '/modules/textadept-vi/lexers')
+    end)
+
+end
+
 M.install_keymap()
+M.install_lexers()
 
 -- Disable "normal" keys in command mode if I haven't bound them explicitly.
 local function set_default_key(k)
