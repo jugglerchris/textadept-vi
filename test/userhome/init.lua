@@ -21,7 +21,7 @@ events.connect(events.FILE_OPENED, remove_line_number_margin)
 
 ok, msg = xpcall(function()
 -- Make textadept-vi available
-package.path = _USERHOME .. "/../../?.lua;".._USERHOME .. "/../scripts/?.lua;" .. package.path
+package.path = _USERHOME .. "/../scripts/?.lua;" .. package.path
 package.cpath = _USERHOME .. "/../../extension/?.so;"..package.cpath
 local lfs = require'lfs'
 
