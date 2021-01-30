@@ -17,7 +17,7 @@ Usage
 -----
 *Note that the installations instructions have changed.*
 *Previously, the recommended location was directly in ~/.textadept,
-but it is now ~/.textadept/modules as with any other modules.*
+but textadept-vi now expects to be installed in _USERHOME/modules/*
 
 I suggest cloning textadept-vi into ~/.textadept/modules/, and setting it up with the
 following:
