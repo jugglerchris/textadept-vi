@@ -7,7 +7,7 @@ scriptability, so this is the solution.  The aim is for my trained fingers
 to keep working, while (at least eventually) making good use of textadept's
 features.
 
-It requires a recent textadept (11 alpha at time of writing).
+It requires textadept 11.0.
 
 I use this as my default editor, and it implements the common features of
 vi/vim that I used to use; there are many less common features I haven't
@@ -15,13 +15,16 @@ implemented.
 
 Usage
 -----
-I suggest cloning textadept-vi into ~/.textadept, and setting it up with the
+*Note that the installations instructions have changed.*
+*Previously, the recommended location was directly in ~/.textadept,
+but it is now ~/.textadept/modules as with any other modules.*
+
+I suggest cloning textadept-vi into ~/.textadept/modules/, and setting it up with the
 following:
 
 ```lua
-package.path = "/home/username/.textadept/textadept-vi/?.lua;" .. package.path
-package.cpath = "/home/username/.textadept/textadept-vi/?.so;" .. package.cpath
-_G.vi_mode = require 'vi_mode'
+package.cpath = "/home/username/.textadept/modules/textadept-vi/?.so;" .. package.cpath
+_G.vi_mode = require 'textadept-vi.vi_mode'
 ```
 
 Textadept-vi also requires a recent version of the
@@ -47,7 +50,7 @@ What works
 * Buffers: c-w c-w, c-^, :split, :vsplit, :only
 * Folds: zo, zc, zM, zR
 * Compiling/Quickfix: basic :make, :cb, :cn, :cp, :clist, :lgrep (grep with Lua patterns)
-* Other ex-mode commands with completion: :e, :w, :wq, :x, :q, :b, :bdelete, :find, @:
+* Other ex-mode commands with completion: :e, :w, :wq, :x, :q, :b, :bdelete, :buffers, :find, @:
 * Misc: ^Z to suspend (with the included "kill" Lua extension)
 * Esc to return to command mode
 * In insert mode: ^p to find matching completions in the current buffer.
