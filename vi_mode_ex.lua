@@ -307,9 +307,8 @@ end
 
 -- Take a buffer with error messages, and turn it into a quickfix list,
 -- which is activated.
-local function choose_errors_from_buf(buf, cb)
+local function choose_errors_from_buf(buf)
     local results = vi_quickfix.quickfix_from_buffer(buf)
-    cb = cb or clist_go
     if results then
         -- Push the results list to the stack
         state.clistidx = #state.clists+1
@@ -343,7 +342,7 @@ end
 -- As choose_errors_from_buf, but with a callback which also annotates
 -- the destination buffer with errors.
 local function choose_errors_annotated_from_buf(buf)
-    return choose_errors_from_buf(buf, clist_go_annotate)
+    return choose_errors_from_buf(buf)
 end
 
 -- Spawn a command, which will write its output to a buffer in the
@@ -559,7 +558,7 @@ M.ex_commands = {
         for _,b in ipairs(_BUFFERS) do
             b:annotation_clear_all()
         end
-        command_to_buffer(command, "./", "*make*", nil, choose_errors_annotated_from_buf, true)
+        command_to_buffer(command, "./", "*make*", "tavi_make", choose_errors_annotated_from_buf, true)
     end,
 
     -- Search files
@@ -589,7 +588,7 @@ M.ex_commands = {
             cmd[#cmd+1] = '.'
         end
 
-        command_to_buffer(cmd, ".", "*grep*", "tavi_grep", choose_errors_from_buf)
+        command_to_buffer(cmd, ".", "*grep*", "tavi_grep", choose_errors_from_buf, true)
     end,
 
     ['!'] = function(args, range)
@@ -749,6 +748,23 @@ keys.tavi_grep = {
     end
 }
 
+keys.tavi_make = {
+    ['\n'] = function()
+               buffer:home()
+               local lineno = buffer:line_from_position(buffer.current_pos)
+               local clist = state.clists[state.clistidx]
+               if clist then
+                   clist.idx = lineno
+               end
+               vi_mode.find_filename_at_pos()
+            end,
+    ['ctrl+c'] = function()
+        -- Kill the process if possible
+        if buffer and buffer.ta_data and buffer.ta_data.proc then
+            buffer.ta_data.proc:kill()
+        end
+    end
+}
 local function errhandler(msg)
     local fullmsg = debug.traceback(msg)
     return fullmsg
