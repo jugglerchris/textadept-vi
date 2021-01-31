@@ -756,7 +756,25 @@ keys.tavi_make = {
                if clist then
                    clist.idx = lineno
                end
-               vi_mode.find_filename_at_pos()
+               local errmsg = buffer:get_line(lineno)
+               local errline = lineno + 1
+               while errline < buffer.line_count do
+                    local line = buffer:get_line(errline)
+                    local matchlen = line:match("^[ %d]* | ()")
+                    if matchlen then
+                        errmsg = errmsg .. line:sub(matchlen)
+                    else
+                        break
+                    end
+                    errline = errline + 1
+               end
+               if vi_mode.find_filename_at_pos() then
+                   -- Succeeded
+                   local lineno = buffer:line_from_position(buffer.current_pos)
+                   buffer.annotation_text[lineno] = errmsg
+                   buffer.annotation_style[lineno] = 9
+                   view.annotation_visible = view.ANNOTATION_STANDARD
+               end
             end,
     ['ctrl+c'] = function()
         -- Kill the process if possible

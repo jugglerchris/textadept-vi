@@ -965,7 +965,9 @@ function find_filename_at_pos(pos)
         if lineno ~= nil then
             buffer:goto_line(lineno)
         end
+        return true
     end
+    return false
 end
 M.find_filename_at_pos = find_filename_at_pos
 
