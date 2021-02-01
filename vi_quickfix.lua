@@ -14,7 +14,7 @@ local ws = S" \t"
 local to_nl = (P(1) - P"\n") ^ 0
 local errpat_newdir = Ct(P"make: Entering directory " * S("'`") * Cg((P(1) - P"'")^0, 'newdir')* P"'")
 local errpat_leavedir = Ct(P"make: Leaving directory " * S("'`") * Cg((P(1) - P"'")^0, 'leavedir')* P"'")
-local errpat_error = Ct((P"In file included from " ^-1) * Cg((P(1) - S":\n") ^ 0, 'path') * P":" * Cg(R"09" ^ 0, 'lineno') * P":" * (S(" \t") ^ 0) * Cg(to_nl, "message"))
+local errpat_error = Ct((P"In file included from " ^-1) * Cg((P(1) - S":\n") ^ 0, 'path') * P":" * Cg(R"09" ^ 0, 'lineno') * P":" * ((Cg(R"09" ^ 0, 'colno') * P":")^-1) * (S(" \t") ^ 0) * Cg(to_nl, "message"))
 local errpat_error_nofile = Ct((P"error" + P"Error" + P"ERROR") * P":" * ws * Cg(to_nl, "message")) +
                             Ct(Cg(P"make: ***" * to_nl, "message"))
 
@@ -55,7 +55,7 @@ end
 function M.quickfix_from_buffer(buffer)
     local dirs = {}
     local results = {}
-    for i=0,buffer.line_count-1 do
+    for i=1,buffer.line_count do
         local line = buffer:get_line(i)
         line = line:match("([^\n]*)")
         local match = errpat_line:match(line)
@@ -71,12 +71,30 @@ function M.quickfix_from_buffer(buffer)
           elseif match.path or match.message then
               local path = match.path
               local lineno = match.lineno and tonumber(match.lineno) or nil
+              local colno = match.colno and tonumber(match.colno) or nil
               local message = match.message
+
+              -- Get any extra lines of a multi-line message
+              local errline = i + 1
+              while errline <= buffer.line_count do
+                   local contline = buffer:get_line(errline)
+                   local matchlen = contline:match("^[ %d]* | ()")
+                   if matchlen then
+                       message = message .. "\n" .. contline:sub(matchlen)
+                       contline = contline:match("([^\n]*)")
+                       line = line .. "\n" .. contline
+                       i = i + 1
+                   else
+                       break
+                   end
+                   errline = errline + 1
+              end
+
               if path and #dirs > 0 then
                   path = dirs[#dirs] .. "/" .. path
               end
               local idx = #results + 1
-              results[idx] = { line, path=path, lineno=lineno, idx=idx, message=message }
+              results[idx] = { line, path=path, lineno=lineno, colno=colno, idx=idx, message=message }
           end
         end
         --cme_log("<"..buffer:get_line(i)..">")
