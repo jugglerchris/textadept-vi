@@ -937,12 +937,20 @@ function find_filename_at_pos(pos)
     local mypos = pos or buffer.current_pos
     local s, e, filename = vi_ta_util.find_word_at(mypos, FILENAME_CHARS)
     local lineno = nil
+    local colno = nil
 
     if buffer:text_range(e, e+1) == ":" then
         local _
         _, _, linenostr = vi_ta_util.find_word_at(e+1, "0123456789")
         if linenostr ~= nil then
             lineno = tonumber(linenostr)
+            local ee = e + 1 + linenostr:len()
+            if buffer:text_range(ee, ee+1) == ":" then
+                _, _, colnostr = vi_ta_util.find_word_at(ee+1, "0123456789")
+                if colnostr ~= nil then
+                    colno = tonumber(colnostr)
+                end
+            end
         end
     end
 
@@ -964,6 +972,9 @@ function find_filename_at_pos(pos)
         io.open_file(filename)
         if lineno ~= nil then
             buffer:goto_line(lineno)
+            if colno ~= nil and buffer:line_length(lineno) >= colno then
+                buffer.goto_pos(buffer.current_pos + (colno - 1))
+            end
         end
         return true
     end
