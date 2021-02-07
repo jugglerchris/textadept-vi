@@ -158,7 +158,7 @@ local function do_expand(word, pos, completions)
     local add_suffix = true
     for i=1,#completions do
         local s, e = completions[i]:find(suffix, 1, true)
-        if s < #prefix then
+        if s == nil or s < #prefix then
             -- The suffix doesn't follow the prefix, so we can't just add the suffix
             add_suffix = false
             break
@@ -189,6 +189,12 @@ local _test_expand_cases = {
         "foo", 3,
         { "bar/baz/foo", "baz/bar/foo" },
         "bafoo", 2
+    },
+    -- Some progress with the cursor not at the end of the word
+    {
+        "barfoo", 2,
+        { "bar/baz/foo" },
+        "bar/baz/foo", 11
     },
 }
 function M._test_expand()
@@ -233,12 +239,7 @@ local function complete_now(expand)
     -- Completions are no longer stale.
     buf.data.completions_stale = false
 
-    if #completions == 1 and expand then
-        local repl = completions[1]
-        debug_complete("complete_now: One completion so expanding: repl=[["..debug_ts(repl).."]]")
-
-        replace_word(buf, repl)
-    elseif #completions >= 1 then
+    if #completions >= 1 then
         -- See if there's a common prefix
         local new_word, new_wordpos
         if expand then
