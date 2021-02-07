@@ -1,7 +1,7 @@
 local M = {
     MAX_COMPLETION_LINES = 5
 }
-local DEBUG_COMPLETE = false
+local DEBUG_COMPLETE = true
 local debug_complete
 local debug_complete_file
 local debug_ts
@@ -122,6 +122,57 @@ local function replace_word(buf, repl)
     buf:refresh()
 end
 
+-- Handle expanding the word as possible.
+-- Params:
+--    word: The entire word containing (or just to the left of) the
+--          cursor
+--    pos:  The cursor position (0 == just before the word)
+--    completions: A list of possible matches.
+-- Returns:
+--    new_word: Possibly updated word, or nil if no change could be made
+--    new_pos:  Position of cursor within the word (if new_word is present)
+local function do_expand(word, pos, completions)
+    local prefix = completions[1]
+    for i=2,#completions do
+        prefix = common_prefix(prefix, completions[i])
+        if #prefix == 0 then break end
+    end
+    if #prefix > 0 and prefix ~= word then
+        return prefix, #prefix
+    else
+        return nil
+    end
+end
+
+local _test_expand_cases = {
+    {
+        "foo", 3,
+        { "foobar", "fooqux" },
+        nil, nil
+    },
+    {
+        "foo", 3,
+        { "foobar", "foobaz" },
+        "fooba", 5
+    },
+}
+function M._test_expand()
+    local ts = require('textadept-vi.vi_util').tostring
+    for _,testcase in ipairs(_test_expand_cases) do
+        local word = testcase[1]
+        local wordpos = testcase[2]
+        local completions = testcase[3]
+        local res1 = testcase[4]
+        local res2 = testcase[5]
+        local out1, out2 = do_expand(word, wordpos, completions)
+        if out1 ~= res1 or out2 ~= out2 then
+            test.log("Expand test case failed:" .. ts(testcase))
+            test.log("do_expand returned: " .. ts(out1) .. " and " .. ts(out2))
+            assert(false)
+        end
+    end
+end
+
 -- expand=nil/false means only show completions, don't update buffer.
 local function complete_now(expand)
     debug_complete("complete_now("..debug_ts(expand)..")")
@@ -140,6 +191,7 @@ local function complete_now(expand)
     local startpos, to_complete, endpos = preceding:match("^.-()(%S*)()$")
     local first_word = t:match("^(%S*)")
     debug_complete("complete_now: first_word='"..debug_ts(first_word).."'")
+    debug_complete("complete_now: to_complete='"..debug_ts(to_complete).."'")
     local completions = buf.data.complete(to_complete, first_word) or {}
     debug_complete("complete_now: completions="..debug_ts(completions))
 
@@ -153,18 +205,15 @@ local function complete_now(expand)
         replace_word(buf, repl)
     elseif #completions >= 1 then
         -- See if there's a common prefix
-        local prefix = ""
+        local new_word, new_wordpos
         if expand then
-            prefix = completions[1]
-            for i=2,#completions do
-                prefix = common_prefix(prefix, completions[i])
-                if #prefix == 0 then break end
-            end
+            new_word, new_wordpos = do_expand(to_complete, pos - startpos, completions)
             debug_complete("complete_now: expand: prefix=[["..debug_ts(prefix).."]]")
         end
-        if #prefix > #to_complete then
+        if new_word ~= nil then
             debug_complete("complete_now: prefix is longer, so replacing.")
-            replace_word(buf, prefix)
+            replace_word(buf, new_word)
+            buf.data.pos = new_wordpos + startpos
         else
             debug_complete("complete_now: No longer prefix, showing completions.")
             -- No common prefix, so show completions.
