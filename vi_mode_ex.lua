@@ -862,7 +862,8 @@ local function matching_buffers(text)
     return buffers
 end
 
-local function matching_commands(text)
+-- text_suffix is the part of the word after the cursor (if any)
+local function matching_commands(text, text_suffix)
     local commands = {}
     local tlen = #text
 
@@ -872,15 +873,6 @@ local function matching_commands(text)
         end
     end
     return commands
-end
-
-local function complete_commands(pos, text)
-    local commands = matching_commands(text)
-    if #buffers == 1 then
-        ui_ce.entry_text = string.sub(ui_ce.entry_text, 1, pos-1) .. buffers[1]
-    else
-        ui_ce.show_completions(commands)
-    end
 end
 
 -- Completers for the new entry method
@@ -898,11 +890,11 @@ M.completions_word = {
     grep = get_matching_files,  -- for the search root
 }
 
-local function do_complete(word, cmd)
+local function do_complete(word, cmd, word_suffix)
     if cmd and M.completions_word[cmd] then
-        return M.completions_word[cmd](word)
+        return M.completions_word[cmd](word, word_suffix)
     elseif cmd == word then
-        return matching_commands(cmd)
+        return matching_commands(cmd, word_suffix)
     else
         return {}
     end

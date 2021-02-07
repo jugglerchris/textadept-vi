@@ -132,6 +132,7 @@ end
 --    new_word: Possibly updated word, or nil if no change could be made
 --    new_pos:  Position of cursor within the word (if new_word is present)
 local function do_expand(word, pos, completions)
+    debug_complete("do_expand("..debug_ts(word)..", "..pos..", "..debug_ts(completions))
     local prefix = completions[1]
     for i=2,#completions do
         prefix = common_prefix(prefix, completions[i])
@@ -196,6 +197,18 @@ local _test_expand_cases = {
         { "bar/baz/foo" },
         "bar/baz/foo", 11
     },
+    -- No expansion from middle
+    {
+        "dirxx", 3,
+        { "dirone/xxx.c", "dirtwo/xxx.c" },
+        nil, nil
+    },
+    -- Full expansion from middle
+    {
+        "diroxx", 4,
+        { "dirone/xxx.c" },
+        "dirone/xxx.c", 12
+    },
 }
 function M._test_expand()
     local ts = require('textadept-vi.vi_util').tostring
@@ -229,11 +242,14 @@ local function complete_now(expand)
     local pos = buf.data.pos
     local preceding = t:sub(1, pos-1)
 
-    local startpos, to_complete, endpos = preceding:match("^.-()(%S*)()$")
+    local startpos, to_complete_prefix, endpos = preceding:match("^.-()(%S*)()$")
     local first_word = t:match("^(%S*)")
+    local following = t:sub(pos)
+    local to_complete_suffix = following:match("^(%S*)")
+    local to_complete = to_complete_prefix .. to_complete_suffix
     debug_complete("complete_now: first_word='"..debug_ts(first_word).."'")
     debug_complete("complete_now: to_complete='"..debug_ts(to_complete).."'")
-    local completions = buf.data.complete(to_complete, first_word) or {}
+    local completions = buf.data.complete(to_complete_prefix, first_word, to_complete_suffix) or {}
     debug_complete("complete_now: completions="..debug_ts(completions))
 
     -- Completions are no longer stale.
@@ -248,6 +264,10 @@ local function complete_now(expand)
         end
         if new_word ~= nil then
             debug_complete("complete_now: prefix is longer, so replacing.")
+            -- replace_word only replaces the word before the cursor, but we
+            -- want to replace the whole word - so move the cursor before
+            -- calling it for now.
+            buf.data.pos = buf.data.pos + #to_complete_suffix
             replace_word(buf, new_word)
             buf.data.pos = new_wordpos + startpos
             buf:refresh()

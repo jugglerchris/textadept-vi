@@ -300,8 +300,14 @@ function find_matching_files_lua(pattern)
     return results
 end
 
-function M.find_matching_files(pat)
+function M.find_matching_files(pat_prefix, pat_suffix)
     local findprg = vi_mode.state.variables.findprg
+    local pat = pat_prefix
+    if pat_suffix and #pat_suffix > 0 then
+        local wild = vi_mode.state.variables.findprg_wild or "*"
+        -- The ".*" depends on the findprg.
+        pat = pat .. wild .. pat_suffix
+    end
     if findprg ~= nil then
         local fproc = os.spawn(findprg .. " " .. pat)
         local files = {}
