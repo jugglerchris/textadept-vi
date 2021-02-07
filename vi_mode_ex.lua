@@ -203,14 +203,22 @@ end
 local function choose_list_lexed(buftype, lexer, clist)
     local buf = get_buffer_by_type(buftype)
     buf.read_only = false
+    buf.vi_data = {
+        clist = clist,
+        idx_to_pos = {}
+    }
     buf:clear_all()
-    for _, item in ipairs(clist.list) do
+    for i, item in ipairs(clist.list) do
+        buf.vi_data.idx_to_pos[i] = buf.length + 1
         buf:append_text(item[1] .. "\n")
     end
     buf.read_only = true
     buf:set_lexer(lexer)
     view:goto_buffer(buf)
-    buf:goto_line(clist.idx)
+    cme_log("choose_list_lexed: clist.idx="..tostring(clist.idx)..", pos="..
+            tostring(buf.vi_data.idx_to_pos[clist.idx]))
+    buf:goto_pos(buf.vi_data.idx_to_pos[clist.idx])
+    cme_log("pos="..tostring(buf.current_pos))
 end
 
 -- Jump to an item in a clist ({ text, path=filename, lineno=lineno, idx=idx })
@@ -732,13 +740,31 @@ M.ex_commands = {
 
 keys.tavi_grep = {
     ['\n'] = function()
-               buffer:home()
-               local lineno = buffer:line_from_position(buffer.current_pos)
-               local clist = state.clists[state.clistidx]
-               if clist then
-                   clist.idx = lineno
+               if buffer.vi_data and buffer.vi_data.idx_to_pos and buffer.vi_data.clist then
+                   local cpos = buffer.current_pos
+                   cme_log('tavi_grep enter.  cpos='..cpos)
+                   local idx = 0
+                   -- Linear search.  Could do a binary search if this gets
+                   -- too slow.
+                   for i, pos in ipairs(buffer.vi_data.idx_to_pos) do
+                       cme_log('  idx pair: '..tostring(i)..": " .. tostring(pos))
+                       if pos <= cpos then
+                           idx = i
+                       else
+                           -- Overshot
+                           break
+                       end
+                   end
+                   cme_log('idx is '..tostring(idx))
+                   if idx > 0 then
+                       buffer.vi_data.clist.idx = idx
+                   end
+                   clist_go(buffer.vi_data.clist.list[idx])
+               else
+                   -- We haven't got the list data, so see if we can find some.
+                   buffer:home()
+                   vi_mode.find_filename_at_pos()
                end
-               vi_mode.find_filename_at_pos()
             end,
     ['ctrl+c'] = function()
         -- Kill the process if possible
