@@ -137,23 +137,58 @@ local function do_expand(word, pos, completions)
         prefix = common_prefix(prefix, completions[i])
         if #prefix == 0 then break end
     end
-    if #prefix > 0 and prefix ~= word then
-        return prefix, #prefix
+    -- If we've made no progress (no common prefix), then give up now.
+    if #prefix == 0 or prefix == word:sub(1, #prefix) then
+        return nil, nil
+    end
+
+    -- We've expanded the prefix.  However, if the original pattern doesn't
+    -- appear in the prefix, then put it after the prefix and the cursor
+    -- in between.  This assumes a straight text match of the suffix.
+    --
+    -- The suffix is either:
+    --   The whole word, if the cursor was at the end OR
+    --   the part of the word after the cursor
+    local suffix
+    if pos == #word then
+        suffix = word
     else
-        return nil
+        suffix = word:sub(pos+1)
+    end
+    local add_suffix = true
+    for i=1,#completions do
+        local s, e = completions[i]:find(suffix, 1, true)
+        if s < #prefix then
+            -- The suffix doesn't follow the prefix, so we can't just add the suffix
+            add_suffix = false
+            break
+        end
+    end
+    if add_suffix then
+        return prefix .. suffix, #prefix
+    else
+        return prefix, #prefix
     end
 end
 
 local _test_expand_cases = {
+    -- No progress possible
     {
         "foo", 3,
         { "foobar", "fooqux" },
         nil, nil
     },
+    -- Some progress possible
     {
         "foo", 3,
         { "foobar", "foobaz" },
         "fooba", 5
+    },
+    -- Some progress, but the pattern is not at the start
+    {
+        "foo", 3,
+        { "bar/baz/foo", "baz/bar/foo" },
+        "bafoo", 2
     },
 }
 function M._test_expand()
@@ -214,6 +249,7 @@ local function complete_now(expand)
             debug_complete("complete_now: prefix is longer, so replacing.")
             replace_word(buf, new_word)
             buf.data.pos = new_wordpos + startpos
+            buf:refresh()
         else
             debug_complete("complete_now: No longer prefix, showing completions.")
             -- No common prefix, so show completions.
