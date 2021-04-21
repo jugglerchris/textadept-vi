@@ -215,10 +215,7 @@ local function choose_list_lexed(buftype, lexer, clist)
     buf.read_only = true
     buf:set_lexer(lexer)
     view:goto_buffer(buf)
-    cme_log("choose_list_lexed: clist.idx="..tostring(clist.idx)..", pos="..
-            tostring(buf.vi_data.idx_to_pos[clist.idx]))
     buf:goto_pos(buf.vi_data.idx_to_pos[clist.idx])
-    cme_log("pos="..tostring(buf.current_pos))
 end
 
 -- Jump to an item in a clist ({ text, path=filename, lineno=lineno, idx=idx })
@@ -315,6 +312,7 @@ end
 
 -- Take a buffer with error messages, and turn it into a quickfix list,
 -- which is activated.
+-- Returns true if it created a quickfix list.
 local function choose_errors_from_buf(buf)
     local results = vi_quickfix.quickfix_from_buffer(buf)
     if results then
@@ -322,6 +320,7 @@ local function choose_errors_from_buf(buf)
         state.clistidx = #state.clists+1
         state.clists[state.clistidx] = { list=results, idx=1 }
 --        choose_list('Errors', results, cb)
+        return true
     end
 end
 
@@ -329,7 +328,7 @@ end
 local function clist_go_annotate(item)
     if item.path and item.lineno then
         io.open_file(item.path)
-        buffer.goto_line(item.lineno-1)
+        buffer:goto_line(item.lineno-1)
         buffer:annotation_clear_all()
         buffer.annotation_visible = buffer.ANNOTATION_STANDARD
         for _,erritem in ipairs(state.clists[state.clistidx].list) do
@@ -350,7 +349,40 @@ end
 -- As choose_errors_from_buf, but with a callback which also annotates
 -- the destination buffer with errors.
 local function choose_errors_annotated_from_buf(buf)
-    return choose_errors_from_buf(buf)
+    if choose_errors_from_buf(buf) then
+        local clist = state.clists[state.clistidx]
+        -- Annotate any open buffers with matching filenames
+        local path_to_buffer = {}
+        for _, error in ipairs(clist.list) do
+            local buf = path_to_buffer[error.path]
+            if buf == nil then
+                buf = false -- If we don't find it
+                for _, b in ipairs(_G._BUFFERS) do
+                    if b.filename == error.path then
+                        buf = b
+                        break
+                    end
+                end
+                -- Cache it as we expect to see the same file again
+                path_to_buffer[error.path] = buf
+                if buf then
+                    -- The first time we've found this buffer, so clear any annotations
+                    buf:annotation_clear_all()
+                end
+            end
+
+            if buf then
+                buf.annotation_visible = buffer.ANNOTATION_STANDARD
+                local msg = error.message
+                local prevmsg = buf.annotation_text[error.lineno]
+                if prevmsg and #prevmsg > 0 then
+                    msg = prevmsg .. "\n" .. msg
+                end
+                buf.annotation_text[error.lineno] = msg
+                buf.annotation_style[error.lineno] = 8  -- error style
+            end
+        end
+    end
 end
 
 -- Spawn a command, which will write its output to a buffer in the
@@ -562,11 +594,11 @@ M.ex_commands = {
         for i=2,#args do
             command[#command+1] = args[i]
         end
-        -- Remove existing annotations.
+        -- Remove existing annotations on all buffers
         for _,b in ipairs(_BUFFERS) do
             b:annotation_clear_all()
         end
-        command_to_buffer(command, "./", "*make*", "tavi_make", choose_errors_annotated_from_buf, true)
+        M.run_compile_command(command)
     end,
 
     -- Search files
@@ -742,12 +774,10 @@ keys.tavi_grep = {
     ['\n'] = function()
                if buffer.vi_data and buffer.vi_data.idx_to_pos and buffer.vi_data.clist then
                    local cpos = buffer.current_pos
-                   cme_log('tavi_grep enter.  cpos='..cpos)
                    local idx = 0
                    -- Linear search.  Could do a binary search if this gets
                    -- too slow.
                    for i, pos in ipairs(buffer.vi_data.idx_to_pos) do
-                       cme_log('  idx pair: '..tostring(i)..": " .. tostring(pos))
                        if pos <= cpos then
                            idx = i
                        else
@@ -755,7 +785,6 @@ keys.tavi_grep = {
                            break
                        end
                    end
-                   cme_log('idx is '..tostring(idx))
                    if idx > 0 then
                        buffer.vi_data.clist.idx = idx
                    end
@@ -936,6 +965,12 @@ function M.start(exitfunc)
     -- If using vi_entry, the current buffer won't be easily available.
     state.cur_buf = buffer
     state.entry_state:start()
+end
+
+-- Run a compile command and annotate the current buffer with any errors.
+function M.run_compile_command(command)
+    buffer:annotation_clear_all()
+    command_to_buffer(command, "./", "*make*", "tavi_make", choose_errors_annotated_from_buf, true)
 end
 
 --- Run an ex command that may not have come directly from the command line.
